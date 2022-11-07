@@ -1,0 +1,159 @@
+#############################################################
+#
+# Filter description file for MSl12
+#
+# Format:  
+#
+# function name, band (1-8), width (pixels), height (scans), minfill
+# 
+# if width is specified as -1, a diamond-shaped kernel of max width and
+# heighth equal to specified height will be used for the filtering window.
+#
+# If number of unmasked pixels in window is less than minfill, center
+# pixel will be masked and flagged as FILTER_FAILURE. A default value
+# for minfill will be computed if -1 is specified.
+#
+# Example: 
+#
+# ltmean, 7,  5,  5, -1
+# ltmean, 8,  5,  5, 13
+#
+# Filter Functions:
+#
+#   dilate  - expands a specified mask (selected by band)
+#   ltmean  - averaging over Lt(band)
+#   ltmed   - median filtering on Lt(band)
+#   ltrmean - averaging over Lt(band) - Lr(band)
+#   ltrmed  - median filtering over Lt(band) - Lr(band)
+#   ltriqmean - averaging over the inter-quartile range of Lt(band) - Lr(band)
+#
+#############################################################
+ltrmed,1,5,5,1
+ltrmed,2,5,5,1
+ltrmed,3,5,5,1
+ltrmed,4,5,5,1
+ltrmed,5,5,5,1
+ltrmed,6,5,5,1
+ltrmed,7,5,5,1
+ltrmed,8,5,5,1
+ltrmed,9,5,5,1
+ltrmed,10,5,5,1
+ltrmed,11,5,5,1
+ltrmed,12,5,5,1
+ltrmed,13,5,5,1
+ltrmed,14,5,5,1
+ltrmed,15,5,5,1
+ltrmed,16,5,5,1
+ltrmed,17,5,5,1
+ltrmed,18,5,5,1
+ltrmed,19,5,5,1
+ltrmed,20,5,5,1
+ltrmed,21,5,5,1
+ltrmed,22,5,5,1
+ltrmed,23,5,5,1
+ltrmed,24,5,5,1
+ltrmed,25,5,5,1
+ltrmed,26,5,5,1
+ltrmed,27,5,5,1
+ltrmed,28,5,5,1
+ltrmed,29,5,5,1
+ltrmed,30,5,5,1
+ltrmed,31,5,5,1
+ltrmed,32,5,5,1
+ltrmed,33,5,5,1
+ltrmed,34,5,5,1
+ltrmed,35,5,5,1
+ltrmed,36,5,5,1
+ltrmed,37,5,5,1
+ltrmed,38,5,5,1
+ltrmed,39,5,5,1
+ltrmed,40,5,5,1
+ltrmed,41,5,5,1
+ltrmed,42,5,5,1
+ltrmed,43,5,5,1
+ltrmed,44,5,5,1
+ltrmed,45,5,5,1
+ltrmed,46,5,5,1
+ltrmed,47,5,5,1
+ltrmed,48,5,5,1
+ltrmed,49,5,5,1
+ltrmed,50,5,5,1
+ltrmed,51,5,5,1
+ltrmed,52,5,5,1
+ltrmed,53,5,5,1
+ltrmed,54,5,5,1
+ltrmed,55,5,5,1
+ltrmed,56,5,5,1
+ltrmed,57,5,5,1
+ltrmed,58,5,5,1
+ltrmed,59,5,5,1
+ltrmed,60,5,5,1
+ltrmed,61,5,5,1
+ltrmed,62,5,5,1
+ltrmed,63,5,5,1
+ltrmed,64,5,5,1
+ltrmed,65,5,5,1
+ltrmed,66,5,5,1
+ltrmed,67,5,5,1
+ltrmed,68,5,5,1
+ltrmed,69,5,5,1
+ltrmed,70,5,5,1
+ltrmed,71,5,5,1
+ltrmed,72,5,5,1
+ltrmed,73,5,5,1
+ltrmed,74,5,5,1
+ltrmed,75,5,5,1
+ltrmed,76,5,5,1
+ltrmed,77,5,5,1
+ltrmed,78,5,5,1
+ltrmed,79,5,5,1
+ltrmed,80,5,5,1
+ltrmed,81,5,5,1
+ltrmed,82,5,5,1
+ltrmed,83,5,5,1
+ltrmed,84,5,5,1
+ltrmed,85,5,5,1
+ltrmed,86,5,5,1
+ltrmed,87,5,5,1
+ltrmed,88,5,5,1
+ltrmed,89,5,5,1
+ltrmed,90,5,5,1
+ltrmed,91,5,5,1
+ltrmed,92,5,5,1
+ltrmed,93,5,5,1
+ltrmed,94,5,5,1
+ltrmed,95,5,5,1
+ltrmed,96,5,5,1
+ltrmed,97,5,5,1
+ltrmed,98,5,5,1
+ltrmed,99,5,5,1
+ltrmed,100,5,5,1
+ltrmed,101,5,5,1
+ltrmed,102,5,5,1
+ltrmed,103,5,5,1
+ltrmed,104,5,5,1
+ltrmed,105,5,5,1
+ltrmed,106,5,5,1
+ltrmed,107,5,5,1
+ltrmed,108,5,5,1
+ltrmed,109,5,5,1
+ltrmed,110,5,5,1
+ltrmed,111,5,5,1
+ltrmed,112,5,5,1
+ltrmed,113,5,5,1
+ltrmed,114,5,5,1
+ltrmed,115,5,5,1
+ltrmed,116,5,5,1
+ltrmed,117,5,5,1
+ltrmed,118,5,5,1
+ltrmed,119,5,5,1
+ltrmed,120,5,5,1
+ltrmed,121,5,5,1
+ltrmed,122,5,5,1
+ltrmed,123,5,5,1
+ltrmed,124,5,5,1
+ltrmed,125,5,5,1
+ltrmed,126,5,5,1
+ltrmed,127,5,5,1
+ltrmed,128,5,5,1
+
