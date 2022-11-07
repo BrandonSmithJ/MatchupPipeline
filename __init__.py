@@ -40,9 +40,9 @@ if os.path.exists(cert_root):
   app.conf.update(**{
     'broker_url'     : 'pyamqp://localhost:5671',
     'broker_use_ssl' : {
-      'keyfile'    : f'{cert_root}/RMQ-server-Key.pem',
-      'certfile'   : f'{cert_root}/RMQ-server-cert.pem',
-      'ca_certs'   : f'{cert_root}/RMQ-CA-cert.pem',
+      'keyfile'    : f'{cert_root}/server-key.pem',
+      'certfile'   : f'{cert_root}/server-cert.pem',
+      'ca_certs'   : f'{cert_root}/ca-cert.pem',
       'cert_reqs'  : ssl.CERT_REQUIRED,
     },
   })

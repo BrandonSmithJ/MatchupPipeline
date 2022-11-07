@@ -31,7 +31,8 @@ def get_credentials(site: str) -> Union[list, str]:
         Raises exception if an invalid site is requested.
 
     """
-    auth_folder = Path(__file__).parent.parent.joinpath('credentials')
+    #auth_folder = Path(__file__).parent.parent.joinpath('credentials')
+    auth_folder = Path('/home/bsmith16/workspace/pipeline/credentials')
     valid_sites = [
         'earthexplorer.usgs.gov',         # Username + Password
         'scihub.copernicus.eu',           # Username + Password

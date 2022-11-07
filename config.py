@@ -11,8 +11,8 @@ sensors  = ['OLCI']
 #         Path Definitions
 #===================================
 l2gen_path   = '/home/bsmith16/workspace/SeaDAS'#'/tis/m2cross/scratch/f002/bsmith/SeaDAS_01_13_2022' # '/tis/m2cross/scratch/f002/roshea/SeaDAS_06_13_2022/ocssw_R_2022_3' supports collection 2 imagery
-polymer_path = Path(__file__).parent.joinpath('AC', 'L2_processing', 'polymer', 'polymer')
-acolite_path = Path(__file__).parent.joinpath('AC', 'L2_processing', 'acolite', 'acolite')
+polymer_path = '/home/bsmith16/AC/polymer/polymer-unknown/polymer' #Path(__file__).parent.joinpath('AC', 'L2_processing', 'polymer', 'polymer')
+acolite_path = '/home/bsmith16/AC/acolite/acolite-20220222.0/acolite' #Path(__file__).parent.joinpath('AC', 'L2_processing', 'acolite', 'acolite')
 
 scratch_path = Path(__file__).parent.parent.joinpath('SCRATCH')
 insitu_path  = scratch_path.joinpath('Insitu') 
