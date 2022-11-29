@@ -1,0 +1,17 @@
+# Compiled
+__pycache__/
+*.py[cod]
+
+# Generated / secret
+**/Logs/
+**/Outputs/
+**/credentials/
+**/backup/
+**/gsutil/
+
+# Atmospheric correction
+**/acolite/acolite/
+**/acolite/config/
+**/acolite/data/
+**/polymer/polymer/
+**/l2gen/auxdata/
