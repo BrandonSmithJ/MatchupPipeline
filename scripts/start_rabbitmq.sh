@@ -1,32 +1,38 @@
 #!/bin/bash
 
-
 # Hardcoded path to RabbitMQ files which everyone needs access to
 SHARED="/discover/nobackup/bsmith16/Matchups_Files"
 
 # RabbitMQ installation
-RMQ_DIR=$(ls rabbitmq_server-*)
+RMQ_DIR=$(ls -d rabbitmq_server-*)
+
+# Directory containing TLS certificates
+TLS_DIR="$SHARED/TLS"
 
 # Location to store RabbitMQ server outputs
 RMQ_LOG="$SHARED/RabbitMQ.log"
 
 # File containing the hostname where the RabbitMQ server is currently running
-RMQ_HOST="$SHARED/RMQ_host"
+RMQ_HOSTFILE="$SHARED/RabbitMQ_host"
 
-# Directory containing TLS certificates
-TLS_DIR="$SHARED/TLS"
+# Current RabbitMQ server host (if it exists)
+RMQ_HOST=$(cat $RMQ_HOSTFILE 2>/dev/null)
 
 # Name of the screen which rabbitmq will run in
 SCREEN_NAME="rabbitmq"
 
 # Command to check if RabbitMQ is running (using the hostname if it exists)
-RUN_CHECK="$RMQ_DIR/sbin/rabbitmqctl status --node rabbit$(cat $RMQ_HOST 2>/dev/null) >/dev/null 2>&1"
+RUN_CHECK="$RMQ_DIR/sbin/rabbitmqctl status --node rabbit$RMQ_HOST >/dev/null 2>&1"
+
+# Create a vhost for the current user to use
+ADD_VHOST="$RMQ_DIR/sbin/rabbitmqctl add_vhost --node rabbit$RMQ_HOST matchups_$(whoami) >/dev/null"
 
 # Command to start the server
 START_RMQ="$RMQ_DIR/sbin/rabbitmq-server > $RMQ_LOG 2>&1"
 
 # Add in the addition of logging the hostname when starting/stopping 
-START_RMQ="echo '@$(hostname)' > $RMQ_HOST; $START_RMQ; rm $RMQ_HOST"
+START_RMQ="echo '@$(hostname)' > $RMQ_HOSTFILE; $START_RMQ; rm $RMQ_HOSTFILE"
+
 
 # RabbitMQ configuration settings
 RMQ_CONFIG=$(cat <<-EOF
@@ -74,7 +80,7 @@ suggest="(e.g. echo 'export SCREENDIR=~/.screens' >> ~/.bashrc && source ~/.bash
 [ -d $RMQ_DIR ] || { echo "$RMQ_DIR does not exist"; exit 1; }
 
 # Check if RabbitMQ is already running
-eval "$RUN_CHECK" && { echo "RabbitMQ is already running $(cat $RMQ_HOST 2>/dev/null)"; exit 0; }
+eval "$RUN_CHECK" && { echo "RabbitMQ is already running $RMQ_HOST"; eval "$ADD_VHOST"; exit 0; }
 
 # Check if TLS certificates exist, and if not, create them
 if [ ! -d $TLS_DIR ]; then
@@ -99,15 +105,19 @@ if [ ! -d $TLS_DIR ]; then
 fi
 
 # Create screen and run RabbitMQ
-echo -n "Starting RabbitMQ..."
+echo -n "Waiting up to 60s for RabbitMQ to start..."
 screen -dmS $SCREEN_NAME bash -c "$START_RMQ; echo 'RabbitMQ exited.'; sleep 40;"
-sleep 10
 
 # Check that RabbitMQ started successfully
-eval "$RUN_CHECK" || { echo "failed."; exit 1; }
+count=60
+while ! eval "$RUN_CHECK" && [ $count -ge 0 ]; do ((count--)); sleep 1; done
+[ $count -ge 0 ] || { echo "failed."; exit 1; }
 echo "success!"
 
 # Ensure log file is accessible to everyone
 touch $RMQ_LOG
 chmod 755 $RMQ_LOG
+chmod 755 $RMQ_HOSTFILE
 
+# Add a vhost for the user
+eval "$ADD_VHOST"
