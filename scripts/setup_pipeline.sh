@@ -195,8 +195,9 @@ chmod +x install_ocssw
 scroll ./install_ocssw --install_dir=`pwd` --tag T2022.31 --seadas --oli --l5tm --l7etmp --msis2a --msis2b
 
 
-# Add RabbitMQ start script to the RabbitMQ folder
+# Add RabbitMQ start script to the RabbitMQ folder, and run it
 cp pipeline/scripts/start_rabbitmq.sh RabbitMQ/
+cd RabbitMQ && ./start_rabbitmq.sh
 
 # Add environmental variables to bashrc
 echo "export SCREENDIR=$USR/.screens" >> ~/.bashrc
