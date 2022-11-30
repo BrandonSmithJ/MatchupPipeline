@@ -4,6 +4,8 @@ USR=/discover/nobackup/$(whoami)
 GIT=https://github.com
 DST=Matchups
 
+SHARED=/discover/nobackup/bsmith16/Matchups_Files
+
 # Download URLs
 PY3_URL="https://www.python.org/ftp/python/3.8.10/Python-3.8.10.tar.xz"
 RMQ_URL="$GIT/rabbitmq/rabbitmq-server/releases/download/v3.10.10/rabbitmq-server-generic-unix-3.10.10.tar.xz"
@@ -137,6 +139,7 @@ mkdir -p $DST && cd $DST
 color_text "Cloning Matchup Pipeline"
 color_text "------------------------"
 scroll git clone https://github.com/BrandonSmithJ/MatchupPipeline pipeline
+cp -R $SHARED/credentials pipeline/
 
 # Install RabbitMQ
 RMQ_PATH=$(download_extract RabbitMQ $RMQ_URL)
