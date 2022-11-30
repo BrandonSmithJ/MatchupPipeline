@@ -1,5 +1,6 @@
 from ...tests import test_function, get_results_path
 from ...utils import Location, DatetimeRange
+from ...config import l2gen_path, acolite_path
 from . import AC_FUNCTIONS
 
 from tempfile import TemporaryDirectory
@@ -7,8 +8,8 @@ from pathlib import Path
 import json
 
 AC_PATHS = {
-    'acolite' : Path(__file__).parent.joinpath('acolite', 'acolite'),
-    'l2gen'   : '/home/bsmith16/workspace/SeaDAS',
+    'acolite' : acolite_path,#Path(__file__).parent.joinpath('acolite', 'acolite'),
+    'l2gen'   : l2gen_path, #'/home/bsmith16/workspace/SeaDAS',
 }
 
 
@@ -54,7 +55,7 @@ def get_tests():
     sensors    = ['ETM', 'OLI', 'TM'][-1:]
     functions  = [run_correction]
     sources    = ['EarthExplorer']
-    ac_methods = ['l2gen']
+    ac_methods = ['l2gen', 'acolite'][1:]
     configs    = {
         'Test 1' : {
             'location' : Location(lon=-76, lat=37),

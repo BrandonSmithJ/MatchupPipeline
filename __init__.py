@@ -2,6 +2,10 @@
 import os 
 os.environ['FORKED_BY_MULTIPROCESSING'] = '1'
 
+# Define NCCS flag to indicate SLURM usage
+import socket
+NCCS = 'discover' in socket.gethostname()
+
 # Define our celery application
 from celery import Celery 
 task = 'pipeline.tasks.pipelines.PipelineTask:PipelineTask'
@@ -34,7 +38,7 @@ app.conf.task_routes = {
 }
 
 # If we're on pardees, we're using TLS for RabbitMQ
-cert_root = '/home/bsmith16/workspace/rabbitmq_server-3.10.7/etc/pki/tls'
+cert_root = 'RabbitMQ/rabbitmq_server-3.10.10/etc/pki/tls'
 if os.path.exists(cert_root):
   import ssl
   app.conf.update(**{

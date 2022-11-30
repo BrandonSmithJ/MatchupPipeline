@@ -1,10 +1,13 @@
-from ... import app, utils
+from ... import app, utils, NCCS
 from ..shutdown import shutdown
 
 from .Worker  import Worker
 from .Flower  import Flower
 from .Monitor import Monitor
 
+
+# Switch to the SLURM worker if we're running on NCCS
+if NCCS: from .SlurmWorker import SlurmWorker as Worker
 
 
 class CeleryManagerMulti:

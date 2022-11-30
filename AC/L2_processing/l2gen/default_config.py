@@ -3,7 +3,8 @@
 #     {SeaDAS install folder}/share/{sensor}/msl12_defaults.par
 DEFAULT_CONFIG = {
   'l2prod' : [ # Output products - more products requires more time to run l2gen
-    'Rrs_nnn', 'Rrs_unc_vvv', 'aot_nnn', 
+    'Rrs_nnn', #'Rrs_unc_vvv', 
+    'aot_nnn', 
     'rhos_nnn', 'rhot_nnn', 'polcor_nnn',
     'latitude', 'longitude', 'l2_flags', 
 

@@ -6,15 +6,17 @@ username = getoutput('whoami')
 datasets = ['Uruguay']
 sensors  = ['OLCI']
 
+root = Path(__file__).parent
+ac_folder = root.parent.joinpath('AC')
 
 #===================================
 #         Path Definitions
 #===================================
-l2gen_path   = '/home/bsmith16/workspace/SeaDAS'#'/tis/m2cross/scratch/f002/bsmith/SeaDAS_01_13_2022' # '/tis/m2cross/scratch/f002/roshea/SeaDAS_06_13_2022/ocssw_R_2022_3' supports collection 2 imagery
+l2gen_path   = ac_folder.joinpath('SeaDAS').as_posix()#'/tis/m2cross/scratch/f002/bsmith/SeaDAS_01_13_2022' # '/tis/m2cross/scratch/f002/roshea/SeaDAS_06_13_2022/ocssw_R_2022_3' supports collection 2 imagery
 polymer_path = '/home/bsmith16/AC/polymer/polymer-unknown/polymer' #Path(__file__).parent.joinpath('AC', 'L2_processing', 'polymer', 'polymer')
-acolite_path = '/home/bsmith16/AC/acolite/acolite-20220222.0/acolite' #Path(__file__).parent.joinpath('AC', 'L2_processing', 'acolite', 'acolite')
+acolite_path = ac_folder.joinpath('Acolite', 'acolite-20221114.0', 'acolite').as_posix() #Path(__file__).parent.joinpath('AC', 'L2_processing', 'acolite', 'acolite')
 
-scratch_path = Path(__file__).parent.parent.joinpath('SCRATCH')
+scratch_path = Path(__file__).parent.parent.joinpath('Data')
 insitu_path  = scratch_path.joinpath('Insitu') 
 output_path  = scratch_path.joinpath('Gathered')
 
