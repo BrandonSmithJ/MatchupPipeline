@@ -175,7 +175,7 @@ module load gdal/3.0.4
 # Remove landsatxplore dependency, as it conflicts with others
 # Manually install landsatxplore, and reinstall correct click version
 install_reqs() {
-  sed -i '/landsatxplore/d' pipeline/requirements.txt
+  #sed -i '/landsatxplore/d' pipeline/requirements.txt
   python -m pip install -r pipeline/requirements.txt && \
   python -m pip install landsatxplore && \
   python -m pip install click==8.1.3
@@ -193,11 +193,14 @@ wget https://oceandata.sci.gsfc.nasa.gov/manifest/install_ocssw >/dev/null 2>&1
 wget https://oceandata.sci.gsfc.nasa.gov/manifest/manifest.py >/dev/null 2>&1
 chmod +x install_ocssw
 scroll ./install_ocssw --install_dir=`pwd` --tag T2022.31 --seadas --oli --l5tm --l7etmp --msis2a --msis2b
-
+cd - > /dev/null
 
 # Add RabbitMQ start script to the RabbitMQ folder, and run it
+export PATH="$ERL_PATH/build/bin:$PATH"
+export SCREENDIR="$USR/.screens"
 cp pipeline/scripts/start_rabbitmq.sh RabbitMQ/
 cd RabbitMQ && ./start_rabbitmq.sh
+cd - > /dev/null
 
 # Add environmental variables to bashrc
 echo "export SCREENDIR=$USR/.screens" >> ~/.bashrc

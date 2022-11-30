@@ -22,7 +22,7 @@ idna==3.4
 imageio==2.22.0
 kiwisolver==1.4.4
 kombu==5.2.4
-landsatxplore==0.13.0
+#landsatxplore==0.13.0
 lxml==4.9.1
 matplotlib==3.6.0
 netCDF4==1.6.1
