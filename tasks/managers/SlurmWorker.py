@@ -7,9 +7,12 @@ import time, os
 class SlurmProcess:
     """ Emulate the functionality of subprocess.Popen process """
     _ids = []
+    
 
-    def __init__(self, command):
+    def __init__(self, command, logdir='Logs/Slurm'):
         self.command = command
+        self.logdir  = Path(logdir)
+
         script = Path(__file__).parent.joinpath('slurm_deploy.sh').as_posix()
         job_id = self.job_id = len(SlurmProcess._ids)
         SlurmWorker._ids.append(job_id)
@@ -19,13 +22,13 @@ class SlurmProcess:
     @property
     def stdout(self):
         """ File handle to the output log of the slurm job """
-        return open("Logs/Slurm/{self.job_id}_out.txt")
+        return self.logdir.joinpath("{self.job_id}_out.txt").open('a+')
 
 
     @property
     def stderr(self):
         """ File handle to the error log of the slurm job """
-        return open("Logs/Slurm/{self.job_id}_err.txt")
+        return self.logdir.joinpath("{self.job_id}_err.txt").open('a+')
 
 
     def poll(self):
