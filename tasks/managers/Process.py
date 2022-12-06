@@ -53,6 +53,12 @@ class Process:
 
 
 
+    def _spawn_process(self, command, **process_config):
+        """ Create a process object which executes the given command """
+        return subprocess.Popen(command, **process_config)
+
+
+
     def _start_process(self):
         """ Start the required process in the background """
 
@@ -65,7 +71,7 @@ class Process:
             }
             kwargs  = ' '.join( f'--{k}={v}' for k,v in kwargs.items() )
             command = f'celery -A pipeline {action} {kwargs}'.split()
-            return subprocess.Popen(command, **process_config)
+            return self._spawn_process(command, **process_config)
 
         self.process = self.process or execute(**self.pkwargs)
         return self
