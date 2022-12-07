@@ -106,8 +106,8 @@ class SlurmWorker(Worker):
             'job-name'    : name,
             'output'      : outdir.joinpath(f'{name}_out.txt').as_posix(),
             'error'       : outdir.joinpath(f'{name}_err.txt').as_posix(),
-            'mem-per-cpu' : '4000',
-            'time'        : '600:00',
+            #'mem-per-cpu' : '4000',
+            'time'        : '120:00',
             'account'     : 's2390',
         }
         kwargs  = [f'--{k}={v}' for k, v in kwargs.items()]

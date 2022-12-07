@@ -5,12 +5,14 @@ from .Process import Process
 from pathlib import Path 
 from typing import Optional 
 from functools import lru_cache
-import time, sys
+import subprocess, time, sys, os
 
 
 
 class RabbitMQ(Process):
     """ RabbitMQ process """
+    node = ''
+    host = '@localhost'
 
     def __init__(self,
         logdir      : Path = Path('Logs'),  # Location to store log files 
@@ -20,7 +22,7 @@ class RabbitMQ(Process):
         self.logfile = self._init_log(logdir, 'rabbitmq', kwargs)
         kwargs.update({
             'timeout' : timeout,
-            'action'  : f'> {self.logfile}',
+            #'action'  : f'> {self.logfile}',
         })
         self._init_base_command()
         super().__init__(**kwargs)
@@ -47,18 +49,21 @@ class RabbitMQ(Process):
         """ Start the required process in the background """
             
         def check_running():
-            try: return self.get_status()
-            except: return False
+            try: 
+                self.get_status()
+                return True
+            except Exception as e: 
+                #print(e)
+                return False
 
         # Start the worker process
         super()._start_process()
 
         try: 
-            if not check_running():
-                print(f'Waiting for RabbitMQ to come online...', end='')
-                sys.stdout.flush()
-                while not check_running(): time.sleep(1)
-                print('done')
+            print(f'Waiting for RabbitMQ to come online...', end='')
+            sys.stdout.flush()
+            while not check_running(): time.sleep(5)
+            print('done')
 
         except (KeyboardInterrupt, Exception) as e: 
             self._kill_process()
@@ -67,10 +72,17 @@ class RabbitMQ(Process):
             raise Exception(message)
 
         # Initialize user 
-        for command in [self.add_vhost, self.add_user]:
-            try: command()
-            except: pass
+        for command in [self.add_vhost, self.add_user, self.set_tags, self.set_permissions]:
+            try: 
+                command()
+                time.sleep(2)
+            except Exception as e: 
+                pass #print(f'Failed to run {command}: {e}')
 
+        # Setup Celery app config
+        address = f'{self.username}:mp{self.username}{self.host}'
+        app.conf.broker_url=app.conf['broker_url'].replace('localhost', address)+f'/matchups_{self.username}'
+        os.environ['CELERY_BROKER_URL'] = app.conf.broker_url        
 
 
     def _init_base_command(self):
@@ -85,7 +97,12 @@ class RabbitMQ(Process):
 
     def get_output(self, command):
         """ Get the output of a command """
-        return subprocess.check_output(command.split())
+        return subprocess.check_output(command.split(), stderr=subprocess.STDOUT).decode('utf-8').strip()
+
+
+    def check_ctl(self, command):
+        """ Get the output of a command for rabbitmqctl """
+        return self.get_output(f'{self.ctl_path} --node rabbit{self.node} {command}')
 
 
     @property
@@ -95,23 +112,25 @@ class RabbitMQ(Process):
     
 
     def get_status(self):
-        return self.get_output(f'{self.ctl_path} status')
+        return self.check_ctl('status')
 
 
     def add_vhost(self):
-        return self.get_output(f'{self.ctl_path} add_vhost matchups_{self.username}')
+        return self.check_ctl(f'add_vhost matchups_{self.username}')
 
 
     def add_user(self):
-        return [
-            self.get_output(f'{self.ctl_path} add_user {self.username} mp{self.username}'),
-            self.get_output(f'{self.ctl_path} set_user_tags {self.username} administrator'),
-            self.get_output(f'{self.ctl_path} set_permissions -p / {self.username} ".*" ".*" ".*"'),
-        ]
+        return self.check_ctl(f'add_user {self.username} mp{self.username}')
+
+    def set_tags(self):
+        return self.check_ctl(f'set_user_tags {self.username} administrator')
+
+    def set_permissions(self):
+        return self.check_ctl(f'set_permissions -p matchups_{self.username} {self.username} .* .* .*')
 
 
     def stop(self):
-        return self.get_output(f'{self.ctl_path} stop')
+        return self.check_ctl('stop')
 
 
 

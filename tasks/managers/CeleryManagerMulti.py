@@ -48,7 +48,7 @@ class CeleryManagerMulti:
     ):
         self.rabbit  = [RabbitMQ()]
 
-        utils.purge_queues()
+        #utils.purge_queues()
         merge_kwargs = lambda d: (d.update(kwargs) or d)
         self.celery  = [Worker(**merge_kwargs(kw)) for kw in worker_kws]
         self.flower  = [Flower()]
@@ -80,7 +80,7 @@ class CeleryManagerMulti:
 
     def _start_processes(self):
         """ Start the required processes in the background """
-        [process._start_process() for process in self]
+        [process._start_process() for process in list(self)[::-1]]
         return self
 
 

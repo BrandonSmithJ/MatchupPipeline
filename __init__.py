@@ -42,8 +42,8 @@ cert_root = '/discover/nobackup/bsmith16/Matchups_Files/TLS'
 if os.path.exists(cert_root):
   import ssl
   app.conf.update(**{
-    'broker_url'     : 'pyamqp://bsmith16:mpbsmith16@discover34:5671',
-    #'broker_url'     : 'pyamqp://rabbit@discover34:5671/matchups_bsmith16',
+    'broker_url'   : 'pyamqp://localhost:5671',
+    #'broker_url'     : 'pyamqp://bsmith16:mpbsmith16@discover34:5671',
     'broker_use_ssl' : {
       'keyfile'    : f'{cert_root}/server-key.pem',
       'certfile'   : f'{cert_root}/server-cert.pem',

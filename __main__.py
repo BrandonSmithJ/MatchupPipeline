@@ -22,10 +22,12 @@ def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
         assert(path.exists()), f'Dataset missing required file: {path}'
 
         try:
-            try:    data = pd.read_csv(path, parse_dates=['date']).dropna()
-            except: data = pd.read_csv(path, parse_dates=['datetime']).dropna()
+            #try:    data = pd.read_csv(path, parse_dates=['date'])#.dropna()
+            #except: 
+            data = pd.read_csv(path, parse_dates=['datetime'])#.dropna()
+            assert(len(data)), 'No data available'
 
-            if 'time' in data.columns:
+            if 'time' in data.columns and 'datetime' not in data.columns:
                 data['datetime'] = data['date'].astype(str) + ' ' + data['time']
 
             # Assume 'date' columns don't contain valid time information
