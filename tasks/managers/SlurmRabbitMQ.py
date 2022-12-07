@@ -1,5 +1,5 @@
 from ... import app
-from .Worker import Worker
+from .RabbitMQ import RabbitMQ
 
 from pathlib import Path
 from threading import Timer

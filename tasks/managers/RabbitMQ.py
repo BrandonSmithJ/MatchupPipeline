@@ -4,7 +4,7 @@ from .Process import Process
 
 from pathlib import Path 
 from typing import Optional 
-from functools import cache
+from functools import lru_cache
 import time, sys
 
 
@@ -88,8 +88,8 @@ class RabbitMQ(Process):
         return subprocess.check_output(command.split())
 
 
-    @cache
     @property
+    @lru_cache()
     def username(self):
         return self.get_output('whoami')    
     
