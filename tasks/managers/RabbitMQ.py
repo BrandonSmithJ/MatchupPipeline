@@ -17,10 +17,10 @@ class RabbitMQ(Process):
         timeout     : Optional[int] = None, # Seconds to wait for graceful exit
         **kwargs,                           # Any additional command line keywords
     ):
-        logfile = self._init_log(logdir, 'rabbitmq', kwargs)
+        self.logfile = self._init_log(logdir, 'rabbitmq', kwargs)
         kwargs.update({
             'timeout' : timeout,
-            'action'  : f'> {logfile}',
+            'action'  : f'> {self.logfile}',
         })
         self._init_base_command()
         super().__init__(**kwargs)
