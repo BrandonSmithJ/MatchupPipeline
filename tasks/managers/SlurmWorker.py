@@ -114,14 +114,14 @@ class SlurmWorker(Worker):
         command = ['srun'] + kwargs + [script] + command 
         return subprocess.Popen(command, **process_config)
 
-    def _stop_process(self):
+    def _stop_process2(self):
         """ Ensure we stop the job restart timer """
         if hasattr(self, 'restart_timer'):
             self.restart_timer.cancel()
         return super()._stop_process()
         
 
-    def _start_new_process(self):
+    def _start_new_process2(self):
         """ Start a new slurm job """
         # 1. send signal to job to gracefully exit
         self.process.stop()

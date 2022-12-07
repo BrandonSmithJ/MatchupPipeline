@@ -11,6 +11,8 @@ import subprocess, time
 
 class Process:
     """ Context manager for background processes """
+    base_command = 'celery -A pipeline'
+
 
     def __init__(self,
         timeout : Optional[int] = None, # Seconds to wait for graceful exit
@@ -62,7 +64,7 @@ class Process:
     def _start_process(self):
         """ Start the required process in the background """
 
-        def execute(action, **kwargs):
+        def execute(action='', **kwargs):
             """ Execute celery action in a separate process """
             process_config = {
                 'stdout' : subprocess.PIPE, 
@@ -70,7 +72,7 @@ class Process:
                 'text'   : True,
             }
             kwargs  = ' '.join( f'--{k}={v}' for k,v in kwargs.items() )
-            command = f'celery -A pipeline {action} {kwargs}'.split()
+            command = f'{self.base_command} {action} {kwargs}'.split()
             return self._spawn_process(command, **process_config)
 
         self.process = self.process or execute(**self.pkwargs)
