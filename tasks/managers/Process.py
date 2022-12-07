@@ -113,7 +113,7 @@ class Process:
             """ Read process from a separate thread to prevent blocking """
             with ThreadPoolExecutor(1) as executor:
                 queue = Queue()
-                executor.submit(Worker._enqueue, process.stdout, queue)
+                executor.submit(Process._enqueue, process.stdout, queue)
 
                 while (process.poll() is None) or not queue.empty():
                     output = sentinel
@@ -132,5 +132,5 @@ class Process:
                     yield output
 
         if self.process is None: return
-        if self.monitor is None: self.monitor = monitor(process)
+        if self.monitor is None: self.monitor = monitor(self.process)
         return iterate_until_empty(self.monitor)

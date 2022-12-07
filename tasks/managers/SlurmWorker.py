@@ -14,26 +14,34 @@ class SlurmProcess:
     _ids = {}
     
 
-    def __init__(self, command, logdir='Logs/Slurm'):
+    def __init__(self, command, logdir='pipeline/Logs/Slurm'):
         self.command = command
         self.logdir  = Path(logdir)
 
-        script   = Path(__file__).parent.joinpath('slurm_deploy.sh').as_posix()
         job_name = self.job_name = f'MatchupPipeline-{len(SlurmProcess._ids)}'
-        job_id   = self.job_id   = subprocess.check_output([script, job_name, command])
-        SlurmWorker._ids[job_id] = command
+        job_id   = self.job_id   = self._execute(command)
+        SlurmProcess._ids[job_id] = command
+        print('Job ID:',job_id)
+
+
+    def _execute(self, command):
+        """ Execute the given command and parse the job ID """
+        script = Path(__file__).parent.parent.parent.joinpath('scripts', 'slurm_deploy2.sh').as_posix()
+        output = subprocess.check_output(['sbatch', script, self.job_name] + command)
+        assert(b'Submitted batch job' in output), output
+        return output.decode('utf-8').strip().split(' ')[-1]
 
 
     @property
     def stdout(self):
         """ File handle to the output log of the slurm job """
-        return self.logdir.joinpath("{self.job_id}_out.txt").open('a+')
+        return self.logdir.joinpath(f"{self.job_id}_out.txt").open('a+')
 
 
     @property
     def stderr(self):
         """ File handle to the error log of the slurm job """
-        return self.logdir.joinpath("{self.job_id}_err.txt").open('a+')
+        return self.logdir.joinpath(f"{self.job_id}_err.txt").open('a+')
 
 
     def poll(self):
@@ -87,10 +95,24 @@ class SlurmWorker(Worker):
         """ Spawn a new slurm job process """
         # Start a thread timer to restart the slurm 
         # process occasionally due to max job times
-        self.restart_timer = Timer(MAX_JOB_TIME, self._start_new_process)
-        self.restart_timer.start()
-        return SlurmProcess(command)
-
+        #self.restart_timer = Timer(MAX_JOB_TIME, self._start_new_process)
+        #self.restart_timer.start()
+        #return SlurmProcess(command)
+        root   = Path(__file__).parent.parent.parent
+        script = root.joinpath('scripts', 'slurm_deploy2.sh').as_posix()
+        name   = Path(self.pkwargs.get('logfile', 'jobname')).stem
+        outdir = Path(self.pkwargs.get('logfile', root.joinpath('Logs', '_'))).parent
+        kwargs = {
+            'job-name'    : name,
+            'output'      : outdir.joinpath(f'{name}_out.txt').as_posix(),
+            'error'       : outdir.joinpath(f'{name}_err.txt').as_posix(),
+            'mem-per-cpu' : '4000',
+            'time'        : '600:00',
+            'account'     : 's2390',
+        }
+        kwargs  = [f'--{k}={v}' for k, v in kwargs.items()]
+        command = ['srun'] + kwargs + [script] + command 
+        return subprocess.Popen(command, **process_config)
 
     def _stop_process(self):
         """ Ensure we stop the job restart timer """

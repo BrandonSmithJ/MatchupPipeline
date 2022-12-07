@@ -28,13 +28,15 @@ def get_active_tasks(self):
             # a = inspector.active_queues()
             # print(a)
             # for worker, queues in a.items():
-            for queue in ['celery', 'dedicated', 'search','correct','extract','write']:
-                name, jobs, consumers = channel.queue_declare(**{
-                    'queue'   : queue,#['name'], 
-                    'passive' : True,
-                })
-                if jobs > 0:
-                    return jobs
+            for queue in ['celery', 'search','correct','extract','write']:
+                try:
+                    name, jobs, consumers = channel.queue_declare(**{
+                        'queue'   : queue,#['name'], 
+                        'passive' : True,
+                    })
+                    if jobs > 0:
+                        return jobs
+                except: pass
                 # active = []
                 # parse  = lambda msg: msg.properties['application_headers']['task']
                 # append = lambda msg: active.append( parse(msg) )

@@ -3,7 +3,7 @@ from .. import app
 
 
 def purge_queues(
-    queues=['celery', 'dedicated', 'search', 'correct', 'extract', 'write'],
+    queues=['celery', 'search', 'correct', 'extract', 'write'],
 ):
     """ Attempt to purge all celery queues """
     with app.connection_for_write() as conn:
