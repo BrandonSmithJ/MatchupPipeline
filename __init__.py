@@ -29,6 +29,11 @@ app.conf.update(**{
     'worker_prefetch_multiplier' : 1,
 })
 
+# Need to allow larger representations to properly reconstruct arguments in 
+# the Monitor. Otherwise, (kw)args are cut off with '...' past a certain size
+app.amqp.argsrepr_maxsize = 32768
+app.amqp.kwargsrepr_maxsize = 32768
+
 # Set task routes
 app.conf.task_routes = {
    'search'  : {'queue': 'search'},
