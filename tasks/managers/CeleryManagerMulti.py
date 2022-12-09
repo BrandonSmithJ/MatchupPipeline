@@ -80,7 +80,10 @@ class CeleryManagerMulti:
 
     def _start_processes(self):
         """ Start the required processes in the background """
-        [process._start_process() for process in list(self)[::-1]]
+        try: [process._start_process() for process in list(self)[::-1]]
+        except:
+            print(f'Failed to start processes')
+            self._kill_processes()
         return self
 
 

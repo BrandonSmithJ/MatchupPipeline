@@ -90,6 +90,10 @@ class SlurmWorker(Worker):
     then handles monitoring, restarting, and stopping this job
     as necessary.
     """
+    def __init__(self, *args, slurm_kwargs={}, **kwargs):
+        self.slurm_kwargs = slurm_kwargs
+        super().__init__(*args, **kwargs)
+
 
     def _spawn_process(self, command, **process_config):
         """ Spawn a new slurm job process """
@@ -110,6 +114,7 @@ class SlurmWorker(Worker):
             'time'        : '120:00',
             'account'     : 's2390',
         }
+        kwargs.update(self.slurm_kwargs)
         kwargs  = [f'--{k}={v}' for k, v in kwargs.items()]
         command = ['srun'] + kwargs + [script] + command 
         return subprocess.Popen(command, **process_config)

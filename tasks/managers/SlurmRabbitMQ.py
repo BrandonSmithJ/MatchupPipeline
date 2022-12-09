@@ -29,6 +29,7 @@ class SlurmRabbitMQ(RabbitMQ):
         }
         kwargs  = [f'--{k}={v}' for k, v in kwargs.items()]
         command = ['srun'] + kwargs + [script] + command 
+        print(f'Spawning process with command: {command}')
         process = subprocess.Popen(command, **process_config)
         time.sleep(5)
  

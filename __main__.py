@@ -164,6 +164,7 @@ def main():
         {   'logname'     : 'worker1',
             'queues'      : ['search', 'celery'],
             'concurrency' : 2,
+            'slurm_kwargs': {'partition' : 'datamove'},
         },
         # Multiple threads for correction
         {   'logname'     : 'worker2',
