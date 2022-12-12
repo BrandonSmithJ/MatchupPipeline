@@ -1,16 +1,13 @@
-#! /usr/bin/env python
 
-
-from __future__ import absolute_import
-from __future__ import print_function
-import get_obpg_file_type
-from . import next_level_name_finder
-from . import obpg_data_file
 import os
-import platform
-from . import ProcUtils
 import sys
+import subprocess
+import shutil
 from modules.ParamUtils import ParamProcessing
+import modules.ProcUtils as ProcUtils
+import get_obpg_file_type
+import modules.next_level_name_finder
+
 
 class ModisL1B:
     """
@@ -39,7 +36,7 @@ class ModisL1B:
                  delfiles=0,
                  log=False,
                  verbose=False):
-        self.file = inp_file
+        self.filename = inp_file
         self.parfile = parfile
         self.geofile = geofile
         self.okm = okm
@@ -74,21 +71,21 @@ class ModisL1B:
 
         # determine geo file name
         if self.geofile is None:
-            self.geofile = '.'.join([self.file.split('.')[0], "GEO"])
+            self.geofile = '.'.join([self.filename.split('.')[0], "GEO"])
             if not os.path.exists(self.geofile):
-                geofile_parts = self.file.split('.')[:-1]
+                geofile_parts = self.filename.split('.')[:-1]
                 geofile_parts.append('GEO')
                 self.geofile = '.'.join(geofile_parts)
             if not os.path.exists(self.geofile):
-                file_typer = get_obpg_file_type.ObpgFileTyper(self.file)
+                file_typer = mlp.get_obpg_file_type.ObpgFileTyper(self.filename)
                 ftype, sensor = file_typer.get_file_type()
                 stime, etime = file_typer.get_file_times()
-                data_files_list = list([obpg_data_file.ObpgDataFile(self.file,
+                data_files_list = list([mlp.obpg_data_file.ObpgDataFile(self.filename,
                                                                    ftype,
                                                                    sensor,
                                                                    stime,
                                                                    etime)])
-                name_finder = next_level_name_finder.ModisNextLevelNameFinder(
+                name_finder = mlp.next_level_name_finder.ModisNextLevelNameFinder(
                                 data_files_list, 'geo')
                 self.geofile = name_finder.get_next_level_name()
 
@@ -106,8 +103,8 @@ class ModisL1B:
         """
         check parameters
         """
-        if not os.path.exists(self.file):
-            print("ERROR: File", self.file, "does not exist.")
+        if not os.path.exists(self.filename):
+            print("ERROR: File", self.filename, "does not exist.")
             sys.exit(1)
 
         if not os.path.exists(self.geofile):
@@ -141,8 +138,6 @@ class ModisL1B:
         """
         Run l1bgen_modis (MOD_PR02)
         """
-        import subprocess
-        import shutil
 
         if self.verbose:
             print("Processing MODIS L1A file to L1B...")

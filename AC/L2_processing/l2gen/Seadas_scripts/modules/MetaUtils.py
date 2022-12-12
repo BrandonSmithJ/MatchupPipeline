@@ -121,6 +121,12 @@ def is_tar_file(file_path):
     #     pass
     return tarfile.is_tarfile(file_path)
 
+def is_metadata_file(mime_data):
+    """
+    Return True when the mime data is from xml, Landsat L1 file or MSI L1C file.
+    """
+    return re.search('xml', mime_data) or re.search('LC08_L1', mime_data) or re.search('manifest.safe', mime_data)
+
 def dump_metadata(filename):
     """Dump file metadata:
         Call functions to get HDF 4 and HDF 5 header data
@@ -210,6 +216,19 @@ def readMetadata(filename):
     if isinstance(text, list):
         if text == []:
             return attrs
+        elif re.search('SENTINEL-2 MSI Level-1C User Product', text[0]):
+            attrs = {}
+            if re.search('2A', text[0]):
+                attrs['platform'] = 'S2A'
+            elif re.search('2B', text[0]):
+                attrs['platform'] = 'S2B'
+            if text[0].find('startTime') != -1:
+                    line_parts = text[0].split('safe:startTime>')
+                    line_parts2 = line_parts[1].split('Z<')
+                    attrs['startTime'] = line_parts2[0].strip()            
+            attrs['instrument'] = 'MSI'
+            attrs['processing_level'] = 'L1B'
+            return attrs
         elif re.search('PRODUCT', text[0]):
             attrs = {}
             for line in text:
@@ -232,6 +251,60 @@ def readMetadata(filename):
                         attrs[attr_key] = attr_val
                 elif line.find('GROUP = PRODUCT_METADATA') != -1:
                     in_metadata_group = True
+        elif text[0].find('GROUP = LANDSAT_METADATA_FILE') != -1:
+            in_metadata_group = False
+            attrs = {}
+            for line in text:
+                if in_metadata_group:
+                    if line.find('STATION_ID = ') != -1 and line.find('"LGN"') != -1:
+                        break
+                    else:
+                        line_parts = line.split('=')
+                        attr_key = line_parts[0].strip()
+                        attr_val = line_parts[1].strip()
+                        attrs[attr_key] = attr_val
+                elif line.find('GROUP = PRODUCT_CONTENTS') != -1:
+                    in_metadata_group = True
+        elif text[0].find('xml') != -1:
+            attrs = {}
+            for line in text:
+                if line.find('startTime') != -1:
+                    line_parts = line.split('>')
+                    line_parts2 = line_parts[1].split('<')
+                    attrs['startTime'] = line_parts2[0].strip()
+                if line.find('stopTime') != -1:
+                    line_parts = line.split('>')
+                    line_parts2 = line_parts[1].split('<')
+                    attrs['stopTime'] = line_parts2[0].strip()
+                if line.find('<envisat:productName>ENV_ME_1_FRG') != -1:
+                    attrs['platform'] = 'ENVISAT'
+                    attrs['instrument'] = 'MERIS'
+                    attrs['processing_level'] = 'L1B'
+                    return attrs
+                if line.find('<sentinel3:productName>S3A_OL_1_ERR') != -1:
+                    attrs['platform'] = '3A'
+                    attrs['data_type'] = 'ERR'
+                    attrs['instrument'] = 'OLCI'
+                    attrs['processing_level'] = 'L1B'
+                    return attrs
+                if line.find('<sentinel3:productName>S3A_OL_1_EFR') != -1:
+                    attrs['platform'] = '3A'
+                    attrs['data_type'] = 'EFR'
+                    attrs['instrument'] = 'OLCI'
+                    attrs['processing_level'] = 'L1B'
+                    return attrs
+                if line.find('<sentinel3:productName>S3B_OL_1_ERR') != -1:
+                    attrs['platform'] = '3B'
+                    attrs['data_type'] = 'ERR'
+                    attrs['instrument'] = 'OLCI'
+                    attrs['processing_level'] = 'L1B'
+                    return attrs
+                if line.find('<sentinel3:productName>S3B_OL_1_EFR') != -1:
+                    attrs['platform'] = '3B'
+                    attrs['data_type'] = 'EFR'
+                    attrs['instrument'] = 'OLCI'
+                    attrs['processing_level'] = 'L1B'
+                    return attrs
         else:
             for line in text:
                 if line.find('title = ') != -1:
@@ -402,7 +475,6 @@ def get_xml_attr(metaxml):
     root = ET.fromstring(metaxml).find('RootGroup')
     add_xml_group(root, attr)
     return attr
-
 
 def parse_odl(text):
     """Recursively extract ODL groups and objects."""

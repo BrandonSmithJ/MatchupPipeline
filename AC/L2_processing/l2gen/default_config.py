@@ -69,8 +69,9 @@ SENSOR_CONFIG = {
   },
 
   'VI' : {
-    'aer_wave_short' : '862',
-    'aer_wave_long'  : '2257',
+    'aer_wave_short' : '868',
+    'aer_wave_long'  : '2258',
+    'l2prod_exclude' : ['depth'],
   },
 
   'HICO' : {

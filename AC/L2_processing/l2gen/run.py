@@ -122,13 +122,15 @@ def run_l2gen(
    
     # Only run if output doesn't yet exist, or we want to overwrite
     if not out_file.exists() or overwrite:
-
+        
         # Ensure the SeaDAS installation exists
         ac_path = Path(ac_path or 'SeaDAS').absolute()
         if not ac_path.exists():
             message = f'SeaDAS installation does not exist at "{ac_path}"'
             raise MissingProcessorError(message)
-
+        
+        #Generates a L1B file for MODIS
+        generate_MODIS_L1B(sensor, inp_file, out_file, ac_path, **extra_cmd)
         # Add the bounding box to the commands if a location is given
         if location is not None:
             keys = ['north', 'south', 'east', 'west']
@@ -176,7 +178,47 @@ def run_l2gen(
 
     return out_file
 
+def generate_MODIS_L1B(   
+    sensor   : str, 
+    inp_file : Path,
+    out_file : Path,
+    ac_path  : Path,
+    **extra_cmd,   
+) -> Iterable[str]: 
+    """Generates a L1B file for MODIS, with proper bounds
 
+    Parameters
+    ----------
+    sensor    : str
+        Satellite sensor (e.g. OLI, MSI, OLCI, ...).
+    inp_file  : Path
+        Path to the L1 input file to atmospherically correct.
+    out_file  : Path
+        Directory to write the L2 result to.
+    ac_path   : Path
+        SeaDAS installation directory.
+    **extra_cmd
+        Additional keywords that can be passed to this function are:
+            *
+
+    Returns
+    -------
+    Iterable[str]
+        Returns path of L1B file
+
+    Raises
+    ------
+
+
+    """
+    from ...L1_processing.run_l1 import run_geo_modis, run_l1b
+    geo = inp_file.with_suffix('.GEO')
+    # run_geo_modis(inp_file=inp_file,ac_path=ac_path,overwrite = True)
+    # run_extract_modis()
+    # inp_file=inp_file + .'SUB'
+    # geofile = run_geo_modis()
+    # run_l1b(inp_file=inp_file,ac_path=ac_path,overwrite = True)
+    # inp_file=inp_file.replace('L1A','L1B')
 
 def generate_cmd(   
     sensor   : str, 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Rewrite the seadas configuration file (usually 
@@ -6,7 +6,7 @@ $SEADAS/config/seadas.config), changing the value
 of the seadas.ocssw.root line to a value passed
 in via the command line call.
 """
-
+import argparse
 import shutil
 import sys
 
@@ -30,10 +30,20 @@ def rewrite_seadas_config(seadas_config, install_dir):
     return
 
 def main():
-    """
-    Allows program to be imported without immediately executing.
-    """
-    rewrite_seadas_config(sys.argv[1], sys.argv[2])
+    version = "1.0"
+    parser = argparse.ArgumentParser(prog="rewrite_seadas_config")
+    parser.add_argument('--version', action='version', version='%(prog)s ' + version)
+    parser.add_argument("seadasConfig", 
+                      help="SeaADAS config file to edit", metavar="CONFIGFILE")  
+    parser.add_argument("OCSSWROOT", 
+                      help="OCSSW root directory", metavar="OCSSWROOT")  
+
+    args = parser.parse_args()
+    if args.seadasConfig is None or args.OCSSWROOT is None:
+        parser.print_help()
+        sys.exit(1)
+
+    rewrite_seadas_config(args.seadasConfig, args.OCSSWROOT)
     return 0
 
 if __name__ == '__main__':

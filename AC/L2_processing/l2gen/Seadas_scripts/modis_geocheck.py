@@ -1,54 +1,43 @@
-#! /usr/bin/env python
-from __future__ import print_function
+#! /usr/bin/env python3
 
+import argparse
 import sys
-from modis_utils import modis_env
-
-import modules.modis_GEO_utils as modisGEO
-from modules.setupenv import env
-from optparse import OptionParser
 import os
+from modis.modis_utils import modis_env
+import modis.modis_GEO_utils as modisGEO
+from seadasutils.setupenv import env
+
 
 if __name__ == "__main__":
-    geofile = None
-    thresh = None
-    verbose = False
-    geothresh = 95
-    version = "%prog 1.0"
+
+    version = "1.1"
 
     # Read commandline options...
-    usage = '''%prog GEOFILE THRESHOLD'''
-
-    parser = OptionParser(usage=usage, version=version)
-
-    parser.add_option("--threshold", dest='geothresh',
-                      help="% of geo-populated pixels required to pass geocheck validation test", metavar="THRESHOLD")
-    parser.add_option("-v", "--verbose", action="store_true", dest='verbose',
+    parser = argparse.ArgumentParser(prog="modis_atteph")
+    parser.add_argument('--version', action='version', version='%(prog)s ' + version)
+    parser.add_argument("geofile", nargs='?',
+                      help="Input GEO file", metavar="GEOFILE")  
+    parser.add_argument("--threshold", dest='geothresh', default=95, type=float,
+                      help="percentage of geo-populated pixels required to pass geocheck validation test", metavar="THRESHOLD")
+    parser.add_argument("-v", "--verbose", action="store_true",
                       default=False, help="print status messages")
 
-    (options, args) = parser.parse_args()
-
-    if args:
-        geofile = args[0]
-        if not os.path.exists(geofile):
+    args = parser.parse_args()
+    if args.geofile:
+        if not os.path.exists(args.geofile):
             print ("*** ERROR: Provided geolocation file does not exist.")
             print ("*** Validation test failed for geolocation file:", geofile)
             sys.exit(1)
-
     else:
         parser.print_help()
-        sys.exit(0)
-
-    if options.geothresh:
-        geothresh = options.geothresh
-    if options.verbose:
-        verbose = options.verbose
+        sys.exit(1)
 
     # kluge: use geofile as l1afile for setup
-    m = modisGEO.modis_geo(file=geofile, geofile=geofile,
-                           geothresh=geothresh,
-                           verbose=verbose
+    m = modisGEO.modis_geo(filename=args.geofile, geofile=args.geofile,
+                           geothresh=args.geothresh,
+                           verbose=args.verbose
     )
     env(m)
     modis_env(m)
     m.geochk()
+    sys.exit(0)

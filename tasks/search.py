@@ -1,5 +1,6 @@
 from .. import API, app
 from argparse import Namespace
+from celery.contrib import rdb
 
 
 @app.task(bind=True, name='search', queue='search')

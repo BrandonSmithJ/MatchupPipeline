@@ -16,19 +16,29 @@ class Processor(object):
     """
     __name__ = "Processor"
     #def __init__(self, instr, src, ruleset, target_type, targt=''):
-    def __init__(self, instr, ruleset, program, par_data, out_dir):
+    def __init__(self, sensor, ruleset, program, par_data, out_dir):
 
         self.input_file = None
         self.geo_file = None
         self.par_data = par_data
-        self.instrument = instr
+        self.sensor = sensor
         self.target_type = program
         self.ocssw_root = os.environ['OCSSWROOT']
         self.ocssw_bin = os.environ['OCSSW_BIN']
         self.rule_set = ruleset
         self.applicable_rules = self._get_applicable_rules(ruleset)
-        self.out_directory = out_dir
-        self.keepfiles = False
+        if 'odir' in par_data:
+            self.out_directory = par_data['odir']
+        else: 
+            self.out_directory = out_dir
+        if 'ofile' in par_data:
+            self.output_file = par_data['ofile']
+        else:
+            self.output_file = ''
+        # if 'deletefiles' in par_data:
+        #     self.deletefiles = par_data['deletefiles']
+        # else: 
+        #     self.deletefiles = False
 
         self.required_types = self._find_required_types()
 
@@ -72,14 +82,13 @@ class Processor(object):
         return self.__cmp__(other) >= 0
     
     def _find_required_types(self):
-        req_types = []
-
+        req_types = self.rule_set.rules[self.target_type][1]
         return req_types
 
     def _get_applicable_rules(self, ruleset):
         applicable_rules = []
         ndx = 0
-        end_fnd = False
+        # end_fnd = False
 #        while (ndx < len(ruleset.rules)) and (not end_fnd):
         for targ in ruleset.order:
             if (self.target_type == targ):

@@ -1,15 +1,16 @@
-#! /usr/bin/env python
-from __future__ import print_function
+#! /usr/bin/env python3
 
 import os
+import sys
 import subprocess
 import tarfile
-from optparse import OptionParser
+import argparse
 
-from modules.ParamUtils import ParamProcessing
-from modules.ProcUtils import date_convert, addsecs, cat, httpdl
-from modules.aquarius_utils import aquarius_timestamp
-from modules.setupenv import env
+from seadasutils.ParamUtils import ParamProcessing
+from seadasutils.ProcUtils import date_convert, addsecs, cat, httpdl
+from seadasutils.aquarius_utils import aquarius_timestamp
+import seadasutils.anc_utils as ga
+from seadasutils.setupenv import env
 
 
 class GetAncAquarius:
@@ -111,28 +112,16 @@ class GetAncAquarius:
 
 
 if __name__ == "__main__":
-    filename = None
-    start = None
-    stop = None
-    ancdir = None
-    ancdb = 'ancillary_data.db'
-    curdir = False
-    download = True
-    force = False
-    refreshDB = False
-    verbose = False
-    printlist = True
-    anc_filelist = None
 
-    version = "%prog 1.0"
+    version = "1.1"
 
     # Read commandline options...
     usage = '''
-        %prog [OPTIONS] FILE
+        %(prog)s [OPTIONS] FILE
 
         This program does the following:
 
-        1) executes getanc.py for Aquarius L1 files. If an input file is
+        1) executes getanc for Aquarius L1 files. If an input file is
         specified the start and end times are determined automatically,
         otherwise a start time must be provided by the user.
 
@@ -142,104 +131,89 @@ if __name__ == "__main__":
         3) retrieves and un-tars the scatterometer files
     '''
 
-    parser = OptionParser(usage=usage, version=version)
+    parser = argparse.ArgumentParser(prog="getanc_aquarius",usage=usage)
+    parser.add_argument('--version', action='version', version='%(prog)s ' + version)
+    parser.add_argument("filename", nargs='?',
+                      help="Input L1 file", metavar="L1FILE")  
+    parser.add_argument("-s", "--start",
+                      help="Time of the first scanline (if used, no input file is required)",
+                      metavar="START")
+    parser.add_argument("-e", "--stop",
+                      help="Time of last scanline", metavar="STOP")
 
-    parser.add_option("-s", "--start", dest='start',
-                      help="Start time of the orbit (if used, no input file is required)", metavar="START")
-    parser.add_option("-e", "--stop", dest='stop',
-                      help="Stop time of the orbit", metavar="STOP")
-    parser.add_option("--ancdir", dest='ancdir',
-                      help="Use a custom directory tree for ancillary files", metavar="ANCDIR")
-    parser.add_option("--ancdb", dest='ancdb',
-                      help="Use a custom file for ancillary database. If full path not given, ANCDB is assumed to "
-                           "exist (or will be created) under $OCSSWROOT/log/. If $OCSSWROOT/log/ does not exist, "
-                           "ANCDB is assumed (or will be created) under the current working directory", metavar="ANCDB")
-    parser.add_option("-c", "--curdir", action="store_true", dest='curdir',
-                      default=False, help="Download ancillary files directly into current working directory")
-    parser.add_option("-d", "--disable-download", action="store_false", dest='download',
-                      default=True, help="Disable download of ancillary files not found on hard disk")
-    parser.add_option("-f", "--force-download", action="store_true", dest='force',
-                      default=False, help="Force download of ancillary files, even if found on hard disk")
-    parser.add_option("-r", "--refreshDB", action="store_true", dest='refreshDB',
-                      default=False, help="Remove existing database records and re-query for ancillary files")
-
-    parser.add_option("-v", "--verbose", action="store_true", dest='verbose',
+    ancdb_help_text = "Use a custom filename for ancillary database. If " \
+                      "full path not given, ANCDB is assumed to exist "\
+                      "(or will be created) under " + \
+                      ga.DEFAULT_ANC_DIR_TEXT + "/log/. If " + \
+                      ga.DEFAULT_ANC_DIR_TEXT + "/log/ does not " \
+                      "exist, ANCDB is assumed (or will be created) " \
+                      "under the current working directory"
+    parser.add_argument("--ancdb", default='ancillary_data.db',help=ancdb_help_text, metavar="ANCDB")
+    parser.add_argument("--ancdir",
+        help="Use a custom directory tree for ancillary files", metavar="ANCDIR")
+    parser.add_argument("-c", "--curdir", action="store_true",
+        default=False, help="Download ancillary files directly into current working directory")
+    parser.add_argument("-r", "--refreshDB", action="store_true", default=False,
+                      help="Remove existing database records and re-query for ancillary files")
+    parser.add_argument("--disable-download", action="store_false", dest="download",default=True,
+                      help="Disable download of ancillary files not found on hard disk")
+    parser.add_argument("--timeout", type=float, default=10.0, metavar="TIMEOUT",
+                      help="set the network timeout in seconds")
+    parser.add_argument("-v", "--verbose", action="store_true",
                       default=False, help="print status messages")
-    parser.add_option("--noprint", action="store_false", dest='printlist',
-                      default=True, help="Supress printing the resulting list of files to the screen")
+    parser.add_argument("--noprint", action="store_false", default=True,
+                      help="Suppress printing the resulting list of files to the screen")
+    parser.add_argument("-f", "--force-download", action="store_true", dest='force', default=False,
+                      help="Force download of ancillary files, even if found on hard disk")
 
-    (options, args) = parser.parse_args()
+    args = parser.parse_args()
 
-    if args:
-        filename = args[0]
-    if options.verbose:
-        verbose = options.verbose
-    if options.start:
-        start = options.start
-    if options.stop:
-        stop = options.stop
-    if options.ancdir:
-        ancdir = options.ancdir
-    if options.ancdb:
-        ancdb = options.ancdb
-    if options.curdir:
-        curdir = options.curdir
-
-    if options.download is False:
-        download = options.download
-    if options.force:
-        force = options.force
-    if options.refreshDB:
-        refreshDB = options.refreshDB
-    if options.printlist is False:
-        printlist = options.printlist
-
-    if filename is None and start is None:
+    if args.filename is None and args.start is None:
         parser.print_help()
-        exit(0)
+        sys.exit(1)
 
-    g = GetAncAquarius(filename=filename,
-                       start=start,
-                       stop=stop,
-                       curdir=curdir,
-                       ancdir=ancdir,
-                       ancdb=ancdb,
-                       verbose=verbose,
-                       printlist=printlist,
-                       download=download,
-                       refreshDB=refreshDB)
+    g = GetAncAquarius(filename=args.filename,
+                       start=argssstart,
+                       stop=args.stop,
+                       curdir=args.curdir,
+                       ancdir=args.ancdir,
+                       ancdb=args.ancdb,
+                       verbose=args.verbose,
+                       printlist=args.noprint,
+                       download=args.download,
+                       refreshDB=args.refreshDB)
 
     env(g)
     if not g.start:
-        (g.start, g.stop, sensor) = aquarius_timestamp(filename)
+        (g.start, g.stop, sensor) = aquarius_timestamp(args.filename)
 
-    # Run getanc.py
-    getanc = os.path.join(g.dirs['scripts'], 'getanc.py')
-    if filename:
-        getanc_cmd = ' '.join([getanc, '--mission=aquarius --noprint', filename])
+    # Run getanc
+    getanc = os.path.join(g.dirs['bin'], 'getanc')
+    if args.filename:
+        getanc_cmd = ' '.join([getanc, '--mission=aquarius --noprint', args.filename])
     else:
-        getanc_cmd = ' '.join([getanc, '--mission=aquarius --noprint', '-s', start])
-    if stop:
-        getanc_cmd += ' -e ' + stop
+        getanc_cmd = ' '.join([getanc, '--mission=aquarius --noprint', '-s', args.start])
+    if args.stop:
+        getanc_cmd += ' -e ' + args.stop
 
-    if verbose:
+    if args.verbose:
         getanc_cmd += ' --verbose'
-    if refreshDB:
+    if args.refreshDB:
         getanc_cmd += ' --refreshDB'
-    if force:
+    if args.force:
         getanc_cmd += ' --force'
 
     # print(getanc_cmd)
     status = subprocess.call(getanc_cmd, shell=True)
 
-    if status and verbose:
+    if status and args.verbose:
         print('getanc returned with exit status: ' + str(status))
         print('command: ' + getanc_cmd)
 
-    if filename is None:
-        anc_filelist = start + ".anc"
+    if args.filename is None:
+        anc_filelist = args.start + ".anc"
     else:
-        anc_filelist = '.'.join([os.path.basename(filename), 'anc'])
+        anc_filelist = '.'.join([os.path.basename(args.filename), 'anc'])
 
     g.parse_anc(anc_filelist)
     anclist = list(g.ancfiles.keys())
@@ -257,7 +231,7 @@ if __name__ == "__main__":
         g.ancfiles['yancfile3'] = g.run_mk_anc(3)
 
     # retrieve and extract scatterometer files
-    gran = os.path.basename(filename).split('.')[0]
+    gran = os.path.basename(args.filename).split('.')[0]
     scatfile = '.'.join([gran, 'L2_SCAT_V5.0.tar'])
     scatpath = '/'.join(['/cgi/getfile', scatfile])
     if verbose:
@@ -293,5 +267,6 @@ if __name__ == "__main__":
 
     # write out the cleaned .anc file
     g.write_anc(anc_filelist)
-    if verbose or printlist:
+    if args.verbose or args.printlist:
         cat(anc_filelist)
+    sys.exit(0)

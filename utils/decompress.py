@@ -35,11 +35,14 @@ def decompress(
             with open(destination, 'wb') as f:
                 shutil.copyfileobj(self, f)
 
-    extension = ''.join(archive.suffixes)
+    extension = archive.suffix
+    if extension == '.bz2':
+            destination = Path(str(destination) + '/' + archive.stem )
+    
     operators = {
         '.zip'    : lambda f: zipfile.ZipFile(f, 'r'),
         '.tar'    : lambda f: tarfile.open(f),
-        '.tar.gz' : lambda f: tarfile.open(f, 'r:gz'),
+        '.gz' : lambda f: tarfile.open(f, 'r:gz'),
         '.bz2'    : lambda f: BZ2Helper(f, 'rb'),
     }
 

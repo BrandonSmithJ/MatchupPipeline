@@ -9,10 +9,8 @@ __author__ = 'melliott'
 
 __version__ = '1.0.3-2015-08-10'
 
-import modules.aquarius_next_level_name_finder as \
-        aquarius_next_level_name_finder
-import modules.next_level_name_finder as next_level_name_finder
-import modules.viirs_next_level_name_finder as viirs_next_level_name_finder
+import mlp.next_level_name_finder
+#import modules.viirs_next_level_name_finder as viirs_next_level_name_finder
 
 def convert_opts_to_dict(options):
     """
@@ -58,26 +56,30 @@ def get_level_finder(data_file_list, target_program, clopts=None):
 
     if data_file_list[0].sensor.find('MODIS') != -1:
         level_finder = create_level_finder(
-            next_level_name_finder.ModisNextLevelNameFinder, clopts,
+            mlp.next_level_name_finder.ModisNextLevelNameFinder, clopts,
+            data_file_list, target_program)
+    elif data_file_list[0].sensor.find('HAWKEYE') != -1:
+        level_finder = create_level_finder(
+            mlp.next_level_name_finder.HawkeyeNextLevelNameFinder, clopts,
             data_file_list, target_program)
     elif data_file_list[0].sensor.find('SeaWiFS') != -1:
         level_finder = create_level_finder(
-            next_level_name_finder.SeawifsNextLevelNameFinder, clopts,
+            mlp.next_level_name_finder.SeawifsNextLevelNameFinder, clopts,
             data_file_list, target_program)
     elif data_file_list[0].sensor.find('Aquarius') != -1:
         level_finder = create_level_finder(
-            aquarius_next_level_name_finder.AquariusNextLevelNameFinder, clopts,
+            mlp.aquarius_next_level_name_finder.AquariusNextLevelNameFinder, clopts,
             data_file_list, target_program)
     elif data_file_list[0].sensor.find('MERIS') != -1:
         level_finder = create_level_finder(
-            next_level_name_finder.MerisNextLevelNameFinder, clopts,
+            mlp.next_level_name_finder.MerisNextLevelNameFinder, clopts,
             data_file_list, target_program)
     elif data_file_list[0].sensor.find('VIIRS') != -1:
         level_finder = create_level_finder(
-            viirs_next_level_name_finder.ViirsNextLevelNameFinder, clopts,
+            mlp.viirs_next_level_name_finder.ViirsNextLevelNameFinder, clopts,
             data_file_list, target_program)
     else:
         level_finder = create_level_finder(
-            next_level_name_finder.NextLevelNameFinder, clopts,
+            mlp.next_level_name_finder.NextLevelNameFinder, clopts,
             data_file_list, target_program)
     return level_finder

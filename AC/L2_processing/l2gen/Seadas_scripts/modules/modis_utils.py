@@ -2,24 +2,24 @@
 Utility functions for MODIS processing programs.
 """
 
-from MetaUtils import readMetadata
-import get_obpg_file_type
-import next_level_name_finder
-import obpg_data_file
 import os
-import ProcUtils
 import re
 import shutil
 import subprocess
 import sys
 
+from modules.MetaUtils import readMetadata
+import get_obpg_file_type
+import modules.next_level_name_finder
+import modules.obpg_data_file
+import modules.ProcUtils as ProcUtils
 
 def buildpcf(self):
     """
     Build process control file for MODIS L1A, Geolocation and L1B creation
     """
 
-    base = self.file
+    base = self.filename
     if self.proctype == "modisL1A":
         base = self.l1a
     if self.proctype == 'modisGEO':
@@ -40,11 +40,11 @@ def buildpcf(self):
     sed = open(self.pcf_file, 'w')
     for line in pcf:
         if self.proctype == "modisL1A":
-            line = line.replace('L0DIR', self.dirs['run'])
+            line = line.replace('L0DIR', self.dirs['run'].resolve().as_posix())
             line = line.replace('CURRL0GRAN0',
                                 '.'.join([self.l0file, 'constr']))
             line = line.replace('CURRL0GRAN1', self.l0file)
-            line = line.replace('L1ADIR', self.dirs['run'])
+            line = line.replace('L1ADIR', self.dirs['run'].resolve().as_posix())
             line = line.replace('L1AFILE', os.path.basename(self.l1a))
             line = line.replace('MCFDIR', self.dirs['mcf'])
             line = line.replace('L1A_MCF', self.l1amcf)
@@ -84,28 +84,36 @@ def buildpcf(self):
                     continue
             else:
                 if "ATTDIR" in line:
+                    if self.attdir1 == 'NULL' and re.search('1$', line):
+                        continue
                     if self.attdir2 == "NULL" and re.search('2$', line):
                         continue
-                    if self.attdir1 == 'NULL' and re.search('1$', line):
+                    if self.attdir3 == "NULL" and re.search('3$', line):
                         continue
 
                 if "EPHDIR" in line:
-                    if self.ephdir2 == "NULL" and re.search('2$', line):
-                        continue
                     if self.ephdir1 == 'NULL' and re.search('1$', line):
                         continue
+                    if self.ephdir2 == "NULL" and re.search('2$', line):
+                        continue
+                    if self.ephdir3 == "NULL" and re.search('3$', line):
+                        continue
 
-                line = line.replace("ATTDIR1", self.attdir2)
-                line = line.replace("ATTFILE1", self.attfile2)
-                line = line.replace("ATTDIR2", self.attdir1)
-                line = line.replace("ATTFILE2", self.attfile1)
-                line = line.replace("EPHDIR1", self.ephdir2)
-                line = line.replace("EPHFILE1", self.ephfile2)
-                line = line.replace("EPHDIR2", self.ephdir1)
-                line = line.replace("EPHFILE2", self.ephfile1)
+                line = line.replace("ATTDIR1", self.attdir1)
+                line = line.replace("ATTDIR2", self.attdir2)
+                line = line.replace("ATTDIR3", self.attdir3)
+                line = line.replace("ATTFILE1", self.attfile1)
+                line = line.replace("ATTFILE2", self.attfile2)
+                line = line.replace("ATTFILE3", self.attfile3)
+                line = line.replace("EPHDIR1", self.ephdir1)
+                line = line.replace("EPHDIR2", self.ephdir2)
+                line = line.replace("EPHDIR3", self.ephdir3)
+                line = line.replace("EPHFILE1", self.ephfile1)
+                line = line.replace("EPHFILE2", self.ephfile2)
+                line = line.replace("EPHFILE3", self.ephfile3)
 
         if self.proctype == "modisL1B":
-            line = line.replace('L1BDIR', self.dirs['run'])
+            line = line.replace('L1BDIR', self.dirs['run'].resolve().as_posix())
             line = line.replace('QKMFILE', os.path.basename(self.qkm))
             line = line.replace('1KMFILE', os.path.basename(self.okm))
             line = line.replace('HKMFILE', os.path.basename(self.hkm))
@@ -129,11 +137,11 @@ def buildpcf(self):
         line = line.replace("CALDIR", self.dirs['cal'])
         line = line.replace("STATIC", self.dirs['static'])
         line = line.replace("L1ADIR",
-                            os.path.abspath(os.path.dirname(self.file)))
-        line = line.replace("L1AFILE", os.path.basename(self.file))
+                            os.path.abspath(os.path.dirname(self.filename)))
+        line = line.replace("L1AFILE", os.path.basename(self.filename))
 
         line = line.replace("VARDIR", os.path.join(self.dirs['var'], 'modis'))
-        line = line.replace('LOGDIR', self.dirs['run'])
+        line = line.replace('LOGDIR', self.dirs['run'].resolve().as_posix())
         line = line.replace('SAT_INST', self.sat_inst)
         line = line.replace('PGEVERSION', self.pgeversion)
 
@@ -148,13 +156,16 @@ def modis_timestamp(arg):
 
     meta = readMetadata(arg)
     sat_name = meta['ASSOCIATEDPLATFORMSHORTNAME'].lower()
-    start_time = meta['RANGEBEGINNINGDATE'] + ' ' + meta['RANGEBEGINNINGTIME']
-    end_time = meta['RANGEENDINGDATE'] + ' ' + meta['RANGEENDINGTIME']
+    start_time = meta['RANGEBEGINNINGDATE'] + 'T' + meta['RANGEBEGINNINGTIME'][0:8]
+    end_time = meta['RANGEENDINGDATE'] + 'T' + meta['RANGEENDINGTIME'][0:8]
     # at this point datetimes are formatted as YYYY-MM-DD HH:MM:SS.uuuuuu
 
     # return values formatted as YYYYDDDHHMMSS
-    return (ProcUtils.date_convert(start_time, 'h', 'j'),
-            ProcUtils.date_convert(end_time, 'h', 'j'),
+    # return (ProcUtils.date_convert(start_time, 'h', 'j'),
+    #         ProcUtils.date_convert(end_time, 'h', 'j'),
+    #         sat_name)
+    return (start_time,
+            end_time,
             sat_name)
 
 
@@ -245,12 +256,12 @@ def modis_env(self):
             elif terra.search(self.sat_name) is not None:
                 self.sat_name = 'terra'
         else:
-            if aqua.search(os.path.basename(self.file)) is not None:
+            if aqua.search(os.path.basename(self.filename)) is not None:
                 self.sat_name = 'aqua'
-            elif terra.search(os.path.basename(self.file)) is not None:
+            elif terra.search(os.path.basename(self.filename)) is not None:
                 self.sat_name = 'terra'
             else:
-                print("ERROR: Unable to determine platform type for " + self.file)
+                print("ERROR: Unable to determine platform type for " + self.filename)
                 print("")
                 print("Please use the '--satellite' argument to specify the platform as 'aqua' or 'terra',")
                 print("or rename your input file to match one of the following formats:")
@@ -260,7 +271,7 @@ def modis_env(self):
                 sys.exit(1)
     else:
         # Determine pass start time and platform
-        self.start, self.stop, self.sat_name = modis_timestamp(self.file)
+        self.start, self.stop, self.sat_name = modis_timestamp(self.filename)
 
     # set sensor specific variables
     if self.sat_name == 'aqua':
@@ -277,7 +288,7 @@ def modis_env(self):
             self.pgeversion = "6.2.2_obpg"
 
     else:
-        print("ERROR: Unable to determine platform type for", self.file)
+        print("ERROR: Unable to determine platform type for", self.filename)
         sys.exit(1)
 
     # Static input directories
@@ -348,13 +359,13 @@ def modis_env(self):
 
         # determine output file name
         if not self.geofile:
-            file_typer = get_obpg_file_type.ObpgFileTyper(self.file)
+            file_typer = get_obpg_file_type.ObpgFileTyper(self.filename)
             ftype, sensor = file_typer.get_file_type()
             stime, etime = file_typer.get_file_times()
-            data_files_list = list([obpg_data_file.ObpgDataFile(self.file,
+            data_files_list = list([modules.obpg_data_file.ObpgDataFile(self.filename,
                                                                 ftype, sensor,
                                                                 stime, etime)])
-            name_finder = next_level_name_finder.ModisNextLevelNameFinder(
+            name_finder = modules.next_level_name_finder.ModisNextLevelNameFinder(
                 data_files_list, 'geo')
             self.geofile = name_finder.get_next_level_name()
 
@@ -371,11 +382,11 @@ def modis_env(self):
 
         if not self.lutversion:
             try:
-                from LutUtils import lut_version
+                from modules.LutUtils import lut_version
                 versions = [lut_version(f) for f in os.listdir(self.lutdir) if f.endswith('.hdf')]
                 self.lutversion = sorted(versions)[-1][1:]  # highest version number
             except:
-                print("ERROR: Could not find LUTs in".self.lutdir)
+                print("ERROR: Could not find LUTs in", self.lutdir)
                 sys.exit(1)
 
         self.refl_lut = self.prefix + '02_Reflective_LUTs.V' + self.lutversion + '.hdf'
@@ -401,36 +412,36 @@ def modis_env(self):
                                 self.collection_id, '.mcf'])
 
         # set output file name
-        file_typer = get_obpg_file_type.ObpgFileTyper(self.file)
+        file_typer = get_obpg_file_type.ObpgFileTyper(self.filename)
         ftype, sensor = file_typer.get_file_type()
         stime, etime = file_typer.get_file_times()
-        data_files_list = list([obpg_data_file.ObpgDataFile(self.file,
+        data_files_list = list([modules.obpg_data_file.ObpgDataFile(self.filename,
                                                             ftype, sensor,
                                                             stime, etime)])
-        name_finder = next_level_name_finder.ModisNextLevelNameFinder(
+        name_finder = modules.next_level_name_finder.ModisNextLevelNameFinder(
             data_files_list, 'l1bgen')
         l1b_name = name_finder.get_next_level_name()
         self.base = os.path.join(self.dirs['run'],
                                  os.path.basename(l1b_name).split('.')[0])
 
         if self.okm is None:
-            if re.search('L1A_LAC', self.file):
-                self.okm = self.file.replace("L1A_LAC", "L1B_LAC")
+            if re.search('L1A_LAC', self.filename):
+                self.okm = self.filename.replace("L1A_LAC", "L1B_LAC")
             else:
                 self.okm = '.'.join([self.base, 'L1B_LAC'])
         if self.hkm is None:
-            if re.search('L1A_LAC', self.file):
-                self.hkm = self.file.replace("L1A_LAC", "L1B_HKM")
+            if re.search('L1A_LAC', self.filename):
+                self.hkm = self.filename.replace("L1A_LAC", "L1B_HKM")
             else:
                 self.hkm = '.'.join([self.base, 'L1B_HKM'])
         if self.qkm is None:
-            if re.search('L1A_LAC', self.file):
-                self.qkm = self.file.replace("L1A_LAC", "L1B_QKM")
+            if re.search('L1A_LAC', self.filename):
+                self.qkm = self.filename.replace("L1A_LAC", "L1B_QKM")
             else:
                 self.qkm = '.'.join([self.base, 'L1B_QKM'])
         if self.obc is None:
-            if re.search('L1A_LAC', self.file):
-                self.obc = self.file.replace("L1A_LAC", "L1B_OBC")
+            if re.search('L1A_LAC', self.filename):
+                self.obc = self.filename.replace("L1A_LAC", "L1B_OBC")
             else:
                 self.obc = '.'.join([self.base, 'L1B_OBC'])
 

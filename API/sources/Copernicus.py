@@ -100,7 +100,7 @@ class Copernicus(BaseSource, SentinelAPI):
 
         if not complete:
             self.download(**{
-                'id'              : scene_details['uuid'], 
+                'id'              : scene_id,#scene_details['uuid'], 
                 'directory_path'  : output,
                 'checksum'        : False,
             })

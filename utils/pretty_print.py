@@ -1,5 +1,5 @@
 from typing import Iterable
-
+import numpy as np
 
 def pretty_print(obj: Iterable, indent: str = '  ', _depth: int = 1) -> str:
     """Return a nicely formatted string of the given iterable object.
@@ -28,7 +28,7 @@ def pretty_print(obj: Iterable, indent: str = '  ', _depth: int = 1) -> str:
 
         can_iter = lambda o: type(o) in [dict, list, tuple]
         safe_len = lambda o: getattr(o, '__len__', lambda: len(str(o)))()
-
+        obj = [sub_obj if sub_obj !='masked' else np.nan for sub_obj in obj ]
         bracket = brackets.get(type(obj), '')
         maxlen  = max(map(safe_len, [[]] + list(obj or [])))
         newline = '\n' + ''.join([' '] * maxlen)

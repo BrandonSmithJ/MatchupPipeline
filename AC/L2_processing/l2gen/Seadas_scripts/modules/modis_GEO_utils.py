@@ -1,16 +1,23 @@
-# ! /usr/bin/env python
+# ! /usr/bin/env python3
 
-import ProcUtils
+import os
+import sys
+import subprocess
+import modules.anc_utils as ga
+from modules.setupenv import env
 from modules.ParamUtils import ParamProcessing
+import modules.ProcUtils as ProcUtils
+import modules.LutUtils as Lut
+from modules.MetaUtils import readMetadata
 
 
 class modis_geo:
 
-    def __init__(self, file=None,
+    def __init__(self, filename=None,
                  parfile=None,
                  geofile=None,
-                 a1=None, a2=None,
-                 e1=None, e2=None,
+                 a1=None, a2=None, a3=None,
+                 e1=None, e2=None, e3=None,
                  download=True,
                  entrained=False,
                  terrain=False,
@@ -21,6 +28,7 @@ class modis_geo:
                  curdir=False,
                  ancdb='ancillary_data.db',
                  refreshDB=False,
+                 forcedl=False,
                  lutver=None,
                  lutdir=None,
                  log=False,
@@ -28,7 +36,7 @@ class modis_geo:
                  timeout=10.0):
 
         # defaults
-        self.file = file
+        self.filename = filename
         self.parfile = parfile
         self.geofile = geofile
         self.ancdir = ancdir
@@ -36,9 +44,12 @@ class modis_geo:
         self.refreshDB = refreshDB
         self.a1 = a1
         self.a2 = a2
+        self.a3 = a3
         self.e1 = e1
         self.e2 = e2
+        self.e3 = e3
         self.download = download
+        self.forcedl = forcedl
         self.entrained = entrained
         self.terrain = terrain
         self.geothresh = geothresh
@@ -83,14 +94,12 @@ class modis_geo:
         """
         Check parameters
         """
-        import os
-        import sys
 
-        if self.file is None:
+        if self.filename is None:
             print("ERROR: No MODIS_L1A_file was specified in either the parameter file or in the argument list. Exiting")
             sys.exit(1)
-        if not os.path.exists(self.file):
-            print("ERROR: File '" + self.file + "' does not exist. Exiting.")
+        if not os.path.exists(self.filename):
+            print("ERROR: File '" + self.filename + "' does not exist. Exiting.")
             sys.exit(1)
         if self.a1 is not None and not os.path.exists(self.a1):
             print("ERROR: Attitude file '" + self.a1 + "' does not exist. Exiting.")
@@ -98,11 +107,17 @@ class modis_geo:
         if self.a2 is not None and not os.path.exists(self.a2):
             print("ERROR: Attitude file '" + self.a2 + "' does not exist. Exiting.")
             sys.exit(99)
+        if self.a3 is not None and not os.path.exists(self.a3):
+            print("ERROR: Attitude file '" + self.a3 + "' does not exist. Exiting.")
+            sys.exit(99)
         if self.e1 is not None and not os.path.exists(self.e1):
             print("ERROR: Ephemeris file '" + self.e1 + "' does not exist. Exiting.")
             sys.exit(1)
         if self.e2 is not None and not os.path.exists(self.e2):
             print("ERROR: Ephemeris file '" + self.e2 + "' does not exist. Exiting.")
+            sys.exit(1)
+        if self.e3 is not None and not os.path.exists(self.e3):
+            print("ERROR: Ephemeris file '" + self.e3 + "' does not exist. Exiting.")
             sys.exit(1)
         if self.a1 is None and self.e1 is not None or self.a1 is not None and self.e1 is None:
             print("ERROR: User must specify attitude AND ephemeris files.")
@@ -120,10 +135,10 @@ class modis_geo:
         Check date of utcpole.dat and leapsec.dat.
         Download if older than 14 days.
         """
-        import os
-        from ProcUtils import mtime
-        import LutUtils as lu
-        lut = lu.LutUtils(verbose=self.verbose, mission=self.sat_name)
+
+        lut = Lut.LutUtils(verbose=self.verbose,
+                    mission=self.sat_name)
+       # (verbose=self.verbose, mission=self.sat_name)
         utcpole = os.path.join(self.dirs['var'], 'modis', 'utcpole.dat')
         leapsec = os.path.join(self.dirs['var'], 'modis', 'leapsec.dat')
 
@@ -133,7 +148,7 @@ class modis_geo:
                 print("** Running update_luts.py to download the missing files...")
             lut.get_luts()
 
-        elif (mtime(utcpole) > 14) or (mtime(leapsec) > 14):
+        elif (ProcUtils.mtime(utcpole) > 14) or (ProcUtils.mtime(leapsec) > 14):
             if self.verbose:
                 print("** Files utcpole.dat/leapsec.dat are more than 2 weeks old.")
                 print("** Running update_luts.py to update files...")
@@ -143,10 +158,11 @@ class modis_geo:
         """
         Determine and retrieve required ATTEPH files
         """
-        import os
-        import sys
-        import anc_utils as ga
-        from setupenv import env
+
+        self.attdir1  = self.attdir2  = self.attdir3  = "NULL"
+        self.attfile1 = self.attfile2 = self.attfile3 = "NULL"
+        self.ephdir1  = self.ephdir2  = self.ephdir3  = "NULL"
+        self.ephfile1 = self.ephfile2 = self.ephfile3 = "NULL"
 
         # Check for user specified atteph files
         if self.a1 is not None:
@@ -160,16 +176,16 @@ class modis_geo:
             if self.a2 is not None:
                 self.attfile2 = os.path.basename(self.a2)
                 self.attdir2 = os.path.abspath(os.path.dirname(self.a2))
-            else:
-                self.attfile2 = "NULL"
-                self.attdir2 = "NULL"
+            if self.a3 is not None:
+                self.attfile3 = os.path.basename(self.a3)
+                self.attdir3 = os.path.abspath(os.path.dirname(self.a3))
 
             if self.e2 is not None:
                 self.ephfile2 = os.path.basename(self.e2)
                 self.ephdir2 = os.path.abspath(os.path.dirname(self.e2))
-            else:
-                self.ephfile2 = "NULL"
-                self.ephdir2 = "NULL"
+            if self.e3 is not None:
+                self.ephfile3 = os.path.basename(self.e3)
+                self.ephdir3 = os.path.abspath(os.path.dirname(self.e3))
 
             if self.verbose:
                 print("Using specified attitude and ephemeris files.")
@@ -179,15 +195,23 @@ class modis_geo:
                     print("att_file2: NULL")
                 else:
                     print("att_file2:", os.path.join(self.attdir2, self.attfile2))
+                if self.attfile3 == "NULL":
+                    print("att_file3: NULL")
+                else:
+                    print("att_file3:", os.path.join(self.attdir3, self.attfile3))
                 print("eph_file1:", os.path.join(self.ephdir1, self.ephfile1))
                 if self.ephfile2 == "NULL":
                     print("eph_file2: NULL")
                 else:
                     print("eph_file2:", os.path.join(self.ephdir2, self.ephfile2))
+                if self.ephfile3 == "NULL":
+                    print("eph_file3: NULL")
+                else:
+                    print("eph_file3:", os.path.join(self.ephdir3, self.ephfile3))
         else:
             if self.verbose:
                 print("Determining required attitude and ephemeris files...")
-            get = ga.getanc(file=self.file,
+            get = ga.getanc(filename=self.filename,
                             atteph=True,
                             ancdb=self.ancdb,
                             ancdir=self.ancdir,
@@ -210,13 +234,13 @@ class modis_geo:
             if resetVerbose:
                 get.verbose = True
             get.chk()
-            if self.file and get.finddb():
+            if self.filename and get.finddb():
                 get.setup()
             else:
                 get.setup()
                 get.findweb()
 
-            get.locate()
+            get.locate(forcedl=self.forcedl)
             get.cleanup()
 
             self.db_status = get.db_status
@@ -229,14 +253,6 @@ class modis_geo:
             # 16 - invalid mission
             if self.sat_name == "terra" and self.db_status & 15:
                 self.kinematic_state = "MODIS Packet"
-                self.attfile1 = "NULL"
-                self.attdir1 = "NULL"
-                self.attfile2 = "NULL"
-                self.attdir2 = "NULL"
-                self.ephfile1 = "NULL"
-                self.ephdir1 = "NULL"
-                self.ephfile2 = "NULL"
-                self.ephdir2 = "NULL"
             elif self.db_status & 12:
                 if self.db_status & 4:
                     print("Missing attitude files!")
@@ -260,23 +276,19 @@ class modis_geo:
                 if 'att2' in get.files:
                     self.attfile2 = os.path.basename(get.files['att2'])
                     self.attdir2 = os.path.dirname(get.files['att2'])
-                else:
-                    self.attfile2 = "NULL"
-                    self.attdir2 = "NULL"
+                if 'att3' in get.files:
+                    self.attfile3 = os.path.basename(get.files['att3'])
+                    self.attdir3 = os.path.dirname(get.files['att3'])
                 if 'eph2' in get.files:
                     self.ephfile2 = os.path.basename(get.files['eph2'])
                     self.ephdir2 = os.path.dirname(get.files['eph2'])
-                else:
-                    self.ephfile2 = "NULL"
-                    self.ephdir2 = "NULL"
+                if 'eph3' in get.files:
+                    self.ephfile3 = os.path.basename(get.files['eph3'])
+                    self.ephdir3 = os.path.dirname(get.files['eph3'])
 
     def geochk(self):
         """Examine a MODIS geolocation file for percent missing data
         Returns an error if percent is greater than a threshold"""
-
-        import os
-        import sys
-        from modules.MetaUtils import readMetadata
 
         thresh = float(self.geothresh)
         if not os.path.exists(self.geofile):
@@ -308,8 +320,6 @@ class modis_geo:
         """
         Run geogen_modis (MOD_PR03)
         """
-        import subprocess
-        import os
 
         if self.verbose:
             print("")
@@ -338,7 +348,7 @@ class modis_geo:
 
             ProcUtils.remove(os.path.join(self.dirs['run'], "GetAttr.temp"))
             ProcUtils.remove(os.path.join(self.dirs['run'], "ShmMem"))
-            ProcUtils.remove('.'.join([self.file, 'met']))
+            ProcUtils.remove('.'.join([self.filename, 'met']))
             ProcUtils.remove('.'.join([self.geofile, 'met']))
             if self.log is False:
                 ProcUtils.remove(self.pcf_file)

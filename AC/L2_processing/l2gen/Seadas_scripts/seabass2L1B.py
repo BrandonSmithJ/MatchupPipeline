@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from SB_support_v35 import readSB
+from seabass.SB_support import readSB
 from netCDF4 import Dataset
 import os
 import datetime

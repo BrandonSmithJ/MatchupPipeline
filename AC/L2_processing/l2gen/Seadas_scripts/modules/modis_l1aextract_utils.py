@@ -1,13 +1,13 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 from modules.ParamUtils import ParamProcessing
 
 class extract:
-    def __init__(self, file=file, parfile=None, outfile=None, geofile=None, north=None, south=None, west=None, east=None
+    def __init__(self, filename, parfile=None, outfile=None, geofile=None, north=None, south=None, west=None, east=None
     ,
                  log=False, sensor=None, verbose=False):
         # defaults
-        self.file = file
+        self.filename = filename
         self.parfile = parfile
         self.geofile = geofile
         self.outfile = outfile
@@ -52,11 +52,11 @@ class extract:
         import os
         import sys
 
-        if self.file is None:
+        if self.filename is None:
             print("ERROR: No MODIS_L1A_file was specified in either the parameter file or in the argument list. Exiting")
             sys.exit(1)
-        if not os.path.exists(self.file):
-            print("ERROR: File '" + self.file + "' does not exist. Exiting.")
+        if not os.path.exists(self.filename):
+            print("ERROR: File '" + self.filename + "' does not exist. Exiting.")
             sys.exit(1)
         if self.sensor.find('modis') < 0 and not os.path.exists(self.geofile):
             print("ERROR: Geolocation file (%s) not found!" % self.geofile)
@@ -107,15 +107,15 @@ class extract:
         lonlat2pixline = os.path.join(self.dirs['bin'], 'lonlat2pixline')
         pixlincmd = [lonlat2pixline, self.geofile, str(self.west), str(self.south), str(self.east), str(self.north)]
         p = subprocess.Popen(pixlincmd, stdout=subprocess.PIPE)
-        line = p.communicate()[0]
+        line = p.communicate()[0].decode("utf-8")
         if not p.returncode:
             pixlin = line.splitlines()[0][2:].split()
 
             l1extract = os.path.join(self.dirs['bin'], 'l1aextract_modis')
-            extractcmd = ' '.join([' ', self.file, pixlin[0], pixlin[1], pixlin[2], pixlin[3], self.outfile])
+            extractcmd = ' '.join([' ', self.filename, pixlin[0], pixlin[1], pixlin[2], pixlin[3], self.outfile])
             retcode = subprocess.call(l1extract + extractcmd, shell=True)
             if retcode:
-                print("Error extracting file %s" % self.file)
+                print("Error extracting file %s" % self.filename)
                 return 1
 
         else:

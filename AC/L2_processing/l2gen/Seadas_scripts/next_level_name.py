@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Program to return the name of the next level file that would be created from
@@ -11,14 +11,13 @@ import sys
 import traceback
 
 #import datetime
-import aquarius_next_level_name_finder
-import get_obpg_file_type
-import MetaUtils
+import mlp.get_obpg_file_type
+import seadasutils.MetaUtils
 #import namer_constants
-import name_finder_utils
-import next_level_name_finder
-import obpg_data_file
-import viirs_next_level_name_finder
+import mlp.name_finder_utils
+import mlp.next_level_name_finder
+import mlp.obpg_data_file
+import mlp.viirs_next_level_name_finder
 
 __version__ = '1.0.5-2018-05-08'
 __author__ = 'melliott'
@@ -41,7 +40,7 @@ def get_1_file_name(data_file, target_program, clopts):
     """
     Return the next level name for a single file.
     """
-    level_finder = name_finder_utils.get_level_finder([data_file],
+    level_finder = mlp.name_finder_utils.get_level_finder([data_file],
                                                       target_program,
                                                       clopts)
     next_level_name = level_finder.get_next_level_name()
@@ -77,7 +76,7 @@ def get_multifile_output_name(data_files_list_info, target_program, clopts):
             err_msg = 'Error!  File types do not match for {0} and {1}'.\
                       format(data_files_list_info[0].name, data_file.name)
             sys.exit(err_msg)
-    level_finder = name_finder_utils.get_level_finder(data_files_list_info,
+    level_finder = mlp.name_finder_utils.get_level_finder(data_files_list_info,
                                                       target_program,
                                                       clopts)
     output_name = level_finder.get_next_level_name()
@@ -127,11 +126,11 @@ def get_data_files_info(file_list_file):
     for line in inp_lines:
         filename = line.strip()
         if os.path.exists(filename):
-            file_typer = get_obpg_file_type.ObpgFileTyper(filename)
+            file_typer = mlp.get_obpg_file_type.ObpgFileTyper(filename)
             file_type, sensor = file_typer.get_file_type()
             if file_type != 'unknown':
                 stime, etime = file_typer.get_file_times()
-                data_file = obpg_data_file.ObpgDataFile(filename, file_type,
+                data_file = mlp.obpg_data_file.ObpgDataFile(filename, file_type,
                                                         sensor, stime, etime)
                 file_info.append(data_file)
             else:
@@ -141,8 +140,11 @@ def get_data_files_info(file_list_file):
         else:
             err_msg = 'Error! File {0} could not be found.'.format(filename)
             sys.exit(err_msg)
-    file_info.sort()
+    file_info.sort(key=myfunc)
     return file_info
+
+def myfunc(n):
+    return n.start_time
 
 def handle_unexpected_exception(exc_info):
     """
@@ -171,10 +173,10 @@ def main():
         sys.exit(err_msg)
     if os.path.exists(inp_name):
         try:
-            file_typer = get_obpg_file_type.ObpgFileTyper(inp_name)
+            file_typer = mlp.get_obpg_file_type.ObpgFileTyper(inp_name)
             ftype, sensor = file_typer.get_file_type()
             if ftype == 'unknown':
-                if MetaUtils.is_ascii_file(inp_name):
+                if seadasutils.MetaUtils.is_ascii_file(inp_name):
                     # Try treating the input file as a file list file.
                     data_files_info = get_data_files_info(inp_name)
                     if len(data_files_info) > 0:
@@ -192,7 +194,7 @@ def main():
                 # The file is an OBPG file
                 stime, etime = file_typer.get_file_times()
                 file_metadata = file_typer.attributes
-                data_file = obpg_data_file.ObpgDataFile(inp_name, ftype, sensor,
+                data_file = mlp.obpg_data_file.ObpgDataFile(inp_name, ftype, sensor,
                                                         stime, etime,
                                                         file_metadata)
                 next_level_name = get_1_file_name(data_file, targ_prog, clopts)
@@ -215,11 +217,11 @@ def main():
 DEBUG = False
 DEBUG = True  # Comment out for production use
 PROCESSABLE_PROGRAMS = \
-    set(list(next_level_name_finder.NextLevelNameFinder.PROCESSING_LEVELS.keys()) +\
-        list(next_level_name_finder.ModisNextLevelNameFinder.PROCESSING_LEVELS.keys()) +\
-        list(next_level_name_finder.SeawifsNextLevelNameFinder.PROCESSING_LEVELS.keys()) +\
-        list(aquarius_next_level_name_finder.AquariusNextLevelNameFinder.PROCESSING_LEVELS.keys()) +\
-        list(viirs_next_level_name_finder.ViirsNextLevelNameFinder.PROCESSING_LEVELS.keys()))
+    set(list(mlp.next_level_name_finder.NextLevelNameFinder.PROCESSING_LEVELS.keys()) +\
+        list(mlp.next_level_name_finder.HawkeyeNextLevelNameFinder.PROCESSING_LEVELS.keys()) +\
+        list(mlp.next_level_name_finder.ModisNextLevelNameFinder.PROCESSING_LEVELS.keys()) +\
+        list(mlp.next_level_name_finder.SeawifsNextLevelNameFinder.PROCESSING_LEVELS.keys()) +\
+        list(mlp.viirs_next_level_name_finder.ViirsNextLevelNameFinder.PROCESSING_LEVELS.keys()))
 
 if __name__ == '__main__':
     sys.exit(main())

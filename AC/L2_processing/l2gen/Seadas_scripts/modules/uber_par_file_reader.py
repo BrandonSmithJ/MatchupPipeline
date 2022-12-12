@@ -11,17 +11,29 @@ import sys
 __author__ = 'melliott'
 
 SECTION_HEADER_TEXT = 'section'
+VALID_KEYS = ['deletefiles', 'overwrite', 'use_existing', 'use_ancillary', 'odir', 'ifile']
 
-class DuplicateEntry(Exception):
-    """
-    Exception class for duplicate entries in a section dictionary.
-    """
-    def __init__(self, value):
-        super(DuplicateEntry, self).__init__()
-        self.value = value
+# class DuplicateEntry(Exception):
+#     """
+#     Exception class for duplicate entries in a section dictionary.
+#     """
+#     def __init__(self, value):
+#         super(DuplicateEntry, self).__init__()
+#         self.value = value
 
-    def __str__(self):
-        return repr(self.value)
+#     def __str__(self):
+#         return repr(self.value)
+
+# class InvalidEntry(Exception):
+#     """
+#     Exception class for invalid entries in a main section dictionary.
+#     """
+#     def __init__(self, value):
+#         super(InvalidEntry, self).__init__()
+#         self.value = value
+
+#     def __str__(self):
+#         return repr(self.value)
 
 def add_par_entry(the_dict, the_key, val_to_add):
     """
@@ -32,14 +44,27 @@ def add_par_entry(the_dict, the_key, val_to_add):
     else:
         the_dict[the_key] = [val_to_add]
 
-def add_sect_entry(the_dict, the_key, val_to_add):
+def add_sect_entry(filename, sect_key, the_dict, the_key, val_to_add):
     """
     Adds an entry to a section dictionary.
     """
-    if the_key not in the_dict:
-        the_dict[the_key] = val_to_add
-    else:
-        raise DuplicateEntry(the_key)
+    if sect_key != 'main':
+        if the_key not in the_dict:
+            the_dict[the_key] = val_to_add
+        else:
+            err_msg = 'Duplicate entry found for {0} in {1}'.format(the_key, filename)
+            sys.exit(err_msg)
+    else: 
+        if is_key_valid(the_key):
+            if the_key not in the_dict:
+                the_dict[the_key] = val_to_add
+            else:
+                err_msg = 'Duplicate entry found for {0} in {1}'.format(the_key, filename)
+                sys.exit(err_msg)
+        else:
+            err_msg = 'Invalid entry {0} found in {1}'.format(the_key, filename)
+            sys.exit(err_msg)
+        
 
 def get_sect_key(line):
     """
@@ -62,6 +87,15 @@ def is_section_header(line):
         return True
     else:
         return False
+
+def is_key_valid(key_str):
+    """
+    Returns True if opt is one of the valid options for Main section.
+    """
+    key_valid = False
+    if key_str in VALID_KEYS:
+        key_valid = True
+    return key_valid
 
 def is_whole_line_comment(line):
     """
@@ -135,12 +169,25 @@ class ParReader(object):
                                     add_par_entry(sect_dict, 'par',
                                                    val.strip().strip('"').strip("'"))
                                 else:
-                                    try:
-                                        add_sect_entry(sect_dict, key,
+                                    
+                                    add_sect_entry(self.filename, sect_key, sect_dict, key,
                                                        val.strip().strip('"').strip("'"))
-                                    except DuplicateEntry as dup_exc:
-                                        err_msg = 'Duplicate entry found for {0} in {1}'.format(str(dup_exc), self.filename)
-                                        sys.exit(err_msg)
+                                        # if sect_key != 'main':
+                                        #     add_sect_entry(sect_dict, key,
+                                        #                val.strip().strip('"').strip("'"))
+                                        # else:
+                                        #     if is_key_valid(key):
+                                        #        add_sect_entry(sect_dict, key,
+                                        #                val.strip().strip('"').strip("'")) 
+                                        #     else:
+                                        #         err_msg = '{0} is not a valid key for main section'.format(key)
+                                        #         sys.exit(err_msg)
+                                    # except DuplicateEntry as dup_exc:
+                                    #     err_msg = 'Duplicate entry found for {0} in {1}'.format(str(dup_exc), self.filename)
+                                    #     sys.exit(err_msg)
+                                    # except InvalidEntry as invalid_exc:
+                                    #     err_msg = 'Invalid entry found for {0} in {1}'.format(str(invalid_exc), self.filename)
+                                    #     sys.exit(err_msg)
                             elif line.strip in self.acceptable_single_keys:
                                 sect_dict[key] = 'True'
                             else:

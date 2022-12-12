@@ -1,7 +1,5 @@
-from __future__ import print_function
 
-from MetaUtils import readMetadata
-
+from modules.MetaUtils import readMetadata
 
 def aquarius_timestamp(arg):
     """

@@ -3,227 +3,169 @@
 SeaDAS library for commonly used functions within other python scripts
 
 """
-from __future__ import print_function
-
+import os
 import sys
+import re
+import subprocess
+import time
+from datetime import datetime, timedelta, date
+import logging
+import requests
+from requests.adapters import HTTPAdapter
+from pathlib import Path
+
+from modules.MetaUtils import readMetadata
 
 
-def get_url_file_name(openUrl, request):
-    """
-    get filename from URL - use content-disposition if provided
-    """
-    import os
+#  ------------------ DANGER -------------------
+#
+# The next 5 functions:
+#    getSession
+#    isRequestAuthFailure
+#    httpdl
+#    uncompressFile
+#    get_file_time
+#
+# exist in two places:
+#    OCSSWROOT/src/manifest/manifest.py
+#    OCSSWROOT/src/scripts/seadasutils/ProcUtils.py
+#
+# Make sure changes get into both files.
+#
 
-    # If the response has Content-Disposition, try to get filename from it
-    filename = openUrl.getheader('content-disposition')
-    if filename:
-        return filename.split('filename=')[1]
+DEFAULT_CHUNK_SIZE = 131072
+
+# requests session object used to keep connections around
+obpgSession = None
+
+def getSession(verbose=0, ntries=5):
+    global obpgSession
+
+    if not obpgSession:
+        # turn on debug statements for requests
+        if verbose > 1:
+            logging.basicConfig(level=logging.DEBUG)
+
+        obpgSession = requests.Session()
+        obpgSession.mount('https://', HTTPAdapter(max_retries=ntries))
+
+        if verbose:
+            print("OBPG session started")
     else:
-        # if no filename was found above, parse it out of the final URL.
-        return os.path.basename(request)
+        if verbose > 1:
+            print("reusing existing OBPG session")
 
+    return obpgSession
 
-def httpinit(url, timeout=10, urlConn=None):
-    """
-    initialize HTTP network connection
-    """
-    import os
-    try:
-        import http.client as hclient  # python 3
-    except ImportError:
-        import httplib as hclient  # python 2
+#  ------------------ DANGER -------------------
+# See comment above
+def isRequestAuthFailure(req) :
+    ctype = req.headers.get('Content-Type')
+    if ctype and ctype.startswith('text/html'):
+        if "<title>Earthdata Login</title>" in req.text:
+            return True
+    return False
 
-    try:
-        from urllib.parse import urlparse
-    except ImportError:
-        from urlparse import urlparse
-        
-    proxy = None
-    proxy_set = os.environ.get('https_proxy')
-    if proxy_set is None:
-        proxy_set = os.environ.get('http_proxy')
-    if proxy_set:
-        proxy = urlparse(proxy_set)
-
-    if urlConn is None:
-        if proxy is None:
-            urlConn = hclient.HTTPSConnection(url, timeout=timeout)
-        elif proxy.scheme == 'https':
-            urlConn = hclient.HTTPSConnection(proxy.hostname,
-                                              proxy.port, timeout=timeout)
-        else:
-            urlConn = hclient.HTTPConnection(proxy.hostname,
-                                             proxy.port, timeout=timeout)
-
-    return urlConn, proxy
-
-
-def _httpdl(url, request, localpath='.', outputfilename=None, ntries=5,
-            uncompress=False, timeout=30., reqHeaders={}, verbose=False,
-            reuseConn=False, urlConn=None):
-    """
-    Copy the contents of a file from a given URL to a local file
-    Inputs:
-        url - URL to retrieve
-        localpath - path to place downloaded file
-        outputfilename - name to give retrieved file (default: URL basename)
-        ntries - number to retry attempts
-        uncompress - uncompress the downloaded file, if necessary (boolean, default False)
-        timeout - sets the connection timeout (seconds)
-        reqHeaders - hash containing URL headers
-        reuseConn - reuse existing connection (boolean, default False)
-        urlConn - existing httplib.connection (needed if reuseConn set, default None)
-        verbose - get chatty about connection issues (boolean, default False)
-    """
-    global ofile
-    import os
-    import re
-    import socket
-
-    from time import sleep
-
-    sleepytime = int(5 + ((30. * (1. / (float(ntries) + 1.)))))
-
-    if not os.path.exists(localpath):
-        os.umask(0o02)
-        os.makedirs(localpath, mode=0o2775)
-
-    urlConn, proxy = httpinit(url, timeout=timeout, urlConn=urlConn)
-
-    if proxy is None:
-        full_request = request
-    else:
-        full_request = ''.join(['https://', url, request])
-
-    try:
-        req = urlConn.request('GET', full_request, headers=reqHeaders)
-    except:
-        err_msg = '\n'.join(['Error! could not establish a network connection. Check your network connection.',
-                             'If you do not find a problem, please try again later.'])
-        sys.exit(err_msg)
+#  ------------------ DANGER -------------------
+# See comment above
+def httpdl(server, request, localpath='.', outputfilename=None, ntries=5,
+           uncompress=False, timeout=30., verbose=0, force_download=False,
+           chunk_size=DEFAULT_CHUNK_SIZE):
 
     status = 0
-    response = None
-    try:
-        response = urlConn.getresponse()
+    urlStr = 'https://' + server + request
 
-        if response.status in (400, 401, 403, 404, 416):
-            status = response.status
-        elif response.status not in (200, 206):
-            urlConn.close()
-            if ntries > 0:
+    global obpgSession
+    localpath = Path(localpath)
+    getSession(verbose=verbose, ntries=ntries)
+
+    modified_since = None
+    headers = {}
+
+    if not force_download:
+        if outputfilename:
+            ofile = localpath / outputfilename
+            modified_since = get_file_time(ofile)
+        else:
+            rpath = Path(request.rstrip())
+            if 'requested_files' in request:
+                rpath = Path(request.rstrip().split('?')[0]) 
+            ofile = localpath / rpath.name
+            if re.search(r'(?<=\?)(\w+)', ofile.name):
+                ofile = Path(ofile.name.split('?')[0])
+
+            modified_since = get_file_time(ofile)
+
+        if modified_since:
+            headers = {"If-Modified-Since":modified_since.strftime("%a, %d %b %Y %H:%M:%S GMT")}
+
+    with obpgSession.get(urlStr, stream=True, timeout=timeout, headers=headers) as req:
+
+        if req.status_code != 200:
+            status = req.status_code
+        elif isRequestAuthFailure(req):
+            status = 401
+        else:
+            if not Path.exists(localpath):
+                os.umask(0o02)
+                Path.mkdir(localpath, mode=0o2775, parents=True)
+
+            if not outputfilename:
+                cd = req.headers.get('Content-Disposition')
+                if cd:
+                    outputfilename = re.findall("filename=(.+)", cd)[0]
+                else:
+                    outputfilename = urlStr.split('/')[-1]
+
+            ofile = localpath / outputfilename
+
+            # This is here just in case we didn't get a 304 when we should have...
+            download = True
+            if 'last-modified' in req.headers:
+                remote_lmt = req.headers['last-modified']
+                remote_ftime = datetime.strptime(remote_lmt, "%a, %d %b %Y %H:%M:%S GMT").replace(tzinfo=None)
+                if modified_since and not force_download:
+                    if (remote_ftime - modified_since).total_seconds() < 0:
+                        download = False
+                        if verbose:
+                            print("Skipping download of %s" % outputfilename)
+
+            if download:
+                total_length = req.headers.get('content-length')
+                length_downloaded = 0
+                total_length = int(total_length)
+                if verbose >0:
+                    print("Downloading %s (%8.2f MBs)" % (outputfilename,total_length /1024/1024))
+
+                with open(ofile, 'wb') as fd:
+
+                    for chunk in req.iter_content(chunk_size=chunk_size):
+                        if chunk: # filter out keep-alive new chunks
+                            length_downloaded += len(chunk)
+                            fd.write(chunk)
+                            if verbose > 0:
+                                percent_done = int(50 * length_downloaded / total_length)
+                                sys.stdout.write("\r[%s%s]" % ('=' * percent_done, ' ' * (50-percent_done)))
+                                sys.stdout.flush()
+
+                if uncompress:
+                    if ofile.suffix in {'.Z', '.gz', '.bz2'}:
+                        if verbose:
+                            print("\nUncompressing {}".format(ofile))
+                        compressStatus = uncompressFile(ofile)
+                        if compressStatus:
+                            status = compressStatus
+                else:
+                    status = 0
+
                 if verbose:
-                    print("Connection interrupted, retrying up to %d more time(s)" % ntries)
-                sleep(sleepytime)
-                urlConn, status = _httpdl(url, request, localpath=localpath,
-                                          outputfilename=outputfilename,
-                                          ntries=ntries - 1, timeout=timeout,
-                                          uncompress=uncompress, reuseConn=reuseConn,
-                                          urlConn=None, verbose=verbose)
-            else:
-                print('We failed to reach a server.')
-                print('Please retry this request at a later time.')
-                print('URL attempted: %s' % url)
-                print('HTTP Error: {0} - {1}'.format(response.status,
-                                                     response.reason))
-                status = response.status
-                urlConn = None
+                    print("\n...Done")
 
-    except socket.error as socmsg:
-        if response:
-            urlConn.close()
-        if ntries > 0:
-            if verbose:
-                print('Connection error, retrying up to {0} more time(s)'. \
-                    format(ntries))
-            sleep(sleepytime)
-            urlConn, status = _httpdl(url, request, localpath=localpath,
-                                      outputfilename=outputfilename, ntries=ntries - 1,
-                                      timeout=timeout, uncompress=uncompress,
-                                      reuseConn=reuseConn, urlConn=None, verbose=verbose)
-        else:
-            print('URL attempted: %s' % url)
-            print('Well, this is embarrassing...an error occurred that we just cannot get past...')
-            print('Here is what we know: %s' % socmsg)
-            print('Please retry this request at a later time.')
-            status = 500
-            urlConn = None
-    except:
-        if response:
-            print('Well, the server did not like this...reports: {0}'. \
-                format(response.reason))
-            status = response.status
-        else:
-            err_msg = '\n'.join(['Could not communicate with the server.',
-                                 'Please check your network connections and try again later.'])
-            sys.exit(err_msg)
-    else:
-        if response.status == 200 or response.status == 206:
-            if outputfilename:
-                ofile = os.path.join(localpath, outputfilename)
-            else:
-                ofile = os.path.join(localpath, get_url_file_name(response,
-                                                                  request))
-            filename = ofile
-            data = response.read()
-
-            if response.status == 200:
-                with open(ofile, 'wb') as f:
-                    f.write(data)
-            else:
-                with open(ofile, 'ab') as f:
-                    f.write(data)
-
-            headers = dict(response.getheaders())
-            if 'content-length' in headers:
-                expectedLength = int(headers.get('content-length'))
-                if 'content-range' in headers:
-                    expectedLength = int(headers.get('content-range').split('/')[1])
-
-                actualLength = os.stat(filename).st_size
-
-                if expectedLength != actualLength:
-                    # continuation - attempt again where it left off...
-                    bytestr = "bytes=%s-" % (actualLength)
-                    reqHeader = {'Range': bytestr}
-                    print(bytestr, sleepytime)
-                    urlConn.close()
-                    sleep(sleepytime)
-                    urlConn, status = _httpdl(url, request, localpath=localpath,
-                                              outputfilename=outputfilename,
-                                              timeout=timeout, uncompress=uncompress,
-                                              reqHeaders=reqHeader, reuseConn=reuseConn,
-                                              urlConn=None, verbose=verbose)
-
-            if not reuseConn:
-                urlConn.close()
-
-            if re.search(".(Z|gz|bz2)$", filename) and uncompress:
-                compressStatus = uncompressFile(filename)
-                if compressStatus:
-                    status = compressStatus
-            else:
-                status = 0
-        else:
-            status = response.status
-            if not reuseConn:
-                urlConn.close()
-
-    return (urlConn, status)
+    return status
 
 
-def httpdl(url, request, localpath='.', outputfilename=None, ntries=5,
-           uncompress=False, timeout=30., reqHeaders={}, verbose=False,
-           reuseConn=False, urlConn=None):
-    urlConn, status = _httpdl(url, request, localpath, outputfilename, ntries,
-                              uncompress, timeout, reqHeaders, verbose,
-                              reuseConn, urlConn)
-    if reuseConn:
-        return (urlConn, status)
-    else:
-        return status
-
-
+#  ------------------ DANGER -------------------
+# See comment above
 def uncompressFile(compressed_file):
     """
     uncompress file
@@ -232,13 +174,11 @@ def uncompressFile(compressed_file):
         gzip
         UNIX compress
     """
-    import os
-    import subprocess
 
-    compProg = {"gz": "gunzip -f ", "Z": "gunzip -f ", "bz2": "bunzip2 -f "}
-    exten = os.path.basename(compressed_file).split('.')[-1]
+    compProg = {".gz": "gunzip -f ", ".Z": "gunzip -f ", ".bz2": "bunzip2 -f "}
+    exten = Path(compressed_file).suffix
     unzip = compProg[exten]
-    p = subprocess.Popen(unzip + compressed_file, shell=True)
+    p = subprocess.Popen(unzip + str(compressed_file.resolve()), shell=True)
     status = os.waitpid(p.pid, 0)[1]
     if status:
         print("Warning! Unable to decompress %s" % compressed_file)
@@ -246,20 +186,30 @@ def uncompressFile(compressed_file):
     else:
         return 0
 
+#  ------------------ DANGER -------------------
+# See comment above
+def get_file_time(localFile):
+    ftime = None
+    localFile = Path(localFile)
+    if not Path.is_file(localFile):
+        while localFile.suffix in {'.Z', '.gz', '.bz2'}:
+            localFile = localFile.with_suffix('')
+
+    if Path.is_file(localFile):
+        ftime = datetime.fromtimestamp(localFile.stat().st_mtime)
+
+    return ftime
 
 def cleanList(filename, parse=None):
     """
     Parses file list from oceandata.sci.gsfc.nasa.gov through html source
     intended for update_luts.py, by may have other uses
     """
-    import os
-    import re
-
-    oldfile = os.path.abspath(filename)
+    oldfile = Path.resolve(filename)
     newlist = []
     if parse is None:
         parse = re.compile(r"(?<=(\"|\')>)\S+(\.(hdf|h5|dat|txt))")
-    if not os.path.exists(oldfile):
+    if not Path.exists(oldfile):
         print('Error: ' + oldfile + ' does not exist')
         sys.exit(1)
     else:
@@ -271,7 +221,7 @@ def cleanList(filename, parse=None):
                 except Exception:
                     pass
         of.close()
-        os.remove(oldfile)
+        Path.unlink(oldfile)
         return newlist
 
 
@@ -291,7 +241,6 @@ def date_convert(datetime_i, in_datetype=None, out_datetype=None):
         't': TAI        YYYY-MM-DDTHH:MM:SS.uuuuuuZ
         'h': HDF-EOS    YYYY-MM-DD HH:MM:SS.uuuuuu
     """
-    import datetime
 
     # define commonly used date formats
     date_time_format = {
@@ -304,8 +253,7 @@ def date_convert(datetime_i, in_datetype=None, out_datetype=None):
     if in_datetype is None:
         dateobj = datetime_i
     else:
-        dateobj = datetime.datetime.strptime(datetime_i,
-                                             date_time_format[in_datetype])
+        dateobj = datetime.strptime(datetime_i, date_time_format[in_datetype])
 
     if out_datetype is None:
         return dateobj
@@ -313,26 +261,65 @@ def date_convert(datetime_i, in_datetype=None, out_datetype=None):
         return dateobj.strftime(date_time_format[out_datetype])
 
 
-def addsecs(datetime_i, dsec, datetype):
+def addsecs(datetime_i, dsec, datetype=None):
     """
     Offset datetime_i by dsec seconds.
     """
-    import datetime
-
     dateobj = date_convert(datetime_i, datetype)
-    delta = datetime.timedelta(seconds=dsec)
+    delta = timedelta(seconds=dsec)
     return date_convert(dateobj + delta, out_datetype=datetype)
+
+def diffsecs(time0, time1, datetype=None):
+    """
+    Return difference in seconds.
+    """
+    t0 = date_convert(time0, datetype)
+    t1 = date_convert(time1, datetype)
+    return (t1-t0).total_seconds()
+
+def round_minutes(datetime_i, datetype=None, resolution=5, rounding=0):
+    """Round to nearest "resolution" minutes, preserving format.
+
+    Parameters
+    ----------
+    datetime_i : string
+        String representation of datetime, in "datetype" format
+    datetype : string
+        Format of datetime, as strftime or date_convert() code
+    resolution : integer, optional
+        Number of minutes to round to (default=5)
+    rounding : integer, optional
+        Rounding "direction", where
+            <0 = round down
+             0 = round to nearest (default)
+            >0 = round up
+    """
+    dateobj = date_convert(datetime_i, datetype)
+
+    if rounding < 0: # round down
+        new_minute = (dateobj.minute // resolution) * resolution
+    elif rounding > 0: # round up
+        new_minute = (dateobj.minute // resolution + 1) * resolution
+    else:  # round to nearest value
+        new_minute = ((dateobj.minute + resolution/2.0) // resolution) * resolution
+
+    # truncate to current hour; add new minutes
+    dateobj -= timedelta(minutes=dateobj.minute,
+                                  seconds=dateobj.second,
+                                  microseconds=dateobj.microsecond)
+    dateobj += timedelta(minutes=new_minute)
+
+    return date_convert(dateobj, out_datetype=datetype)
 
 
 def remove(file_to_delete):
     """
     Delete a file from the system
-    A simple wrapper for os.remove
+    A simple wrapper for Path.unlink
     """
-    import os
-
-    if os.path.exists(file_to_delete):
-        os.remove(file_to_delete)
+    file_to_delete = Path(file_to_delete)
+    if Path.exists(file_to_delete):
+        Path.unlink(file_to_delete)
         return 0
 
     return 1
@@ -342,41 +329,32 @@ def ctime(the_file):
     """
     returns days since file creation
     """
-    import datetime
-    import os
-    import time
 
-    today = datetime.date.today().toordinal()
-    utc_create = time.localtime(os.path.getctime(the_file))
+    today = date.today().toordinal()
+    p = Path(the_file)
+    utc_create = time.localtime(p.stat().st_ctime)
 
-    return today - datetime.date(utc_create.tm_year, utc_create.tm_mon, utc_create.tm_mday).toordinal()
+    return today - date(utc_create.tm_year, utc_create.tm_mon, utc_create.tm_mday).toordinal()
 
 
 def mtime(the_file):
     """
     returns days since last file modification
     """
-    import datetime
-    import os
-    import time
 
-    today = datetime.date.today().toordinal()
-    utc_mtime = time.localtime(os.path.getmtime(the_file))
+    today = date.today().toordinal()
+    p = Path(the_file)
+    utc_mtime = time.localtime(p.stat().st_mtime)
 
-    return today - datetime.date(utc_mtime.tm_year, utc_mtime.tm_mon, utc_mtime.tm_mday).toordinal()
+    return today - date(utc_mtime.tm_year, utc_mtime.tm_mon, utc_mtime.tm_mday).toordinal()
 
 
 def cat(file_to_print):
     """
     Print a file to the standard output.
     """
-    f = open(file_to_print, 'r')
-    while True:
-        line = f.readline()
-        if not len(line):
-            break
-        print(line, end=' ')
-    f.close()
+    with open(file_to_print) as f:
+        print(f.read())
 
 
 def check_sensor(inp_file):
@@ -390,12 +368,11 @@ def check_sensor(inp_file):
               'Coastal Zone Color Scanner (CZCS)': 'czcs',
               'Ocean Color and Temperature Scanner (OCTS)': 'octs',
               'Ocean Scanning Multi-Spectral Imager (OSMI)': 'osmi',
-              'Ocean   Color   Monitor   OCM-2': 'ocm2',
-              'MOS': 'mos', 'VIIRS': 'viirs', 'Aquarius': 'aquarius',
-              'hico': 'hico'}
+              'Ocean   Color   Monitor   OCM-2': 'ocm2', 
+              'GOCI': 'goci', 'Hawkeye': 'hawkeye', 'hico': 'hico',
+              'MERIS': 'meris','MOS': 'mos',
+              'Aquarius': 'aquarius', 'VIIRS': 'viirs'}
 
-    from modules.MetaUtils import readMetadata
-    import re
 
     fileattr = readMetadata(inp_file)
     if not fileattr:
@@ -408,11 +385,20 @@ def check_sensor(inp_file):
         return senlst[str(fileattr['Instrument_Short_Name'])]
     elif 'Sensor' in fileattr:
         return senlst[(fileattr['Sensor']).strip()]
+    elif 'Sensor name' in fileattr:
+        return senlst[(fileattr['Sensor name']).strip()]
+    elif 'SENSOR_ID' in fileattr and re.search('OLI', fileattr['SENSOR_ID']):
+        print(fileattr['SENSOR_ID'].strip())
+        return 'oli'
     elif 'PRODUCT' in fileattr and re.search('MER', fileattr['PRODUCT']):
         print(fileattr['PRODUCT'])
         return 'meris'
     elif 'instrument' in fileattr:
         print(fileattr['instrument'])
-        return senlst[(fileattr['instrument'])].strip()
+        if re.search('OLCI', fileattr['instrument']):
+            if 'platform' in fileattr:
+                return fileattr['platform']
+        else:
+            return senlst[(fileattr['instrument'])].strip()
     else:
         return 'X'

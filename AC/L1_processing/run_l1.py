@@ -33,9 +33,10 @@ def _run_seadas_script(script_file: str):
 			inp_file    = Path(inp_file).absolute()
 			out_file    = script_function(inp_file)
 			ocssw_path  = Path(ac_path or 'SeaDAS').absolute()
-			curr_path   = Path(__file__).parent.absolute()
+			curr_path   = Path(__file__).parent.parent.joinpath('L2_processing','l2gen').absolute() #Path(__file__).parent.absolute()
 			module_path = curr_path.joinpath('Seadas_scripts', 'modules')
-			script_file = curr_path.joinpath('Seadas_scripts', script_file).as_posix()
+			nonlocal script_file
+			script_file = curr_path.joinpath('Seadas_scripts', script_file)
 			ancill_path = curr_path.joinpath('Ancillary')
 			ancill_path.mkdir(parents=True, exist_ok=True)
 

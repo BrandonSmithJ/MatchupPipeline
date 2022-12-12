@@ -6,14 +6,15 @@ OBPG software.
 
 # import os
 import re
-import modules.next_level_name_finder as next_level_name_finder
+import datetime 
+import mlp.next_level_name_finder
 
 
 __author__ = 'melliott'
 
 __version__ = '1.0.4-2016-04-29'
 
-class ViirsNextLevelNameFinder(next_level_name_finder.NextLevelNameFinder):
+class ViirsNextLevelNameFinder(mlp.next_level_name_finder.NextLevelNameFinder):
     """
     A class to determine the standard OBPG filename for VIIRS files when the
     given input name is run through the next level of OBPG processing.
@@ -40,6 +41,7 @@ class ViirsNextLevelNameFinder(next_level_name_finder.NextLevelNameFinder):
         'L3b':            'l3bin',
         'l3gen':          'l3gen',
         'l3mapgen':       'SMI',           # Temporary(?)
+        'mapgen':         'mapgen',
         'SDR':          'Level 1B',
         'SMI':          'SMI',
         'smigen':       'SMI'
@@ -60,36 +62,29 @@ class ViirsNextLevelNameFinder(next_level_name_finder.NextLevelNameFinder):
             return '.GEO-M_JPSS1'
         return '.GEO-M_SNPP'
 
-    def _get_l1b_extension(self):
-        """
-        Returns the file extension for L1B MOD files.
-        """
-        if 'J1' in self.data_files[0].sensor:
-            return '.L1B-M_JPSS1'
-        return '.L1B-M_SNPP'
+    # def _get_l1b_extension(self):
+    #     """
+    #     Returns the file extension for L1B MOD files.
+    #     """
+    #     if 'J1' in self.data_files[0].sensor:
+    #         return '.L1B-M_JPSS1'
+    #     return '.L1B-M_SNPP'
 
     def _get_geo_name(self):
         """
         Returns the name of the GEO file.
         """
         if self.data_files[0].start_time:
-            time_stamp = self.data_files[0].start_time
+            start_time = self.data_files[0].start_time
+            dt_obj = datetime.datetime.strptime(start_time, "%Y%j%H%M%S")  
+            time_stamp = "{}T{}".format(dt_obj.strftime("%Y%m%d"), start_time[7:]) 
         elif self.data_files[0].metadata:
             time_stamp = self._extract_l1_time(
                 self.data_files[0].metadata['RANGEBEGINNINGDATE'],
                 self.data_files[0].metadata['RANGEBEGINNINGTIME'])
         geo_name = self.get_platform_indicator() + time_stamp +\
-                   self._get_geo_extension()
+                   ".GEO-M"
         return geo_name
-
-
-    def get_platform_indicator(self):
-        """
-        Returns a character which indicates what platform (instrument) the
-        data in the file is from.  This is usually used as the first character
-        of an output file.
-        """
-        return 'V'
 
     def _get_extra_extensions(self):
         """
@@ -103,13 +98,26 @@ class ViirsNextLevelNameFinder(next_level_name_finder.NextLevelNameFinder):
         self.data_files[0].name = orig_name
         return extra_ext
 
-    def _get_l2_extension(self):
+    # def _get_l2_extension(self):
+    #     """
+    #     Return the appropriate extension for an L2 file.
+    #     """
+    #     if 'J1' in self.data_files[0].sensor:
+    #         return '.L2_JPSS1'
+    #     return '.L2_SNPP'
+
+    def get_platform_indicator(self):
         """
-        Return the appropriate extension for an L2 file.
+        Returns a character which indicates what platform (instrument) the
+        data in the file is from.  This is usually used as the first character
+        of an output file.
         """
-        if 'J1' in self.data_files[0].sensor:
-            return '.L2_JPSS1'
-        return '.L2_SNPP'
+        if self.data_files[0].metadata['platform'].find('JPSS-1') != -1:
+            head_name = 'NOAA20'
+        elif self.data_files[0].metadata['platform'].find('Suomi-NPP') != -1:
+            head_name = 'SNPP'
+        head_name += '_VIIRS.'
+        return head_name
 
     def _get_transition_functions(self):
         """
@@ -122,7 +130,8 @@ class ViirsNextLevelNameFinder(next_level_name_finder.NextLevelNameFinder):
                              'l1bgen' :  self._get_l1b_name,
                              'l1brsgen': self._get_l1brsgen_name,
                              'l1mapgen': self._get_l1mapgen_name,
-                             'Level 2' : self._get_l2_name
+                             'Level 2' : self._get_l2_name,
+                             'mapgen': self._get_l1mapgen_name,
                             },
                 'SDR': {'Level 1B': self._get_l1b_name,
                         'l1aextract_seawifs' : self._get_l1aextract_name,
@@ -133,17 +142,20 @@ class ViirsNextLevelNameFinder(next_level_name_finder.NextLevelNameFinder):
                        },
                 'Level 1B':  {'Level 2': self._get_l2_name,
                               'l1brsgen': self._get_l1brsgen_name,
-                              'l1mapgen': self._get_l1mapgen_name
+                              'l1mapgen': self._get_l1mapgen_name,
+                              'mapgen': self._get_l1mapgen_name,
                              },
                 'Level 2': {'l2bin':     self._get_l3bin_name,
                             'l2extract': self._get_l2extract_name,
                             'l3bin':     self._get_l3bin_name,
                             'l2brsgen':  self._get_l2brsgen_name,
-                            'l2mapgen':  self._get_l2mapgen_name
+                            'l2mapgen':  self._get_l2mapgen_name,
+                            'mapgen': self._get_l2mapgen_name,
                            },
                 'Level 3 Binned': {'l3bin' :    self._get_l3bin_name,
                                    'l3gen':     self._get_l3gen_name,
                                    'l3mapgen' : self._get_l3mapgen_name,
-                                   'SMI' :      self._get_l3mapgen_name
+                                   'SMI' :      self._get_l3mapgen_name,
+                                   'mapgen': self._get_l3mapgen_name,
                                   }
                }

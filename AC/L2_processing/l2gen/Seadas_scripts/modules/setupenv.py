@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+import logging
 import sys
 
 
@@ -6,25 +8,42 @@ def env(self):
     """
     A simple module to populate some important environment variables
     """
-
-    if os.getenv("OCDATAROOT") is None:
-        print("ERROR: OCDATAROOT environment variable not set.")
-        sys.exit(1)
+    if os.getenv("OCSSWROOT") is None:
+        scriptdir = Path(__file__).resolve().parent
+        if 'src' in scriptdir.parts:
+            self.dirs['packageroot'] =  scriptdir.parents[2]
+        else:
+            self.dirs['packageroot'] =  scriptdir.parents[1]
     else:
-        self.dirs['root'] = os.getenv("OCDATAROOT")
+        self.dirs['packageroot'] = Path(os.getenv("OCSSWROOT"))
 
-    if not os.path.exists(os.getenv("OCDATAROOT")):
-        print("ERROR: The OCDATAROOT " + os.getenv("OCDATAROOT") + " directory does not exist.")
-        print("Please make sure you have downloaded and installed the SeaDAS processing data support file (seadas_processing.tar.gz).")
+    self.dirs['root'] = self.dirs['packageroot'] / "share"
+    if os.getenv("OCDATAROOT"):
+        self.dirs['root'] = Path(os.getenv("OCDATAROOT"))
+
+    if not self.dirs['root'].exists():
+        print("ERROR: The OCDATAROOT {} directory does not exist.".format(self.dirs['root']))
+        print("Please make sure you have downloaded and installed OCSSW and sourced the OCSSW environment")
         sys.exit(1)
 
-    self.dirs['scripts'] = os.path.join(os.getenv("OCSSWROOT"), "scripts")
-    self.dirs['var'] = os.path.join(os.getenv("OCSSWROOT"), "var")
-    self.dirs['bin'] = os.getenv("OCSSW_BIN")
-    self.dirs['bin3'] = os.getenv("LIB3_BIN")
-    self.dirs['log'] = os.path.join(os.getenv("OCSSWROOT"), "log")
-    if not os.path.exists(self.dirs['log']):
-        self.dirs['log'] = self.dirs['var']
+    self.dirs['scripts'] = self.dirs['packageroot'] / "scripts"
+    if os.getenv("OCSSW_SCRIPTS"):
+        self.dirs['scripts'] = Path(os.getenv("OCSSW_SCRIPTS"))
+
+    self.dirs['var'] = self.dirs['packageroot'] / "var"
+    if os.getenv("OCVARROOT"):
+        self.dirs['var'] = Path(os.getenv("OCVARROOT"))
+
+    self.dirs['bin'] = self.dirs['packageroot'] / "bin"
+    if os.getenv("OCSSW_BIN"):
+        self.dirs['bin'] = Path(os.getenv("OCSSW_BIN"))
+
+    self.dirs['bin3'] = self.dirs['packageroot'] / "opt" / "bin"
+    if os.getenv("LIB3_BIN"):
+        self.dirs['bin3'] = Path(os.getenv("LIB3_BIN"))
+
+    self.dirs['log'] = self.dirs['var'] / "log"
+    Path(self.dirs['log']).mkdir(parents=True, exist_ok=True)
 
     if os.getenv("OCSSW_DEBUG") is not None and int(os.getenv("OCSSW_DEBUG")) > 0:
         if not os.path.exists(self.dirs['bin']):
@@ -33,7 +52,7 @@ def env(self):
         else:
             print("Running debug binaries...\n\t%s" % self.dirs['bin'])
 
-    self.dirs['run'] = os.path.abspath(os.getcwd())
+    self.dirs['run'] = Path.cwd()
     if self.curdir:
         self.dirs['anc'] = self.dirs['run']
     else:
@@ -50,7 +69,21 @@ def env(self):
                 else:
                     self.dirs['anc'] = os.getenv("USER_L2GEN_ANC")
         else:
-            if self.ancdir[0] != "/":
-                self.dirs['anc'] = os.path.join(self.dirs['run'], self.ancdir)
-            else:
-                self.dirs['anc'] = self.ancdir
+            self.dirs['anc'] = Path(self.ancdir)
+
+def build_executable_path(prog_name):
+    """
+    Returns the path to the program named in prog_name as a pathlib Path object.
+    None is returned if the program is not found.
+    """
+    packageroot = None
+    if os.getenv("OCSSWROOT"):
+        packageroot = Path(os.getenv("OCSSWROOT"))
+
+    prog_path = packageroot / 'bin' / prog_name
+    if not Path.exists(prog_path):
+        err_msg = "Cannot find program %s" % prog_name
+        logging.error(err_msg)
+        sys.exit(err_msg)
+
+    return prog_path

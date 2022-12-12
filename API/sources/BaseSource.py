@@ -215,19 +215,19 @@ class BaseSource(Picklable, metaclass=BaseSourceMeta):
             stream.close()
             assert(len(url)), f'Error getting {self} authorization:\n{text}'
             stream = self.session.get(url[0].get('href'), **kwargs)  
-
-        pbar_kwargs = {
-            'total'        : int(stream.headers.get('Content-Length')),
-            'unit_divisor' : 1024, 
-            'unit_scale'   : True,
-            'unit'         : 'B',
-            'leave'        : False,
-            'disable'      : not show_pbar,
-        }
-        with tqdm(**pbar_kwargs) as pbar:
-            with archive.open('wb') as f:
-                for chunk in stream.iter_content(chunk_size=chunk_size):
-                    if chunk: 
-                        f.write(chunk)
-                        pbar.update(chunk_size)
+        if stream.headers.get('Content-Length') is not None:
+            pbar_kwargs = {
+                'total'        : int(stream.headers.get('Content-Length')),
+                'unit_divisor' : 1024, 
+                'unit_scale'   : True,
+                'unit'         : 'B',
+                'leave'        : False,
+                'disable'      : not show_pbar,
+            }
+            with tqdm(**pbar_kwargs) as pbar:
+                with archive.open('wb') as f:
+                    for chunk in stream.iter_content(chunk_size=chunk_size):
+                        if chunk: 
+                            f.write(chunk)
+                            pbar.update(chunk_size)
         stream.close()

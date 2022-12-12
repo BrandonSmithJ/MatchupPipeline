@@ -136,8 +136,8 @@ def filter_completed(
     return data.loc[~data['uid'].isin(complete)]
 
 
-
-def main():
+#debug changes celery to implement tasks in serial instead of parallel
+def main(debug=True):
     global_config = gc = get_args()
     print(f'\nRunning pipeline with parameters: {pretty_print(gc.__dict__)}\n')
 
@@ -186,7 +186,7 @@ def main():
             #print(row)
             #print()
             #print('Running:',manager.running())
-            pipeline.delay(row.to_dict())
+            pipeline(row.to_dict()) if debug  else pipeline.delay(row.to_dict())
             # if i >= 10: break
 
 

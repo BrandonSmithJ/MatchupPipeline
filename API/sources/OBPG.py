@@ -14,6 +14,7 @@ class OBPG(BaseSource):
     VIIRS, MODIS, OLCI, HICO are all able to be downloaded
             
     Docs: https://oceancolor.gsfc.nasa.gov/data/download_methods/
+    Configure netrc file to resolve redirect issues.
     """
     site_url    = 'urs.earthdata.nasa.gov'
     search_url  = 'https://oceancolor.gsfc.nasa.gov'
@@ -152,8 +153,9 @@ class OBPG(BaseSource):
 
         if not complete:
             def download_suffix(suffix):
-                dl_url  = f'{self.data_url}/ob/getfile/{scene_id}.{suffix}'
-                suffix  = suffix.replace('GEO-M_SNPP.nc', 'L1A_SNPP.GEO')
+                scene_id_VIIRS = '.'.join(scene_id.split('.')[:-1])
+                dl_url  = f'{self.data_url}/ob/getfile/{scene_id_VIIRS}.{suffix}' if 'VIIRS' in scene_id else f'{self.data_url}/ob/getfile/{scene_id}.{suffix}'
+                suffix  = suffix.replace('GEO.nc', 'GEO').replace('L1A.nc','nc')
                 archive = output.joinpath(f'{scene_id}.{suffix}')
 
                 self.stream_download(dl_url, archive, **{
@@ -166,7 +168,7 @@ class OBPG(BaseSource):
             suffixes =  {
                 'MOD_L2' : ['L2_LAC_OC.nc'], # L2 product direct 
                 'MOD'    : ['L1A_LAC.bz2'],
-                'VI'     : ['GEO-M_SNPP.nc', 'L1A_SNPP.nc'],
+                'VI'     : ['GEO.nc', 'L1A.nc'],
                 'OLCI'   : ['zip'],
                 'HICO'   : ['L1B_ISS.bz2'],
                 'MERIS'  : ['ZIP'],
@@ -178,7 +180,7 @@ class OBPG(BaseSource):
             if sensor in ['MOD', 'OLCI', 'HICO', 'MERIS']:
                 decompress(archive, output)
             output.joinpath('.complete').touch()
-        return output
+        return output.joinpath(f'{scene_id}.SEN3') if sensor == 'OLCI' else output
         
 
 

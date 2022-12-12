@@ -9,7 +9,7 @@ import os
 import re
 import sys
 import types
-import modules.next_level_name_finder as next_level_name_finder
+import mlp.next_level_name_finder as next_level_name_finder
 # import next_level_name_finder
 
 __author__ = 'melliott'

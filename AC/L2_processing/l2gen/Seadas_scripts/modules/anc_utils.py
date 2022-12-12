@@ -1,12 +1,28 @@
 
-
+import os
+import sys
 import gc
+import re
+import subprocess
+import json
+from datetime import datetime
+from datetime import timedelta
+
 import xml.etree.ElementTree as ElementTree
 from operator import sub
 from collections import OrderedDict
 
 import modules.MetaUtils as MetaUtils
 import modules.ProcUtils as ProcUtils
+from modules.timestamp_utils import hico_timestamp
+from modules.modis_utils import modis_timestamp
+from modules.viirs_utils import viirs_timestamp
+from modules.aquarius_utils import aquarius_timestamp
+
+
+import modules.ancDB as db
+#import modules.ancDBmysql as db
+
 
 DEFAULT_ANC_DIR_TEXT = "$OCVARROOT"
 
@@ -16,7 +32,7 @@ class getanc:
     utilities for ancillary file search
     """
 
-    def __init__(self, file=None,
+    def __init__(self, filename=None,
                  start=None,
                  stop=None,
                  ancdir=None,
@@ -25,12 +41,12 @@ class getanc:
                  atteph=False,
                  sensor=None,
                  opt_flag=None,
-                 verbose=False,
+                 verbose=0,
                  printlist=True,
                  download=True,
                  timeout=10,
                  refreshDB=False):
-        self.file = file
+        self.filename = filename
         self.start = start
         self.stop = stop
         self.ancdir = ancdir
@@ -59,14 +75,13 @@ class getanc:
         """
         Check validity of inputs to
         """
-        import sys
 
-        if self.start is None and self.file is None:
+        if self.start is None and self.filename is None:
             print("ERROR: No L1A_or_L1B_file or start time specified!")
             sys.exit(1)
 
         if self.atteph:
-            if self.sensor is None and self.file is None:
+            if self.sensor is None and self.filename is None:
                 print("ERROR: No FILE or MISSION specified.")
                 sys.exit(1)
             if self.sensor is not None and self.sensor != "modisa" and self.sensor != "modist" \
@@ -80,13 +95,13 @@ class getanc:
             sys.exit(1)
 
         if self.start is not None:
-            if len(self.start) != 13 or int(self.start[0:4]) < 1978 or int(self.start[0:4]) > 2030:
-                print("ERROR: Start time must be in YYYYDDDHHMMSS format and YYYY is between 1978 and 2030.")
+            if (len(self.start) != 13 and len(self.start) != 19) or int(self.start[0:4]) < 1978 or int(self.start[0:4]) > 2030:
+                print("ERROR: Start time must be in YYYYDDDHHMMSS or YYYY-MM-DDTHH:MM:SS format and YYYY is between 1978 and 2030.")
                 sys.exit(1)
 
         if self.stop is not None:
-            if len(self.stop) != 13 or int(self.stop[0:4]) < 1978 or int(self.stop[0:4]) > 2030:
-                print("ERROR: End time must be in YYYYDDDHHMMSS format and YYYY is between 1978 and 2030.")
+            if (len(self.stop) != 13 and len(self.start) != 19) or int(self.stop[0:4]) < 1978 or int(self.stop[0:4]) > 2030:
+                print("ERROR: End time must be in YYYYDDDHHMMSS or YYYY-MM-DDTHH:MM:SS format and YYYY is between 1978 and 2030.")
                 sys.exit(1)
 
     @staticmethod
@@ -99,7 +114,7 @@ class getanc:
         stoptime = None
         startdate = None
         stopdate = None
-        for line in info[0].splitlines():
+        for line in info[0].decode("utf-8").splitlines():
             if line.find("Start_Time") != -1:
                 starttime = line.split('=')[1]
             if line.find("End_Time") != -1:
@@ -167,16 +182,15 @@ class getanc:
         Set up the basics
         """
         # global stopdate, stoptime, startdate, starttime
-        import os
-        import sys
-        import re
-        import subprocess
-        from modis_utils import modis_timestamp
-        from viirs_utils import viirs_timestamp
-        from aquarius_utils import aquarius_timestamp
 
         # set l2gen parameter filename
-        if self.file is None:
+        if self.filename is None:
+            if len(self.start) == 13:
+                start_obj = datetime.strptime(self.start, '%Y%j%H%M%S')
+                self.start = datetime.strftime(start_obj, '%Y-%m-%dT%H:%M:%S')
+                if self.stop is not None:
+                    stop_obj = datetime.strptime(self.stop, '%Y%j%H%M%S')
+                    self.stop = datetime.strftime(stop_obj, '%Y-%m-%dT%H:%M:%S')
             self.base = self.start
             self.server_file = self.base + ".anc.server"
             if self.atteph:
@@ -184,7 +198,7 @@ class getanc:
             else:
                 self.anc_file = self.base + ".anc"
         else:
-            self.base = os.path.basename(self.file)
+            self.base = os.path.basename(self.filename)
             self.server_file = "{0:>s}.anc.server".format('.'.join(self.base.split('.')[0:-1]))
             if self.atteph:
                 self.anc_file = '.'.join([self.base, 'atteph'])
@@ -194,8 +208,8 @@ class getanc:
                 #                self.anc_file = "{0:>s}.anc".format('.'.join(self.base.split('.')[0:-1]))
 
             if self.server_file == '.anc.server':
-                self.server_file = self.file + self.server_file
-                self.anc_file = self.file + self.anc_file
+                self.server_file = self.filename + self.server_file
+                self.anc_file = self.filename + self.anc_file
 
             # Check if start time specified.. if not, obtain from HDF header or if the
             # file doesn't exist, obtain start time from filename
@@ -203,7 +217,7 @@ class getanc:
                 # Check for existence of ifile, and if it doesn't exist assume the
                 # user wants to use this script without an actual input file, but
                 # instead an OBPG formatted filename that indicates the start time.
-                if not os.path.exists(self.file):
+                if not os.path.exists(self.filename):
                     if self.sensor:
                         print("*** WARNING: Input file doesn't exist! Parsing filename for start time and setting")
                         print("*** end time to 5 minutes later for MODIS and 15 minutes later for other sensors.")
@@ -222,37 +236,43 @@ class getanc:
                     # for l1info subsample every 250 lines
                     if self.verbose:
                         print("Determining pass start and end times...")
-                    senchk = ProcUtils.check_sensor(self.file)
+                    senchk = ProcUtils.check_sensor(self.filename)
 
                     if re.search('(Aqua|Terra)', senchk):
                         #   if self.mission == "A" or self.mission == "T":
-                        self.start, self.stop, self.sensor = modis_timestamp(self.file)
+                        self.start, self.stop, self.sensor = modis_timestamp(self.filename)
                     elif senchk.find("viirs") == 0:
-                        self.start, self.stop, self.sensor = viirs_timestamp(self.file)
+                        self.start, self.stop, self.sensor = viirs_timestamp(self.filename)
                     elif senchk.find("aquarius") == 0:
-                        self.start, self.stop, self.sensor = aquarius_timestamp(self.file)
+                        self.start, self.stop, self.sensor = aquarius_timestamp(self.filename)
+                    elif senchk.find("hico") == 0:
+                        self.start, self.stop, self.sensor = hico_timestamp(self.filename)
                     else:
                         if self.sensor is None:
                             self.sensor = senchk
-                        mime_data = MetaUtils.get_mime_data(self.file)
+                        mime_data = MetaUtils.get_mime_data(self.filename)
                         if MetaUtils.is_netcdf4(mime_data):
-                            metadata = MetaUtils.dump_metadata(self.file)
+                            metadata = MetaUtils.dump_metadata(self.filename)
                             starttime, stoptime = self.get_start_end_info_from_xml(metadata)
                             starttime = starttime.strip('"')
                             stoptime = stoptime.strip('"')
                             starttime = starttime.strip("'")
                             stoptime = stoptime.strip("'")
                             if starttime.find('T') != -1:
-                                self.start = ProcUtils.date_convert(starttime, 't', 'j')
+                                self.start = starttime[0:19]
+                                # self.start = ProcUtils.date_convert(starttime, 't', 'j')
                             else:
-                                self.start = ProcUtils.date_convert(starttime, 'h', 'j')
+                                self.start = starttime[0:19]
+                                # self.start = ProcUtils.date_convert(starttime, 'h', 'j')
                             if stoptime.find('T') != -1:
-                                self.stop = ProcUtils.date_convert(stoptime, 't', 'j')
+                                self.stop = stoptime[0:19]
+                                # self.stop = ProcUtils.date_convert(stoptime, 't', 'j')
                             else:
-                                self.stop = ProcUtils.date_convert(stoptime, 'h', 'j')
+                                self.stop = stoptime[0:19]
+                                # self.stop = ProcUtils.date_convert(stoptime, 'h', 'j')
                             pass
                         else:
-                            infocmd = [os.path.join(self.dirs['bin'], 'l1info'), '-s', '-i 250', self.file]
+                            infocmd = [os.path.join(self.dirs['bin'], 'l1info'), '-s', '-i 250', self.filename]
                             l1info = subprocess.Popen(infocmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                             info = l1info.communicate()
                             (starttime, startdate, stoptime, stopdate) = self.get_start_end_info(info)
@@ -282,16 +302,18 @@ class getanc:
                                     print('    {0}'.format(info[1]))
                                 sys.exit(1)
                             else:
-                                self.start = ProcUtils.date_convert(startdate + ' ' + starttime, 'h', 'j')
-                                self.stop = ProcUtils.date_convert(stopdate + ' ' + stoptime, 'h', 'j')
+                                # self.start = ProcUtils.date_convert(startdate + ' ' + starttime, 'h', 'j')
+                                # self.stop = ProcUtils.date_convert(stopdate + ' ' + stoptime, 'h', 'j')
+                                self.start = startdate + 'T' + starttime[0:8]
+                                self.stop = stopdate + 'T' + stoptime[0:8]
 
-        if self.file and not self.sensor:
+        if self.filename and not self.sensor:
             # Make sure sensor is set (JIRA Ticket #1012)
-            self.sensor = ProcUtils.check_sensor(self.file)
+            self.sensor = ProcUtils.check_sensor(self.filename)
 
         if self.verbose:
             print()
-            print("Input file: " + str(self.file))
+            print("Input file: " + str(self.filename))
             print("Sensor    : " + str(self.sensor))
             print("Start time: " + str(self.start))
             print("End time  : " + str(self.stop))
@@ -317,10 +339,7 @@ class getanc:
         """
         Checks local db for anc files.
         """
-        import os
-        import modules.ancDB as db
-        #        import modules.ancDBmysql as db
-
+        print(self.ancdb)
         if len(os.path.dirname(self.ancdb)):
             self.dirs['log'] = os.path.dirname(self.ancdb)
             self.ancdb = os.path.basename(self.ancdb)
@@ -336,6 +355,10 @@ Using current working directory for storing the ancillary database file: %s''' %
         if not os.path.exists(self.ancdb):
             return 0
 
+        anctype = 'anc_data_api'
+        # if self.atteph:
+        #     anctype = 'atteph_test'
+
         ancdatabase = db.ancDB(dbfile=self.ancdb)
         if not os.path.getsize(self.ancdb):
             if self.verbose:
@@ -347,22 +370,25 @@ Using current working directory for storing the ancillary database file: %s''' %
             if self.verbose:
                 print("Searching database: %s " % self.ancdb)
 
-        filekey = os.path.basename(self.file)
-        status = ancdatabase.check_file(filekey)
+        if self.filename:
+            filekey = os.path.basename(self.filename)
+        else:
+            filekey = None
+        status = ancdatabase.check_file(filekey,anctype=anctype,starttime=self.start)
         if status:
             if not self.refreshDB:
-                self.files = ancdatabase.get_ancfiles(filekey, self.atteph)
+                self.files = ancdatabase.get_ancfiles(filekey, self.atteph, starttime=self.start)
                 if self.curdir:
                     for anckey in list(self.files.keys()):
                         self.files[anckey] = os.path.basename(self.files[anckey])
-                self.db_status = ancdatabase.get_status(filekey, self.atteph)
-                self.start, self.stop = ancdatabase.get_filetime(filekey)
+                self.db_status = ancdatabase.get_status(filekey, self.atteph, starttime=self.start)
+                self.start, self.stop = ancdatabase.get_filetime(filekey, starttime=self.start)
             else:
-                ancdatabase.delete_record(filekey)
+                ancdatabase.delete_record(filekey, starttime=self.start)
 
             ancdatabase.closeDB()
 
-        if status and self.db_status is not None and not self.db_status < 0:
+        if status and self.db_status:
             if not self.refreshDB:
                 if self.db_status > 0:
                     print("Warning! Non-optimal data exist in local repository.")
@@ -377,44 +403,51 @@ Using current working directory for storing the ancillary database file: %s''' %
         """
         Execute the display_ancillary_files search and populate the locate cache database
         """
-        import os
-        import sys
-        import modules.ancDB as db
-        import json
-
-        #        import modules.ancDBmysql as db
 
         # dlstat = 0
+    
+        with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'missionID.json'), 'r') as msn_file:
+            msn = json.load(msn_file)
 
-        msn = {"modisa": "A", "modist": "T", "aqua": "A", "terra": "T", "meris": "M", "seawifs": "S", "octs": "O",
-               "czcs": "C", "aquarius": "Q", "viirs": "V"}
+        # msn = {"seawifs": "6", "modisa": "7", "aqua": "7", "modist": "8", "terra": "8", "octs": "9",
+        #        "czcs": "11", "suomi-npp": "14", "aquarius": "15", "meris": "19", "ocm2": "21", "hico" : "25", 
+        #        "goci": "27", "oli": "28", "3a": "29", "jpss-1": "33","hawkeye": "35", "3b": "36"}
 
         ProcUtils.remove(self.server_file)
 
         # Query the OBPG server for the ancillary file list
         opt_flag = str(self.opt_flag)
-        anctype = 'anc'
-        if self.atteph:
-            opt_flag = ''
-            anctype = 'atteph'
+        anctype = 'anc_data_api'
+        # if self.atteph:
+        #     opt_flag = ''
+        #     anctype = 'atteph_test'
 
         if self.sensor == 'aquarius':
             opt_flag = ''
 
-        msnchar = 'A'
+        msnchar = '0'
         if str(self.sensor).lower() in msn:
-            msnchar = msn[str(self.sensor).lower()]
+            # msnchar = msn[str(self.sensor).lower()]
+            msnchar = msn[str(self.sensor.lower())]
+        elif self.sensor.isdigit:
+            msnchar = self.sensor
 
         if self.stop is None:
-            dlstat = ProcUtils.httpdl(self.query_site, '/'.join(['/api', anctype, msnchar, self.start, '', opt_flag]),
+            start_obj = datetime.strptime(self.start, '%Y-%m-%dT%H:%M:%S')
+            time_change = timedelta(minutes=5)
+            stop_obj = start_obj + time_change
+            self.stop = datetime.strftime(stop_obj,'%Y-%m-%dT%H:%M:%S')
+            anc_str = '?&m=' + msnchar + '&s=' + self.start + '&e=' + self.stop
+            dlstat = ProcUtils.httpdl(self.query_site, '/'.join(['/api', anctype, anc_str]),
                                       os.path.abspath(os.path.dirname(self.server_file)),
                                       outputfilename=self.server_file,
                                       timeout=self.timeout,
                                       verbose=self.verbose
                                       )
         else:
+            anc_str = '?&m=' + msnchar + '&s=' + self.start + '&e=' + self.stop
             dlstat = ProcUtils.httpdl(self.query_site,
-                                      '/'.join(['/api', anctype, msnchar, self.start, self.stop, opt_flag]),
+                                      '/'.join(['/api', anctype, anc_str]),
                                       os.path.abspath(os.path.dirname(self.server_file)),
                                       outputfilename=self.server_file,
                                       timeout=self.timeout,
@@ -492,13 +525,16 @@ Using current working directory for storing the ancillary database file: %s''' %
             if self.files[anctype] == 'missing':
                 missing.append(anctype)
                 continue
-            if self.file and self.dl:
+            if (self.filename and self.dl) or (self.start and self.dl):
                 path = self.dirs['anc']
                 if not self.curdir:
                     year, day = self.yearday(self.files[anctype])
                     path = os.path.join(path, year, day)
 
-                filekey = os.path.basename(self.file)
+                if self.filename:
+                    filekey = os.path.basename(self.filename)
+                else:
+                    filekey = None
                 ancdatabase.insert_record(satfile=filekey, starttime=self.start, stoptime=self.stop, anctype=anctype,
                                           ancfile=self.files[anctype], ancpath=path, dbstat=self.db_status,
                                           atteph=self.atteph)
@@ -509,9 +545,7 @@ Using current working directory for storing the ancillary database file: %s''' %
             self.files.__delitem__(anctype)
 
     def yearday(self, ancfile):
-        import re
         if ancfile.startswith('RIM_'):
-            from datetime import datetime
             ymd = ancfile.split('_')[2]
             dt = datetime.strptime(ymd, '%Y%m%d')
             year = dt.strftime('%Y')
@@ -519,7 +553,6 @@ Using current working directory for storing the ancillary database file: %s''' %
             return year, day
 
         if ancfile.startswith('MERRA'):
-            from datetime import datetime
             ymd = ancfile.split('.')[4]
             dt = datetime.strptime(ymd, '%Y%m%d')
             year = dt.strftime('%Y')
@@ -547,9 +580,6 @@ Using current working directory for storing the ancillary database file: %s''' %
         """
         Find the files on the local system or download from OBPG
         """
-        import os
-        import re
-        import sys
 
         FILES = []
         for f in (list(self.files.keys())):
@@ -562,8 +592,6 @@ Using current working directory for storing the ancillary database file: %s''' %
             FILES.append(os.path.basename(self.files[f]))
 
         dl_msg = 1
-
-        urlConn, proxy = ProcUtils.httpinit(self.data_site, timeout=self.timeout)
 
         for FILE in list(OrderedDict.fromkeys(FILES)):
             year, day = self.yearday(FILE)
@@ -603,21 +631,34 @@ Using current working directory for storing the ancillary database file: %s''' %
 
                     if self.verbose:
                         print("Downloading '" + FILE + "' to " + self.dirs['path'])
-                    urlConn, status = ProcUtils.httpdl(self.data_site, ''.join(['/cgi/getfile/', FILE]),
-                            self.dirs['path'], timeout=self.timeout, uncompress=True,
-                            reuseConn=True, urlConn=urlConn, verbose=self.verbose)
+                    status = ProcUtils.httpdl(self.data_site, ''.join(['/ob/getfile/', FILE]),
+                            self.dirs['path'], timeout=self.timeout, uncompress=True,force_download=forcedl,
+                            verbose=self.verbose)
                     gc.collect()
                     if status:
-                        print("*** ERROR: The HTTP transfer failed with status code " + str(status) + ".")
-                        print("*** Please check your network connection and for the existence of the remote file:")
-                        print("*** " + '/'.join([self.data_site, 'cgi/getfile', FILE]))
-                        print("***")
-                        print("*** Also check to make sure you have write permissions under the directory:")
-                        print("*** " + self.dirs['path'])
-                        print()
-                        ProcUtils.remove(os.path.join(self.dirs['path'], FILE))
-                        ProcUtils.remove(self.server_file)
-                        sys.exit(1)
+                        if status == 304:
+                            if self.verbose:
+                                print("%s is not newer than local copy, skipping download" % FILE)
+                        elif status == 401:
+                            print("*** ERROR: Authentication Failure retrieving:")
+                            print("*** " + '/'.join([self.data_site, 'ob/getfile', FILE]))
+                            print("*** Please check that your ~/.netrc file is setup correctly and has proper permissions.")
+                            print("***")
+                            print("*** see: https://oceancolor.gsfc.nasa.gov/data/download_methods/")
+                            print("***\n")
+                        else:
+                            print("*** ERROR: The HTTP transfer failed with status code " + str(status) + ".")
+                            print("*** Please check your network connection and for the existence of the remote file:")
+                            print("*** " + '/'.join([self.data_site, 'ob/getfile', FILE]))
+                            print("***")
+                            print("*** Also check to make sure you have write permissions under the directory:")
+                            print("*** " + self.dirs['path'])
+                            print()
+
+                        if status != 304:
+                            ProcUtils.remove(os.path.join(self.dirs['path'], FILE))
+                            ProcUtils.remove(self.server_file)
+                            sys.exit(1)
 
             for f in (list(self.files.keys())):
                 if self.atteph:
@@ -628,8 +669,6 @@ Using current working directory for storing the ancillary database file: %s''' %
                         continue
                 if FILE == self.files[f]:
                     self.files[f] = os.path.join(self.dirs['path'], FILE)
-
-        urlConn.close()
 
     def write_anc_par(self):
         """
@@ -701,7 +740,12 @@ Using current working directory for storing the ancillary database file: %s''' %
         ancpar = open(self.anc_file, 'w')
 
         for key in sorted(self.files.keys()):
-            ancpar.write('='.join([key, self.files[key]]) + '\n')
+            if self.atteph:
+                if key.find('att') != -1 or key.find('eph') != -1:
+                    ancpar.write('='.join([key, self.files[key]]) + '\n')
+            else:
+                if key.find('att') == -1 and key.find('eph') == -1:
+                    ancpar.write('='.join([key, self.files[key]]) + '\n')
 
         ancpar.close()
 
