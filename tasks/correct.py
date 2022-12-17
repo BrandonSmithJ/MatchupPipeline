@@ -22,10 +22,11 @@ def correct(self,
         'inp_file'  : inp_path,
         'out_dir'   : out_path,
         'ac_path'   : global_config.ac_path[ac_method],
-        'overwrite' : global_config.overwrite, # Correcting only for small area needs overwrite
+        'overwrite' : True,#global_config.overwrite, # Correcting only for small area needs overwrite
         'timeout'   : global_config.ac_timeout,
         'location'  : sample_config['location'],
     }
+    kwargs.update(global_config.extra_cmd[ac_method][sample_config['sensor']] if ac_method in global_config.extra_cmd.keys() and sample_config['sensor'] in global_config.extra_cmd[ac_method].keys() else {})
     kwargs['correction_path'] = AC_FUNCTIONS[ac_method](**kwargs)
     kwargs.update(sample_config)
     kwargs.update({'ac_method': ac_method})

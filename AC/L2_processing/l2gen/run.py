@@ -306,6 +306,7 @@ def generate_cmd(
             # Add sensor-specific default parameters and gains
             if alias in SENSOR_CONFIG: cmd.update(SENSOR_CONFIG[alias])
             if alias in SENSOR_GAINS:  cmd.update({'gain':SENSOR_GAINS[alias]})
+             
 
             # Add filter
             cwd         = Path(__file__).absolute().parent
@@ -327,7 +328,7 @@ def generate_cmd(
         cmd.update( {'l2prod' : ' '.join(l2prod)} )
 
     # Format the command appropriately and return it
-    executable = ac_path.joinpath('bin', 'l2gen').as_posix()
+    executable = ac_path.joinpath('bin', 'l2gen').as_posix()    
     return [executable] + [f'--{key}={val}' for key, val in cmd.items()]
 
 

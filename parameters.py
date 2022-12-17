@@ -81,6 +81,11 @@ ac_parameters.add_argument('--ac_kwargs', nargs=3, action='append',
          'e.g. to discard l2gen\'s RSR out-of-band correction:\n'+
          '\t--ac_kwargs l2gen outband_opt 0')
 
+ac_parameters.add_argument('--extra_cmd',   nargs=2, action='append', 
+    metavar=('AC_METHOD', 'PATH [--ac_path AC_METHOD PATH ...]'), 
+    default=config.extra_cmd,
+    help='Set a dictionary of AC kwargs')
+
 ac_parameters.add_argument('--ac_timeout',  type=int,
     default=config.ac_timeout, 
     help='Number of minutes an AC processor can run before being terminated\n'+
