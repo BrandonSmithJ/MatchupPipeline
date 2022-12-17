@@ -51,7 +51,7 @@ def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
                 Location(**({
                     'footprint' : row['footprint']
                 } if 'footprint' in row else dict(
-                    zip(['nsew'], row['Coordinates_n_s_e_w'])
+                    zip(['n','s','e','w'], [float(i) for i in row['Coordinates_n_s_e_w'].split(' ')])
                 ) if 'Coordinates_n_s_e_w' in row else {
                     'lat' : row['lat'],
                     'lon' : row['lon'],

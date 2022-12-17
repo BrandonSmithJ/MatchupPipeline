@@ -24,6 +24,11 @@ def _run_seadas_script(script_file: str):
 			inp_file  : Union[str, Path],         # Path to the L0 input file 
 			ac_path   : Union[str, Path] = '',    # SeaDAS installation directory 
 			overwrite : bool             = False, # Overwrite the output file if it already exists
+            n         : str = '',                 # North coordinate for extract L1A
+            s         : str = '',                 # South coordinate for extract L1A
+            e         : str = '',                 # East coordinate for extract L1A            
+            w         : str = '',                 # West coordinate for extract L1
+            geofile   : str = None,               # Geofile path for L2B
 		) -> None:                                # No return value
 			''' 
 			Wrapper function which is actually executed when calling the original script function
@@ -50,6 +55,11 @@ def _run_seadas_script(script_file: str):
 
 				# Create command and execution environment
 				cmd = [sys.executable, script_file.as_posix(), inp_file.as_posix(), '-o', out_file.as_posix(), '--verbose']
+                #Overwrite command 
+				if n!='' and s!='' and e!='' and w!='':
+								cmd = [sys.executable, script_file.as_posix(), inp_file.as_posix(),'-g', inp_file.as_posix().split('.')[0] + '.GEO', '-o', out_file.as_posix(),'-n',n,'-s',s,'-e',e,'-w',w, '--verbose']
+				if geofile:
+								cmd = [sys.executable, script_file.as_posix(), inp_file.as_posix(), geofile, '-o', out_file.as_posix(), '--verbose']
 				env = dict(os.environ)
 				env.update({
 					'PYTHONPATH' : module_path.as_posix(),
@@ -77,6 +87,12 @@ def run_geo_modis(inp_file: Path) -> Path:
 	return Path(inp_file.as_posix().replace('L1A_LAC', 'GEO'))
 
 
+@_run_seadas_script('modis_L1A_extract.py')
+def run_extract_modis(inp_file: Path) -> Path:
+	''' 
+	Runs Seadas_scripts/L1A extract.py to produce extracted MODIS files for the given input
+	'''
+	return Path(inp_file.as_posix().replace('L1A_LAC', 'SUB.L1A_LAC'))
 
 @_run_seadas_script('modis_L1B.py')
 def run_l1b(inp_file: Path) -> Path:

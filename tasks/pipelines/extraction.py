@@ -15,7 +15,7 @@ def extraction(global_config):
     return ( group([
         search.s(sensor, **k)    # 1. Search for matching scenes 
 
-        # Execute steps 2-4 in parallel over AC processors
+        # Execute steps 2-5 in parallel over AC processors
         | group([(                                          
               correct.s(ac_method=ac, **k) # 2. Correct L1 scene with each AC processor
             | extract.s(**k)     # 3. Extract window from L2 scene

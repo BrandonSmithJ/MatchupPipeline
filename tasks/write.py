@@ -30,7 +30,7 @@ def write(self,
     to_write = {}
 
     # out_path.mkdir(exist_ok=True, parents=True)
-    out_path = sample_config['output_path_full'].joinpath('Matchups')
+    out_path = sample_config['out_path'].joinpath('Matchups')
     out_path.mkdir(exist_ok=True, parents=True)
     # sfile = out_path.joinpath('store.zarr')
     # mode  = 'a' if sfile.exists() else 'w'

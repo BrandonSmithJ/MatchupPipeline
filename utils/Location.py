@@ -42,8 +42,8 @@ class Location:
             fp_corners_str = ', '.join(map(fmt_corner, fp_corners))
             self.footprint = wkt.loads(f'MULTIPOLYGON ((({fp_corners_str})))')
 
-            self.lat = (self.n + self.s) / 2
-            self.lon = (self.e + self.w) / 2
+            self.lat = (float(self.n) + float(self.s)) / 2
+            self.lon = (float(self.e) + float(self.w)) / 2
             self.given = 'bbox'
 
         if point:

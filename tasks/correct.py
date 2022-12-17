@@ -26,8 +26,8 @@ def correct(self,
         'timeout'   : global_config.ac_timeout,
         'location'  : sample_config['location'],
     }
-#    kwargs['l2prod']=['Rrs_nnn', 'chlor_a']
     kwargs['correction_path'] = AC_FUNCTIONS[ac_method](**kwargs)
     kwargs.update(sample_config)
     kwargs.update({'ac_method': ac_method})
+
     return kwargs

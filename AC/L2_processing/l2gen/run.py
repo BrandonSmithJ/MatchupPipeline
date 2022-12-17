@@ -129,14 +129,14 @@ def run_l2gen(
             message = f'SeaDAS installation does not exist at "{ac_path}"'
             raise MissingProcessorError(message)
         
-        #Generates a L1B file for MODIS
-        if sensor == 'MOD': inp_file = generate_MODIS_L1B(sensor, inp_file, out_file, ac_path, **extra_cmd)
+
         # Add the bounding box to the commands if a location is given
         if location is not None:
             keys = ['north', 'south', 'east', 'west']
             bbox = location.get_bbox('nsew', dict_keys=keys)
             extra_cmd.update(bbox)
-
+        #Generates a L1B file for MODIS
+        if sensor == 'MOD': inp_file = generate_MODIS_L1B(sensor, inp_file, out_file, ac_path, overwrite, **extra_cmd)
         # Generate the command we'll use to execute l2gen
         cmd = generate_cmd(sensor, inp_file, out_file, ac_path, **extra_cmd)
 
@@ -200,6 +200,7 @@ def generate_MODIS_L1B(
         SeaDAS installation directory.
     **extra_cmd
         Additional keywords that can be passed to this function are:
+            n,s,e,w coordinates 
             *
 
     Returns
@@ -212,15 +213,17 @@ def generate_MODIS_L1B(
 
 
     """
-    from ...L1_processing.run_l1 import run_geo_modis, run_l1b
+    from ...L1_processing.run_l1 import run_geo_modis, run_l1b, run_extract_modis
+    n,s,e,w = [str(round(extra_cmd[nsew],6)) for nsew in ['north','south','east','west']]
     geo = inp_file.with_suffix('.GEO')
     run_geo_modis(inp_file=inp_file,ac_path=ac_path,overwrite=overwrite)
-    # run_extract_modis()
-    # inp_file=inp_file + .'SUB'
-    # geofile = run_geo_modis()
-    run_l1b(inp_file=inp_file,ac_path=ac_path,overwrite=overwrite)
+    run_extract_modis(inp_file=inp_file,ac_path=ac_path,overwrite=overwrite,n=n,s=s,e=e,w=w)
+    inp_file= inp_file.with_suffix('.SUB.L1A_LAC')
+    run_geo_modis(inp_file=inp_file,ac_path=ac_path,overwrite=overwrite)
+    geofile = inp_file.with_suffix('.GEO')
+    run_l1b(inp_file=inp_file,ac_path=ac_path,overwrite=overwrite,geofile=geofile)
     # inp_file=inp_file.replace('L1A','L1B')
-    return Path(str(inp_file).split('.')[0] + '.L1B_LAC')
+    return inp_file.with_suffix('.L1B_LAC')#Path(str(inp_file).split('.')[0] + '.SUB.L1B_LAC')
 
 def generate_cmd(   
     sensor   : str, 
