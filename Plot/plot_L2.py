@@ -26,13 +26,30 @@ import os
 from PIL import Image
 
 
-def save_nc(product,product_map,out_path):
-    ''' Saves products as a masked array to output path'''
-    print("Saving to:", product, out_path)
-    print(np.shape(product_map))
+
+def save_nc(inp_file,out_path,products,slices,):
+    ''' Saves products onto the L2 tile'''
+
+    filename = inp_file
+    new_fn   = out_path
+
+    if not Path(new_fn).exists():
+            os.system(f'cp {filename} {new_fn}')
+
+    with Dataset(new_fn, 'a') as dst:
+        if 'geophysical_data' in dst.groups.keys():
+                dst = dst['geophysical_data']
+
+        
+        for product in  slices.keys():
+                varname = f'MDN_{product}'
+                if varname not in dst.variables.keys():
+                        dims = dst[[k for k in dst.variables.keys() if 'Rrs' in k or 'Rw' in k][0]].get_dims()
+                        dst.createVariable(varname, np.float32, [d.name for d in dims], fill_value=-999)
+                dst[varname][:] = np.squeeze(products[:,:,slices[product]].astype(np.float32))
 
 
-    return 0
+
 
 def convert_png_to_jpg(inp_file,output_file):
     png = Image.open(inp_file)
@@ -108,7 +125,8 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     jpg_filename = product_name(inp_file=inp_file,out_path=out_path,date=date,dataset=dataset,sensor=sensor,ac_method=ac_method,product=product,extension='.jpg',prefix='AQV')
 
     geotiff_filename = product_name(inp_file=inp_file,out_path=out_path,date=date,dataset=dataset,sensor=sensor,ac_method=ac_method,product=product,extension='.tif',prefix='AQV')
-    
+    nc_filename = product_name(inp_file=inp_file,out_path=out_path,date=date,dataset=dataset,sensor=sensor,ac_method=ac_method,product=product,extension='.nc',prefix='AQV')
+
     if os.path.exists(png_filename) and not overwrite:
         print(png_filename,f'exists, moving to next location')
         return
@@ -145,8 +163,9 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     }
     for i, (key, idx) in enumerate(slices.items()):
         plot_product(np.atleast_1d(axes)[i], key, products[..., idx], rgb, *bounds[key])
-        save_nc(product=key,product_map=products[..., idx],out_path=out_path)
+
     create_geotiff(products=products,im_lat=im_lat,im_lon=im_lon,filename=geotiff_filename)
+    save_nc(inp_file,nc_filename,products,slices,)
 
 
     f.suptitle(f'{loc} {location.stem} {date} {sensor}')

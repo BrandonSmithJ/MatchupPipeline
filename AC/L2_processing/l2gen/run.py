@@ -136,7 +136,10 @@ def run_l2gen(
             bbox = location.get_bbox('nsew', dict_keys=keys)
             extra_cmd.update(bbox)
         #Generates a L1B file for MODIS
-        if sensor == 'MOD': inp_file = generate_MODIS_L1B(sensor, inp_file, out_file, ac_path, overwrite, **extra_cmd)
+        if sensor == 'MOD': 
+            inp_file = generate_MODIS_L1B(sensor, inp_file, out_file, ac_path, overwrite, **extra_cmd)
+            for direction in ['north','south','east','west']:
+                if direction in extra_cmd.keys(): del extra_cmd[direction]
         # Generate the command we'll use to execute l2gen
         cmd = generate_cmd(sensor, inp_file, out_file, ac_path, **extra_cmd)
 
