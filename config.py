@@ -3,14 +3,14 @@ from pathlib import Path
 import os
 
 username = getoutput('whoami')
-datasets = ['SaltonSea_2022']
-sensors  = ['MOD']
+datasets = ['SaltonSea_2022'] #Erie_2021 #SaltonSea_2022
+sensors  = ['VI']
 
 
 #===================================
 #         Path Definitions
 #===================================
-l2gen_path   = '/tis/m2cross/scratch/f004/roshea/Seadas_versions/Seadas_V2021_2/ocssw'#/tis/m2cross/scratch/f004/roshea/test_folder/SeaDAS_01_13_2022'#'/home/bsmith16/workspace/SeaDAS'#'/tis/m2cross/scratch/f002/bsmith/SeaDAS_01_13_2022' # '/tis/m2cross/scratch/f002/roshea/SeaDAS_06_13_2022/ocssw_R_2022_3' supports collection 2 imagery
+l2gen_path   =  '/tis/m2cross/scratch/f004/roshea/Seadas_versions/Seadas_V2022_3/ocssw' #'/tis/m2cross/scratch/f004/roshea/Seadas_versions/Seadas_8_2_0/SeaDAS/ocssw' # '/tis/m2cross/scratch/f004/roshea/Seadas_versions/Seadas_V2022_0/ocssw' #/tis/m2cross/scratch/f004/roshea/Seadas_versions/Seadas_V2021_2/ocssw'#/tis/m2cross/scratch/f004/roshea/test_folder/SeaDAS_01_13_2022'#'/home/bsmith16/workspace/SeaDAS'#'/tis/m2cross/scratch/f002/bsmith/SeaDAS_01_13_2022' # '/tis/m2cross/scratch/f002/roshea/SeaDAS_06_13_2022/ocssw_R_2022_3' supports collection 2 imagery
 polymer_path = '/home/bsmith16/AC/polymer/polymer-unknown/polymer' #Path(__file__).parent.joinpath('AC', 'L2_processing', 'polymer', 'polymer')
 acolite_path = '/home/bsmith16/AC/acolite/acolite-20220222.0/acolite' #Path(__file__).parent.joinpath('AC', 'L2_processing', 'acolite', 'acolite')
 
@@ -37,6 +37,11 @@ ac_methods = ['l2gen'] # Atmospheric Correction methods to apply
 #===================================
 extract_window = 2 # pixels to extract around the center pixel (e.g. 1 -> 3x3 window)
 
+#===================================
+#    Data Cleanup Parameters
+#===================================
+remove_L2_tile = False
+overwrite      = False
 
 ############################################## Plotting parameters ##########################################
 #Max chl/PC values from MDN (sets values above to NaN to remove extreme outliers due to atm correction)

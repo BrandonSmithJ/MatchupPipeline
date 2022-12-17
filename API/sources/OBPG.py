@@ -6,7 +6,10 @@ from pathlib import Path
 from typing import Union 
 from lxml import etree
 
+import logging
 
+
+logger = logging.getLogger('MatchupPipeline')
 
 class OBPG(BaseSource):
     """ 
@@ -136,7 +139,7 @@ class OBPG(BaseSource):
                 url = tree.xpath(f'//a[{s1} and {s2}]')
                 if not len(url):
                     logger.error(f'Possible error: response from OBPG for {sensor} @ {location} for {dt_range}, but no tiles were found; Response:\n{req.text}')
-                return {Path(dl_url[0].get('href')).stem: {'instrument': sensor}}
+                return {Path(url[0].get('href')).stem: {'instrument': sensor}}
         return {}
 
 

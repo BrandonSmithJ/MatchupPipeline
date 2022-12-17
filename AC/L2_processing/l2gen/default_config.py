@@ -66,6 +66,8 @@ SENSOR_CONFIG = {
     'aer_wave_long'  : '2130',
     'cloud_wave'     : '2130',
     'cloud_thresh'   : '0.018',
+    'l2prod_exclude' : ['depth'],
+
   },
 
   'VI' : {
@@ -81,6 +83,11 @@ SENSOR_CONFIG = {
     'cloud_thresh'   : '0.027',
     'atrem_opt'      : '32',
     'gas_opt'        : '15',
+  },
+  
+  'OLCI': {
+
+    'l2prod_exclude' : [ 'depth'],
   },
 }
 

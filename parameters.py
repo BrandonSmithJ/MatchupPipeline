@@ -36,6 +36,7 @@ parser.add_argument('-o', '--output_path', type=str,
     help='Path where outputs will be saved\n(default: %(default)s)\n\n')
 
 parser.add_argument('--overwrite', action='store_true', 
+    default=config.overwrite,
     help='Redownload and correct scenes already saved\n(default: False)')
 
 
@@ -100,7 +101,17 @@ extract_parameters.add_argument('--extract_window', type=int,
     help='Pixels to extract around the center pixel (e.g. 1 -> 3x3 window)')
 
 
+#===================================
+#    Data Cleanup Parameters
+#===================================
+cleanup_parameters = parser.add_argument_group(
+    'Cleanup Parameters', 
+    'Set any parameters associated with removing unnecesary data from scenes',
+)
 
+cleanup_parameters.add_argument('--remove_L2_tile', type=bool, 
+    default=config.remove_L2_tile,
+    help='Removes the Level 2 file if True')
 
 def get_args(kwargs={}, use_cmdline=True, **kwargs2):
     kwargs2.update(kwargs)
@@ -119,6 +130,7 @@ def get_args(kwargs={}, use_cmdline=True, **kwargs2):
     args.ac_kwargs    = {ac: {k:v for a,k,v in args.ac_kwargs if a == ac} for ac in set([v[0] for v in (args.ac_kwargs or [])])}
     args.insitu_path  = Path(args.insitu_path)
     args.output_path  = Path(args.output_path)
+
     if getattr(args, 'search_minute_window', None) is not None:
         args.search_day_window = None
 

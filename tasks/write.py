@@ -28,10 +28,10 @@ def write(self,
     # ac_method = 
     # sensor    = 
     to_write = {}
-    out_path = global_config.output_path.joinpath(*[ sample_config[k] 
-                         for k in ['dataset', 'sensor', 'ac_method']])
-    out_path.mkdir(exist_ok=True, parents=True)
 
+    # out_path.mkdir(exist_ok=True, parents=True)
+    out_path = sample_config['output_path_full'].joinpath('Matchups')
+    out_path.mkdir(exist_ok=True, parents=True)
     # sfile = out_path.joinpath('store.zarr')
     # mode  = 'a' if sfile.exists() else 'w'
     # store = zarr.DirectoryStore(sfile.as_posix())
@@ -72,7 +72,7 @@ def write(self,
             f.write(f'{values}\n')
 
     try: 
-        sample_config['correction_path'].unlink()
+        if remove_L2_tile: sample_config['correction_path'].unlink()
         if sample_config['ac_method'] == 'acolite':
             for suffix in ['L1R', 'L1R_pan', 'L2R']:
                 for path in sample_config['correction_path'].glob(f'*{suffix}.nc'):

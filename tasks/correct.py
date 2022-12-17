@@ -22,7 +22,7 @@ def correct(self,
         'inp_file'  : inp_path,
         'out_dir'   : out_path,
         'ac_path'   : global_config.ac_path[ac_method],
-        'overwrite' : True, # Correcting only for small area needs overwrite
+        'overwrite' : global_config.overwrite, # Correcting only for small area needs overwrite
         'timeout'   : global_config.ac_timeout,
         'location'  : sample_config['location'],
     }

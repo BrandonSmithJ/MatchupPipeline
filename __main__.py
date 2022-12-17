@@ -136,7 +136,7 @@ def filter_completed(
     return data.loc[~data['uid'].isin(complete)]
 
 
-#debug changes celery to implement tasks in serial instead of parallel
+# Debug changes celery to implement tasks in serial instead of parallel, must also set ALWAYS_EAGER to True in init file
 def main(debug=True):
     global_config = gc = get_args()
     print(f'\nRunning pipeline with parameters: {pretty_print(gc.__dict__)}\n')

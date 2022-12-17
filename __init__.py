@@ -32,6 +32,7 @@ app.conf.task_routes = {
    'search'  : {'queue': 'search'},
    'correct' : {'queue': 'correct'},
    'extract' : {'queue': 'extract'},
+   'plot'    : {'queue': 'plot'},
    'write'   : {'queue': 'write'},
 }
 

@@ -130,7 +130,7 @@ def run_l2gen(
             raise MissingProcessorError(message)
         
         #Generates a L1B file for MODIS
-        generate_MODIS_L1B(sensor, inp_file, out_file, ac_path, **extra_cmd)
+        if sensor == 'MOD': inp_file = generate_MODIS_L1B(sensor, inp_file, out_file, ac_path, **extra_cmd)
         # Add the bounding box to the commands if a location is given
         if location is not None:
             keys = ['north', 'south', 'east', 'west']
@@ -183,6 +183,7 @@ def generate_MODIS_L1B(
     inp_file : Path,
     out_file : Path,
     ac_path  : Path,
+    overwrite: bool,
     **extra_cmd,   
 ) -> Iterable[str]: 
     """Generates a L1B file for MODIS, with proper bounds
@@ -213,12 +214,13 @@ def generate_MODIS_L1B(
     """
     from ...L1_processing.run_l1 import run_geo_modis, run_l1b
     geo = inp_file.with_suffix('.GEO')
-    # run_geo_modis(inp_file=inp_file,ac_path=ac_path,overwrite = True)
+    run_geo_modis(inp_file=inp_file,ac_path=ac_path,overwrite=overwrite)
     # run_extract_modis()
     # inp_file=inp_file + .'SUB'
     # geofile = run_geo_modis()
-    # run_l1b(inp_file=inp_file,ac_path=ac_path,overwrite = True)
+    run_l1b(inp_file=inp_file,ac_path=ac_path,overwrite=overwrite)
     # inp_file=inp_file.replace('L1A','L1B')
+    return Path(str(inp_file).split('.')[0] + '.L1B_LAC')
 
 def generate_cmd(   
     sensor   : str, 
