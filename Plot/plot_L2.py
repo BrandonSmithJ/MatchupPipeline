@@ -27,13 +27,13 @@ from PIL import Image
 
 
 
-def save_nc(inp_file,out_path,products,slices,):
+def save_nc(inp_file,out_path,products,slices,overwrite,prefix='AQV'):
     ''' Saves products onto the L2 tile'''
 
     filename = inp_file
     new_fn   = out_path
 
-    if not Path(new_fn).exists():
+    if not Path(new_fn).exists() or overwrite:
             os.system(f'cp {filename} {new_fn}')
 
     with Dataset(new_fn, 'a') as dst:
@@ -42,7 +42,7 @@ def save_nc(inp_file,out_path,products,slices,):
 
         
         for product in  slices.keys():
-                varname = f'MDN_{product}'
+                varname = f'{prefix}_{product}'
                 if varname not in dst.variables.keys():
                         dims = dst[[k for k in dst.variables.keys() if 'Rrs' in k or 'Rw' in k][0]].get_dims()
                         dst.createVariable(varname, np.float32, [d.name for d in dims], fill_value=-999)
@@ -165,7 +165,7 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
         plot_product(np.atleast_1d(axes)[i], key, products[..., idx], rgb, *bounds[key])
 
     create_geotiff(products=products,im_lat=im_lat,im_lon=im_lon,filename=geotiff_filename)
-    save_nc(inp_file,nc_filename,products,slices,)
+    save_nc(inp_file,nc_filename,products,slices,overwrite)
 
 
     f.suptitle(f'{loc} {location.stem} {date} {sensor}')

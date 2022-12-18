@@ -72,11 +72,12 @@ def write(self,
             f.write(f'{values}\n')
 
     try: 
-        if remove_L2_tile: sample_config['correction_path'].unlink()
+        if global_config.remove_L2_tile: sample_config['correction_path'].unlink()
         if sample_config['ac_method'] == 'acolite':
             for suffix in ['L1R', 'L1R_pan', 'L2R']:
                 for path in sample_config['correction_path'].glob(f'*{suffix}.nc'):
                     path.unlink()
+        return ["Finished Writing"]
     except Exception as e:
         with Path(__file__).parent.parent.joinpath('Logs', 'write_err.txt').open('a+') as f:
             f.write(f'Failed to remove nc files: {e}\n')
