@@ -97,12 +97,12 @@ APPLY_BITMASK=True     #Does not process MDN imagery with non-0 atmospheric bit 
 ALLOW_NEG=False        #
 
 if  any(datasets[0] == loc for loc in ['SaltonSea_10_09_2022']): 
-    extra_cmd = {'l2gen': {'MOD': {'aer_wave_short' : '1240','aer_wave_long'  : '2130','resolution':'500','l2prod' : [ 'Rrs_nnn', 'Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
-                            'VI' : {'aer_wave_short' : '1240','aer_wave_long'  : '2257','resolution':'500','l2prod' : [ 'Rrs_nnn', 'Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
+    extra_cmd = {'l2gen': {'MOD' : {'aer_wave_short' : '1240','aer_wave_long'  : '2130','resolution':'500','l2prod' : [ 'Rrs_nnn', 'rhos_nnn', 'Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
+                            'VI' : {'aer_wave_short' : '1240','aer_wave_long'  : '2257','resolution':'500','l2prod' : [ 'Rrs_nnn', 'rhos_nnn','Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
                             },
                   'acolite': {},
                   'polymer': {},}
-    overwrite=False
+    overwrite=True
     
 ###################################################### LOCATION SPECIFIC OVERRIDES ##################################################
 # if DATASET == 'Savannah_River_2015':    
