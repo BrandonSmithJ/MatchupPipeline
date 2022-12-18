@@ -9,6 +9,7 @@ from .tasks import create_extraction_pipeline, CeleryManager
 from .utils import pretty_print, color
 from .utils import Location, DatetimeRange
 from .parameters import get_args
+from .tasks.search  import search
 
 
 
@@ -160,7 +161,7 @@ def main(debug=True):
     worker_kws = [
         # Multiple threads for search
         {   'logname'     : 'worker1',
-            'queues'      : ['search', 'celery'],
+            'queues'      : ['download', 'celery'],
             'concurrency' : 2,
         },
         # Multiple threads for correction
@@ -186,7 +187,12 @@ def main(debug=True):
             #print(row)
             #print()
             #print('Running:',manager.running())
-            pipeline(row.to_dict()) if debug  else pipeline.delay(row.to_dict())
+            # Searches each sensor for available imagery, appends it to individual rows
+            for sensor in gc.sensors:   
+                row_kwargs = search(sample_config=row.to_dict(),sensor=sensor,global_config = gc)
+                if len(row_kwargs):
+                    for row_kwarg in row_kwargs:
+                        pipeline(row_kwarg) if debug  else pipeline.delay(row_kwarg)
             # if i >= 10: break
 
 
