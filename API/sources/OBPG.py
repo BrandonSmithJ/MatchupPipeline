@@ -97,7 +97,7 @@ class OBPG(BaseSource):
         dse  = lambda d: int(d.timestamp() / (24 * 60 * 60)) # days since epoch
         date = dt_range.start
         day  = f'{dse(date)} {dt_range.distance.days + 1}'                         # days since epoch & days in range
-        print(date.year,date.month)
+
         mon  = dse(dt(date.year + ((date.month+1) // 12), (date.month % 12) +1, 1)) # first day of next month
         sen  = self.valid_sensors[sensor]
 

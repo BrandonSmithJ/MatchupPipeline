@@ -196,7 +196,7 @@ def main(debug=True):
             for sensor in gc.sensors:   
                 
                 row_kwargs = search(sample_config=row.to_dict(),sensor=sensor,global_config = gc)
-                if len(row_kwargs) and False:
+                if len(row_kwargs):
                     for row_kwarg in row_kwargs:
                         pipeline(row_kwarg) if debug  else pipeline.delay(row_kwarg)
             # if i >= 10: break
