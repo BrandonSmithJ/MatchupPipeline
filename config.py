@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 
 username = getoutput('whoami')
-datasets = ['SaltonSea_10_09_2022'] #Erie_2021 #SaltonSea_2022
+datasets = ['SaltonSea_10_09_2022'] #Erie_2021 #SaltonSea_2022 #SaltonSea_10_09_2022
 sensors  = ['MOD']
 
 
@@ -102,7 +102,7 @@ if  any(datasets[0] == loc for loc in ['SaltonSea_10_09_2022']):
                             },
                   'acolite': {},
                   'polymer': {},}
-    overwrite=True
+    overwrite=False
     
 ###################################################### LOCATION SPECIFIC OVERRIDES ##################################################
 # if DATASET == 'Savannah_River_2015':    

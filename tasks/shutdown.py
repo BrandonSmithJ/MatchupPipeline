@@ -28,7 +28,7 @@ def get_active_tasks(self):
             # a = inspector.active_queues()
             # print(a)
             # for worker, queues in a.items():
-            for queue in ['celery', 'dedicated', 'download','correct','extract','write']:
+            for queue in ['celery', 'dedicated', 'download','correct','extract','plot','write']:
                 name, jobs, consumers = channel.queue_declare(**{
                     'queue'   : queue,#['name'], 
                     'passive' : True,

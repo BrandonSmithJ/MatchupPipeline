@@ -159,7 +159,7 @@ def main(debug=True):
     print(data, '\n')
 
     worker_kws = [
-        # Multiple threads for search
+        # Multiple threads for download
         {   'logname'     : 'worker1',
             'queues'      : ['download', 'celery'],
             'concurrency' : 2,
@@ -174,8 +174,13 @@ def main(debug=True):
             'queues'      : ['extract'],
             'concurrency' : 3,
         },
-        # Single dedicated thread (i.e. for writing)
+        # Multiple threads for plotting
         {   'logname'     : 'worker4',
+            'queues'      : ['plot'],
+            'concurrency' : 1,
+        },
+        # Single dedicated thread (i.e. for writing)
+        {   'logname'     : 'worker5',
             'queues'      : ['write'],
             'concurrency' : 1,
         },

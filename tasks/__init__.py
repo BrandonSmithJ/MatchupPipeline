@@ -3,7 +3,9 @@ from .managers import CeleryManagerMulti as CeleryManager
 
 # Individual tasks
 from .shutdown import shutdown
-from .search   import search
+from .search   import search, download
+from .plot     import plot
+
 from .correct  import correct 
 from .extract  import extract
 from .write    import write

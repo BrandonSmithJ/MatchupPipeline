@@ -11,7 +11,7 @@ from netCDF4 import Dataset
 from pathlib import Path 
 
 from pipeline.MDNs.MDN_MODIS_VIIRS_OLCI.parameters import get_args
-from pipeline.MDNs.MDN_MODIS_VIIRS_OLCI.utils import get_sensor_bands, closest_wavelength, get_tile_data
+from pipeline.MDNs.MDN_MODIS_VIIRS_OLCI.utils import closest_wavelength
 from pipeline.MDNs.MDN_MODIS_VIIRS_OLCI.plot_utils import add_identity, add_stats_box
 from pipeline.MDNs.MDN_MODIS_VIIRS_OLCI.metrics import mdsa,slope,sspb,r_squared
 from pipeline.utils.product_name import product_name
@@ -111,7 +111,9 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
         'sensor'        : sensor,
         'product'       : product,
         'sat_bands'     : True,
+        'benchmark'     : False,
     }
+
     req_bands = get_sensor_bands(sensor, get_args(**kwargs))
     rgb_bands = [640, 550, 440]
 
@@ -142,7 +144,7 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     bands = list(image['sensor_band_parameters'].variables['wavelength'][:]) if not bands else bands
 
     Rrs   = extract_data(image, bands, req_bands,allow_neg=False)
-    if sensor in ['PACE']: Rrs = Rrs[::-1, :, :] #if sensor == 'PACE': 
+    if sensor in ['PACE']: Rrs = Rrs[::-1, :, :]
     if sensor in ['VI'] or (Aqua_or_Terra =='A' and 'MOD' in sensor): Rrs = Rrs[::-1, ::-1, :] 
 
     rgb   = extract_data(image, bands, rgb_bands,key='rhos')
@@ -176,4 +178,5 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     convert_png_to_jpg(png_filename,jpg_filename)
     print(f'Generated',png_filename,geotiff_filename,jpg_filename,'in {time.time()-time_start:.1f} seconds')
     print(np.shape(products),len(products))
+    return True
     
