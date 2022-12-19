@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 
 username = getoutput('whoami')
-datasets = ['SaltonSea_10_09_2022'] #Erie_2021 #SaltonSea_2022 #SaltonSea_10_09_2022
+datasets = ['SaltonSea_2022'] #Erie_2021 #SaltonSea_2022 #SaltonSea_10_09_2022
 sensors  = ['MOD']
 
 
@@ -14,7 +14,7 @@ l2gen_path   = '/home/roshea/SeaDAS/SeaDAS_V2022_3/ocssw' #'/tis/m2cross/scratch
 polymer_path = '/home/bsmith16/AC/polymer/polymer-unknown/polymer' #Path(__file__).parent.joinpath('AC', 'L2_processing', 'polymer', 'polymer')
 acolite_path = '/home/bsmith16/AC/acolite/acolite-20220222.0/acolite' #Path(__file__).parent.joinpath('AC', 'L2_processing', 'acolite', 'acolite')
 
-scratch_path = Path(__file__).parent.parent.joinpath('SCRATCH')
+scratch_path = Path(f'/data/{username}').joinpath('SCRATCH') #Path(__file__).parent.parent.
 insitu_path  = scratch_path.joinpath('Insitu') 
 output_path  = scratch_path.joinpath('Gathered')
 
@@ -96,7 +96,7 @@ FLAG_MASK = True       #Masks product with AtmCorr failure bitmask (Does not use
 APPLY_BITMASK=True     #Does not process MDN imagery with non-0 atmospheric bit masks
 ALLOW_NEG=False        #
 
-if  any(datasets[0] == loc for loc in ['SaltonSea_10_09_2022']): 
+if  'SaltonSea' in datasets[0]: 
     extra_cmd = {'l2gen': {'MOD' : {'aer_wave_short' : '1240','aer_wave_long'  : '2130','resolution':'500','l2prod' : [ 'Rrs_nnn', 'rhos_nnn', 'Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
                             'VI' : {'aer_wave_short' : '1240','aer_wave_long'  : '2257','resolution':'500','l2prod' : [ 'Rrs_nnn', 'rhos_nnn','Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
                             },
