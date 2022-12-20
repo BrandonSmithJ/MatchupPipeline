@@ -15,6 +15,7 @@ from pipeline.MDNs.MDN_MODIS_VIIRS_OLCI.utils import closest_wavelength
 from pipeline.MDNs.MDN_MODIS_VIIRS_OLCI.plot_utils import add_identity, add_stats_box
 from pipeline.MDNs.MDN_MODIS_VIIRS_OLCI.metrics import mdsa,slope,sspb,r_squared
 from pipeline.utils.product_name import product_name
+from pipeline.utils.fix_projection import fix_projection
 from pipeline.Plot.create_geotiff import create_geotiff
 from pipeline.utils.identify_subsensor import identify_subsensor
 import pandas as pd
@@ -103,7 +104,7 @@ def plot_product(ax, title, product, rgb, vmin, vmax):
     img  = ax.imshow(np.squeeze(product), norm=norm, cmap='turbo',interpolation='nearest')
     plt.colorbar(img, ax=ax,fraction=0.046, pad=0.04)
 
-def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product = 'chl,tss,cdom',overwrite=True):
+def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product = 'chl,tss,cdom',overwrite=True, fix_project = False):
     if sensor in ['OLCI']: product = 'chl,tss,cdom,pc'
     #Identifies the subsensor from input path
     sensor = identify_subsensor(inp_file,sensor)
@@ -150,6 +151,12 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     rgb   = extract_data(image, bands, rgb_bands,key='rhos')
     if sensor in ['PACE']: rgb = rgb[::-1, :, :] 
     if sensor in ['VI'] or (Aqua_or_Terra =='A' and 'MOD' in sensor): rgb = rgb[::-1, ::-1, :] 
+    if fix_project:
+        rgb, extent, (_, _)  = fix_projection(rgb,im_lon,im_lat,False)
+
+        Rrs, extent, (im_lon, im_lat)  = fix_projection(Rrs,im_lon,im_lat,reproject=False,nearestNeighborInterp=False, sparse_resample=True)        
+    cholesky_min_val = 0.0000001
+    Rrs[Rrs<cholesky_min_val] = np.nan
     try:
         products, slices = image_estimates(Rrs, **kwargs)
     except:
@@ -165,8 +172,6 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     }
     for i, (key, idx) in enumerate(slices.items()):
         plot_product(np.atleast_1d(axes)[i], key, products[..., idx], rgb, *bounds[key])
-
-    create_geotiff(products=products,im_lat=im_lat,im_lon=im_lon,filename=geotiff_filename)
     save_nc(inp_file,nc_filename,products,slices,overwrite)
 
 
@@ -178,5 +183,8 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     convert_png_to_jpg(png_filename,jpg_filename)
     print(f'Generated',png_filename,geotiff_filename,jpg_filename,'in {time.time()-time_start:.1f} seconds')
     print(np.shape(products),len(products))
+    if not fix_project: products, extent, (im_lon, im_lat)  = fix_projection(products,im_lon,im_lat,reproject=False,nearestNeighborInterp=False, sparse_resample=True)        
+    create_geotiff(products=products,im_lat=im_lat,im_lon=im_lon,filename=geotiff_filename)
+
     return True
     
