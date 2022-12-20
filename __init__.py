@@ -23,7 +23,7 @@ app.conf.update(**{
 
     'task_acks_late' : True,
     'worker_prefetch_multiplier' : 1,
-    'task_always_eager' : False, # Processes in serial, locally 
+    'task_always_eager' : True, # Processes in serial, locally 
 
 })
 

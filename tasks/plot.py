@@ -19,6 +19,7 @@ def plot(self,
         'dataset'  : sample_config['dataset'],
         'date'     : sample_config['date'],
         'ac_method': sample_config['ac_method'],
+        'fix_projection_Rrs': global_config.fix_projection_Rrs,
  	}
     plot_products(**kwargs)
     kwargs.update(sample_config)

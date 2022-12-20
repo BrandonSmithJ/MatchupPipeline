@@ -68,7 +68,7 @@ def extract_lat_lon(image):
         return image['lat'][:], image['lon'][:] 
     return image['navigation_data']['latitude'][:], image['navigation_data']['longitude'][:]
 
-def extract_data(image, avail_bands, req_bands, allow_neg=False, key='Rrs'):
+def extract_data(image, avail_bands, req_bands, allow_neg=False, key='Rrs',apply_min_threshold = False,cholesky_min_val=1e-7):
     ''' Extract the requested bands from a given NetCDF object '''
 
     if key == 'rhos':
@@ -87,6 +87,8 @@ def extract_data(image, avail_bands, req_bands, allow_neg=False, key='Rrs'):
     # Set any values <= 0 to nan if we disallow negatives
     if not allow_neg: 
         extracted[extracted <= 0] = np.nan
+    if apply_min_threshold:
+        extracted[extracted<cholesky_min_val] = np.nan
 
     # Return the data, filling any masked values with nan
     return extracted.filled(fill_value=np.nan)
@@ -104,7 +106,7 @@ def plot_product(ax, title, product, rgb, vmin, vmax):
     img  = ax.imshow(np.squeeze(product), norm=norm, cmap='turbo',interpolation='nearest')
     plt.colorbar(img, ax=ax,fraction=0.046, pad=0.04)
 
-def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product = 'chl,tss,cdom',overwrite=True, fix_project = False):
+def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product = 'chl,tss,cdom',overwrite=True, fix_projection_Rrs = False):
     if sensor in ['OLCI']: product = 'chl,tss,cdom,pc'
     #Identifies the subsensor from input path
     sensor = identify_subsensor(inp_file,sensor)
@@ -144,19 +146,23 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     
     bands = list(image['sensor_band_parameters'].variables['wavelength'][:]) if not bands else bands
 
-    Rrs   = extract_data(image, bands, req_bands,allow_neg=False)
+    Rrs   = extract_data(image, bands, req_bands,allow_neg=False,apply_min_threshold = True)
     if sensor in ['PACE']: Rrs = Rrs[::-1, :, :]
-    if sensor in ['VI'] or (Aqua_or_Terra =='A' and 'MOD' in sensor): Rrs = Rrs[::-1, ::-1, :] 
+    #if sensor in ['VI'] or (Aqua_or_Terra =='A' and 'MOD' in sensor): Rrs = Rrs[::-1, ::-1, :] 
 
     rgb   = extract_data(image, bands, rgb_bands,key='rhos')
     if sensor in ['PACE']: rgb = rgb[::-1, :, :] 
-    if sensor in ['VI'] or (Aqua_or_Terra =='A' and 'MOD' in sensor): rgb = rgb[::-1, ::-1, :] 
-    if fix_project:
+    #if sensor in ['VI'] or (Aqua_or_Terra =='A' and 'MOD' in sensor): rgb = rgb[::-1, ::-1, :] 
+    if fix_projection_Rrs:
+        try:
+            products, slices = image_estimates(Rrs, **kwargs)
+        except:
+            print('Failed to produce products for ', png_filename)
+            save_nc(inp_file,nc_filename,products,slices,overwrite)
+    
         rgb, extent, (_, _)  = fix_projection(rgb,im_lon,im_lat,False)
-
         Rrs, extent, (im_lon, im_lat)  = fix_projection(Rrs,im_lon,im_lat,reproject=False,nearestNeighborInterp=False, sparse_resample=True)        
-    cholesky_min_val = 0.0000001
-    Rrs[Rrs<cholesky_min_val] = np.nan
+
     try:
         products, slices = image_estimates(Rrs, **kwargs)
     except:
@@ -172,7 +178,7 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     }
     for i, (key, idx) in enumerate(slices.items()):
         plot_product(np.atleast_1d(axes)[i], key, products[..., idx], rgb, *bounds[key])
-    save_nc(inp_file,nc_filename,products,slices,overwrite)
+
 
 
     f.suptitle(f'{loc} {location.stem} {date} {sensor}')
@@ -183,7 +189,9 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     convert_png_to_jpg(png_filename,jpg_filename)
     print(f'Generated',png_filename,geotiff_filename,jpg_filename,'in {time.time()-time_start:.1f} seconds')
     print(np.shape(products),len(products))
-    if not fix_project: products, extent, (im_lon, im_lat)  = fix_projection(products,im_lon,im_lat,reproject=False,nearestNeighborInterp=False, sparse_resample=True)        
+    if not fix_projection_Rrs: 
+        save_nc(inp_file,nc_filename,products,slices,overwrite)
+        products, extent, (im_lon, im_lat)  = fix_projection(products,im_lon,im_lat,reproject=False,nearestNeighborInterp=False, sparse_resample=True)        
     create_geotiff(products=products,im_lat=im_lat,im_lon=im_lon,filename=geotiff_filename)
 
     return True

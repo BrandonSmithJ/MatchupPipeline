@@ -105,6 +105,18 @@ extract_parameters.add_argument('--extract_window', type=int,
     default=config.extract_window,
     help='Pixels to extract around the center pixel (e.g. 1 -> 3x3 window)')
 
+#===================================
+#    Plotting Parameters
+#===================================
+plot_parameters = parser.add_argument_group(
+    'Plot Parameters', 
+    'Set any parameters associated with plotting data from scenes',
+)
+
+plot_parameters.add_argument('--fix_projection_Rrs', type=int, 
+    default=config.fix_projection_Rrs,
+    help='Fix projection of Rrs.')
+
 
 #===================================
 #    Data Cleanup Parameters

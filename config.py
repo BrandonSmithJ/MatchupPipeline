@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 
 username = getoutput('whoami')
-datasets = ['SaltonSea_10_09_2022'] #Erie_2021 #SaltonSea_2022 #SaltonSea_10_09_2022
+datasets = ['SaltonSea_shifted'] #Erie_2021 #SaltonSea_2022 #SaltonSea_10_09_2022
 sensors  = ['MOD']
 
 
@@ -36,6 +36,11 @@ ac_methods = ['l2gen'] # Atmospheric Correction methods to apply
 #    Data Extraction Parameters
 #===================================
 extract_window = 2 # pixels to extract around the center pixel (e.g. 1 -> 3x3 window)
+
+#===================================
+#    Plotting Parameters
+#===================================
+fix_projection_Rrs=False
 
 #===================================
 #    Data Cleanup Parameters
