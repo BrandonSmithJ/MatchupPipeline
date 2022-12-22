@@ -55,13 +55,14 @@ dt_range.add_argument('--search_day_window', type=int,
          '(default: %(default)s)')
 
 dt_range.add_argument('--search_minute_window', type=int,
+  default=config.search_minute_window,
     help='Number of minutes surrounding an in situ sample to match\n'+
     'Only one of search_day_window or search_minute_window can be set')
 
 dt_range.add_argument('--search_year_range', type=int,
   default=config.search_year_range,
-    help='Number of years after an in situ sample to match\n'+
-    'Only one of search_day_window or search_minute_window can be set')
+    help='Number of years after provided date to search\n'+
+    'Overrides both search_day_window and search_minute_window')
 
 #===================================
 # Atmospheric Correction Parameters
@@ -133,6 +134,10 @@ cleanup_parameters = parser.add_argument_group(
 cleanup_parameters.add_argument('--remove_L2_tile', type=bool, 
     default=config.remove_L2_tile,
     help='Removes the Level 2 file if True')
+
+cleanup_parameters.add_argument('--remove_scene_folder', type=bool, 
+    default=config.remove_scene_folder,
+    help='Removes the entire scene folder')
 
 def get_args(kwargs={}, use_cmdline=True, **kwargs2):
     kwargs2.update(kwargs)

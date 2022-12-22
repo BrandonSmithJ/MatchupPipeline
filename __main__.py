@@ -25,7 +25,7 @@ def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
         
         #Check if dataset file already exists
         dataset_path = ins_path.joinpath(dataset,'_'.join(sorted(global_config.sensors))+'_dataset.pkl') #sensors
-        if dataset_path.exists():
+        if dataset_path.exists() and not global_config.overwrite:
             current_dataset=pd.read_pickle(dataset_path)
             current_dataset = [rows.to_frame().swapaxes("index","columns") for index, rows in current_dataset.iterrows()]
             datasets.append(current_dataset)
@@ -56,6 +56,8 @@ def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
                 data['uid'] = idxs+ '_' + data['uid']
             data['uid'] = dataset + '_' + data['uid']
             data['dataset'] = dataset
+            #data['lat'] = data['lat'].apply(lambda x: float(x.replace('/','')) if type(x) == str else x)
+            #data['lon'] = data['lon'].apply(lambda x: float(x.replace('/','')) if type(x) == str else x)
 
             # Parse Location objects
             data['location'] = data.apply(lambda row:
@@ -70,14 +72,15 @@ def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
             axis=1)
 
             # Parse DatetimeRange objects
-            sdw    = global_config.search_day_window
-            smw    = global_config.search_minute_window
-            window = smw or (sdw * 24 * 60) # Convert to minutes
-            if global_config.search_day_window is not None:
+
+            if global_config.search_day_window is not None or global_config.search_minute_window is not None :
+                sdw    = global_config.search_day_window
+                smw    = global_config.search_minute_window
+                window = smw or (sdw * 24 * 60) # Convert to minutes
                 data['dt_range'] = data.apply(lambda row:
                 DatetimeRange(center=row['datetime'], window=td(minutes=window)),
                 axis=1)
-            if global_config.search_year_range:
+            if global_config.search_year_range is not None:
                 data['dt_range'] = data.apply(lambda row:
                 DatetimeRange(start=row['datetime'], end=row['datetime'] + td(minutes=global_config.search_year_range*24*60*365)),
                 axis=1)           
@@ -211,7 +214,7 @@ def main(debug=True):
             'concurrency' : 1,
         },
     ]
-    assert(0)
+    
     with CeleryManager(worker_kws, data, gc.ac_methods) as manager:
         for i, row in data.iterrows():
             #row['location'] = Location(lat=47.443, lon=-61.8168)

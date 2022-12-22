@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Hardcoded path to RabbitMQ files which everyone needs access to
-SHARED="/discover/nobackup/bsmith16/Matchups_Files"
+SHARED="/home/roshea/matchup_pipeline_development/pipeline/scripts/rabbitmq_server_files"   #"/discover/nobackup/bsmith16/Matchups_Files"
 
 # RabbitMQ installation
-RMQ_DIR=$(ls -d rabbitmq_server-*)
+RMQ_DIR="/home/roshea/rabbitMQ/rabbitmq_server-3.10.7" #"/home/bsmith16/workspace/rabbitmq_server-3.10.7" #$(ls -d rabbitmq_server-*)
 
 # Directory containing TLS certificates
 TLS_DIR="$SHARED/TLS"

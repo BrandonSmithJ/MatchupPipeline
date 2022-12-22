@@ -3,7 +3,7 @@ from argparse import Namespace
 from pathlib import Path
 # import zarr
 import numpy as np
-
+import shutil
 
 def serialize(values, separators=['||', '<>', ',']):
 	""" Recursively serialize a nested list of values """
@@ -77,6 +77,9 @@ def write(self,
             for suffix in ['L1R', 'L1R_pan', 'L2R']:
                 for path in sample_config['correction_path'].glob(f'*{suffix}.nc'):
                     path.unlink()
+        if global_config.remove_scene_folder: shutil.rmtree(sample_config['scene_path']) #print("Removeing scenes folder")#sample_config['scene_folder']sample_config['scene_path'].rmdir()
+            
+            
         return ["Finished Writing"]
     except Exception as e:
         with Path(__file__).parent.parent.joinpath('Logs', 'write_err.txt').open('a+') as f:

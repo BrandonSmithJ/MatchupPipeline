@@ -3,8 +3,8 @@ from pathlib import Path
 import os
 
 username = getoutput('whoami')
-datasets = ['GSL_1999_2022'] #Erie_2021 #SaltonSea_2022 #SaltonSea_10_09_2022 #SaltonSea_shifted
-sensors  = ['MOD']
+datasets = ['GSL_10_9_2022'] #Erie_2021 #SaltonSea_2022 #SaltonSea_10_09_2022 #SaltonSea_shifted
+sensors  = ['VI']
 
 
 #===================================
@@ -23,8 +23,9 @@ output_path  = scratch_path.joinpath('Gathered')
 #    Data Search Parameters
 #===================================  
 max_cloud_cover = 100 #Max cloud cover for downloading/processing.
-search_day_window = 0
-search_year_range = 24 #24
+search_day_window = None
+search_minute_window = None
+search_year_range = None
 
 #===================================
 # Atmospheric Correction Parameters
@@ -47,7 +48,7 @@ fix_projection_Rrs=False
 #===================================
 remove_L2_tile = False
 overwrite      = False
-
+remove_scene_folder = False
 #===================================
 #    Atmospheric correction arguments
 #===================================
@@ -108,6 +109,16 @@ if  'SaltonSea' in datasets[0] or 'GSL' in datasets[0]:
                   'acolite': {},
                   'polymer': {},}
     overwrite=True
+    remove_scene_folder=True
+    if 'SaltonSea_1999_2022' == datasets[0] or 'GSL_1999_2022' == datasets[0]:
+        search_year_range = 24 
+    else:
+        search_day_window = 0
+
+if  'AugGloria' in datasets[0]: 
+    search_day_window=2 #30*60 #h*m
+    sensors  = ['OLI']
+
     
 ###################################################### LOCATION SPECIFIC OVERRIDES ##################################################
 # if DATASET == 'Savannah_River_2015':    
