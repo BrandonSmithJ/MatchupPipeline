@@ -58,6 +58,10 @@ dt_range.add_argument('--search_minute_window', type=int,
     help='Number of minutes surrounding an in situ sample to match\n'+
     'Only one of search_day_window or search_minute_window can be set')
 
+dt_range.add_argument('--search_year_range', type=int,
+  default=config.search_year_range,
+    help='Number of years after an in situ sample to match\n'+
+    'Only one of search_day_window or search_minute_window can be set')
 
 #===================================
 # Atmospheric Correction Parameters

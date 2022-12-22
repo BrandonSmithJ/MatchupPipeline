@@ -17,9 +17,19 @@ def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
     """ Load the in situ data and parse as necessary """
     datasets = []
     ins_path = Path(global_config.insitu_path)
-
+    
+    
     for dataset in global_config.datasets:
+        current_dataset = []
         path = ins_path.joinpath(dataset, 'parsed.csv')
+        
+        #Check if dataset file already exists
+        dataset_path = ins_path.joinpath(dataset,'_'.join(sorted(global_config.sensors))+'_dataset.pkl') #sensors
+        if dataset_path.exists():
+            current_dataset=pd.read_pickle(dataset_path)
+            current_dataset = [rows.to_frame().swapaxes("index","columns") for index, rows in current_dataset.iterrows()]
+            datasets.append(current_dataset)
+            continue
         assert(path.exists()), f'Dataset missing required file: {path}'
 
         try:
@@ -63,14 +73,30 @@ def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
             sdw    = global_config.search_day_window
             smw    = global_config.search_minute_window
             window = smw or (sdw * 24 * 60) # Convert to minutes
-            data['dt_range'] = data.apply(lambda row:
+            if global_config.search_day_window is not None:
+                data['dt_range'] = data.apply(lambda row:
                 DatetimeRange(center=row['datetime'], window=td(minutes=window)),
-            axis=1)
+                axis=1)
+            if global_config.search_year_range:
+                data['dt_range'] = data.apply(lambda row:
+                DatetimeRange(start=row['datetime'], end=row['datetime'] + td(minutes=global_config.search_year_range*24*60*365)),
+                axis=1)           
 
         except Exception as e: 
             raise Exception(f'Could not parse {path}: {e}')
-
-        datasets.append(data)
+        j=0
+        for i, row in data.iterrows():
+            for sensor in global_config.sensors: 
+                data_kwargs =search(sample_config=row.to_dict(),sensor=sensor,global_config = global_config)
+                for data_kwarg in data_kwargs:
+                    data_kwarg['scene_details'] =  str(data_kwarg['scene_details'])
+                    current_dataset.append(pd.DataFrame.from_dict([data_kwarg])) 
+                    if not j%100: print(f"Found {j} Matchups")
+                    j= j + 1
+                    
+        pd.concat(current_dataset).to_pickle(dataset_path)
+        datasets.append(current_dataset)
+    datasets = [dataframe for sub_dataset in datasets for dataframe in sub_dataset]
     return pd.concat(datasets)
 
 
@@ -102,9 +128,9 @@ def filter_completed(
         matched  = uids.loc[ found] 
         no_match = uids.loc[~found] 
 
-        metapaths = get_exists('meta.csv', datasets, sensors, ac_methods)
+        metapaths = get_exists('meta.csv', datasets, sensors, ac_methods,['Matchups'])
         metanames = map(get_name, metapaths)
-        written   = [df['uid'] for df in read_files(metapaths, **{
+        written   = [df['uid']+'-' +df['scene_id'] for df in read_files(metapaths, **{
             'index_col' : None,
             'header'    : 0,
             'delimiter' : '\|\|',
@@ -185,7 +211,7 @@ def main(debug=True):
             'concurrency' : 1,
         },
     ]
-    
+    assert(0)
     with CeleryManager(worker_kws, data, gc.ac_methods) as manager:
         for i, row in data.iterrows():
             #row['location'] = Location(lat=47.443, lon=-61.8168)
@@ -193,12 +219,14 @@ def main(debug=True):
             #print()
             #print('Running:',manager.running())
             # Searches each sensor for available imagery, appends it to individual rows
-            for sensor in gc.sensors:   
+            #for sensor in gc.sensors:   
                 
-                row_kwargs = search(sample_config=row.to_dict(),sensor=sensor,global_config = gc)
-                if len(row_kwargs):
-                    for row_kwarg in row_kwargs:
-                        pipeline(row_kwarg) if debug  else pipeline.delay(row_kwarg)
+                #row_kwargs = search(sample_config=row.to_dict(),sensor=sensor,global_config = gc)
+                #if len(row_kwargs):
+                   # for row_kwarg in row_kwargs:
+            row = row.to_dict()
+            row['scene_details'] = eval(row['scene_details'])
+            pipeline(row) if debug  else pipeline.delay(row)
             # if i >= 10: break
 
 

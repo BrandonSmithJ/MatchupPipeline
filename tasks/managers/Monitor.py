@@ -92,17 +92,18 @@ def start_monitor(total_samples, total_ac, show_plot=plt is not None):
     def track_events(event):
         states.event(event)
         task  = states.tasks.get(event['uuid'])
-        name  = (getattr(task, 'name', None) or 'search').split('.')[-1]
+        name  = (getattr(task, 'name', None) or 'download').split('.')[-1]
         label = lambda name: f'{name.title():>8} '
         state = getattr(event, 'state', getattr(task, 'state', 'Unknown'))
 
         if name == 'shutdown':
             return 
 
-        if name == 'search' and state == 'SUCCESS':
+        if name == 'download' and state == 'SUCCESS':
             dataset = extract_key('dataset', task.args)
             uid     = extract_key('uid',     task.args)
-            sensor  = task.args.split(" '")[-1][:-2] 
+            sensor  = extract_key('sensor',     task.args)
+            scene_id  = extract_key('scene_id',     task.args)
             outpath = task.kwargs.split('output_path=')[-1]
             outpath = outpath.split("('")[-1].split("')")[0]
 
@@ -111,7 +112,7 @@ def start_monitor(total_samples, total_ac, show_plot=plt is not None):
                 outpath = Path(outpath).joinpath(dataset, sensor)
                 outpath.mkdir(exist_ok=True, parents=True)
                 with outpath.joinpath('completed.csv').open('a+') as f:
-                    f.write(f'{uid}, {successful_search}\n')
+                    f.write(f'{uid}-{scene_id}, {successful_search}\n')
 
         else: successful_search = True 
 
@@ -186,7 +187,7 @@ def start_monitor(total_samples, total_ac, show_plot=plt is not None):
 
 
         if name not in bars:
-            total = total_samples * (1 if name == 'search' else total_ac)
+            total = total_samples * (1 if name == 'download' else total_ac)
             bars[name] = {
                 'main'     : tqdm(total=total, position=len(bars)+(3 if show_plot else 0), desc=label(name)), 
                 # 'main'     : tqdm(total=total * 3, position=len(bars) * 4, desc=label(name)), 

@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 
 username = getoutput('whoami')
-datasets = ['SaltonSea_shifted'] #Erie_2021 #SaltonSea_2022 #SaltonSea_10_09_2022
+datasets = ['GSL_1999_2022'] #Erie_2021 #SaltonSea_2022 #SaltonSea_10_09_2022 #SaltonSea_shifted
 sensors  = ['MOD']
 
 
@@ -24,7 +24,7 @@ output_path  = scratch_path.joinpath('Gathered')
 #===================================  
 max_cloud_cover = 100 #Max cloud cover for downloading/processing.
 search_day_window = 0
-
+search_year_range = 24 #24
 
 #===================================
 # Atmospheric Correction Parameters
@@ -101,7 +101,7 @@ FLAG_MASK = True       #Masks product with AtmCorr failure bitmask (Does not use
 APPLY_BITMASK=True     #Does not process MDN imagery with non-0 atmospheric bit masks
 ALLOW_NEG=False        #
 
-if  'SaltonSea' in datasets[0]: 
+if  'SaltonSea' in datasets[0] or 'GSL' in datasets[0]: 
     extra_cmd = {'l2gen': {'MOD' : {'aer_wave_short' : '1240','aer_wave_long'  : '2130','resolution':'500','l2prod' : [ 'Rrs_nnn', 'rhos_nnn', 'Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
                             'VI' : {'aer_wave_short' : '1240','aer_wave_long'  : '2257','resolution':'500','l2prod' : [ 'Rrs_nnn', 'rhos_nnn','Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
                             },

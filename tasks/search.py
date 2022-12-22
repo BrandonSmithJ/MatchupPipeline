@@ -18,15 +18,7 @@ def search(
     total_kwargs = []
     if len(scenes):
         for scene in list(scenes.keys()):
-            # Quick hack to minimize risk of running out of space
-            try:
-                folders = list(out_path.glob('*'))
-                if len(folders) > 50:
-                    import numpy as np
-                    import shutil
-                    oldest = min(folders, key=lambda f: f.stat().st_ctime)#i = np.random.randint(0, len(folders))
-                    shutil.rmtree(oldest) #folders[i].as_posix())
-            except Exception as e: print(e)#self.logger.error(f'Error removing folders: {e}')
+
         
             # scene  = list(scenes.keys())[0] 
             kwargs = {
@@ -56,6 +48,18 @@ def download(self,
         'scene_folder'  : sample_config['scene_folder'],
         'overwrite'     : global_config.overwrite,
     }
+    out_path = sample_config['scene_folder']
+
+    # Quick hack to minimize risk of running out of space
+    try:
+        folders = list(out_path.glob('*'))
+        while (len(folders)>100):
+            import numpy as np
+            import shutil
+            oldest = min(folders, key=lambda f: f.stat().st_ctime)#i = np.random.randint(0, len(folders))
+            shutil.rmtree(oldest) #folders[i].as_posix())
+            folders = list(out_path.glob('*'))
+    except Exception as e: print(e)#self.logger.error(f'Error removing folders: {e}')
     
     api    = API.API[sample_config['sensor']]()
     kwargs['scene_path'] = api.download_scene(**kwargs)
