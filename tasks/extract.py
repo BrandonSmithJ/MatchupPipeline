@@ -3,7 +3,7 @@ from .. import app
 from argparse import Namespace
 
 
-@app.task(bind=True, name='extract', queue='extract')
+@app.task(bind=True, name='extract', queue='extract', priority=3)
 def extract(self,
 	sample_config : dict,      # Config for this sample
 	global_config : Namespace, # Config for the pipeline

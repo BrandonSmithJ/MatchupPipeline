@@ -160,18 +160,18 @@ def main():
     worker_kws = [
         # Multiple threads for search
         {   'logname'     : 'worker1',
-            'queues'      : ['search', 'celery'],
-            'concurrency' : 2,
+            'queues'      : ['search', 'correct', 'extract', 'celery'],
+            'concurrency' : 4,
         },
         # Multiple threads for correction
         {   'logname'     : 'worker2',
             'queues'      : ['correct'],
-            'concurrency' : 4,
+            'concurrency' : 2,
         },
         # Multiple threads for extraction
         {   'logname'     : 'worker3',
             'queues'      : ['extract'],
-            'concurrency' : 3,
+            'concurrency' : 2,
         },
         # Single dedicated thread (i.e. for writing)
         {   'logname'     : 'worker4',

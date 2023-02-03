@@ -3,7 +3,7 @@ from .. import app
 from argparse import Namespace
 
 
-@app.task(bind=True, name='correct', queue='correct')
+@app.task(bind=True, name='correct', queue='correct', priority=2)
 def correct(self,
     sample_config : dict,      # Config for this sample
     ac_method     : str,       # AC method to use for correction
