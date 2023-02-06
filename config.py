@@ -2,9 +2,9 @@ from subprocess import getoutput
 from pathlib import Path 
 import os
 
-username = getoutput('whoami')
-datasets = ['GSL_10_9_2022'] #Erie_2021 #SaltonSea_2022 #SaltonSea_10_09_2022 #SaltonSea_shifted
-sensors  = ['VI']
+username = getoutput('whoami') #SaltonSea_08_27_2016
+datasets = ['Erie_OLI_08_23_2022'] #Erie_2021 #SaltonSea_2022 #SaltonSea_10_09_2022 #SaltonSea_shifted SaltonSea_1999_2022 GSL_02_13_2019 #GSL_High_quality
+sensors  = ['OLI']
 
 
 #===================================
@@ -49,6 +49,7 @@ fix_projection_Rrs=False
 remove_L2_tile = False
 overwrite      = False
 remove_scene_folder = False
+remove_L1_tile=False
 #===================================
 #    Atmospheric correction arguments
 #===================================
@@ -110,15 +111,19 @@ if  'SaltonSea' in datasets[0] or 'GSL' in datasets[0]:
                   'polymer': {},}
     overwrite=True
     remove_scene_folder=True
+    remove_L1_tile=True
     if 'SaltonSea_1999_2022' == datasets[0] or 'GSL_1999_2022' == datasets[0]:
         search_year_range = 24 
     else:
         search_day_window = 0
+    fix_projection_Rrs=True
 
 if  'AugGloria' in datasets[0]: 
     search_day_window=2 #30*60 #h*m
     sensors  = ['OLI']
 
+if search_day_window is None  and search_year_range is None and search_minute_window is None:
+    search_day_window=0
     
 ###################################################### LOCATION SPECIFIC OVERRIDES ##################################################
 # if DATASET == 'Savannah_River_2015':    

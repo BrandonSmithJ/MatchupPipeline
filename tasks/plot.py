@@ -17,10 +17,11 @@ def plot(self,
         'out_path' : sample_config['out_path'],
         'overwrite': global_config.overwrite,
         'dataset'  : sample_config['dataset'],
-        'date'     : sample_config['date'],
+        'date'     : str(sample_config['inp_file']).split('/')[-1][1:] if sample_config['sensor'] == 'MOD' else str(sample_config['inp_file']).split('/')[-1].split('.')[1],
         'ac_method': sample_config['ac_method'],
         'fix_projection_Rrs': global_config.fix_projection_Rrs,
  	}
     plot_products(**kwargs)
     kwargs.update(sample_config)
     return kwargs
+ 

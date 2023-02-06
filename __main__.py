@@ -56,8 +56,8 @@ def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
                 data['uid'] = idxs+ '_' + data['uid']
             data['uid'] = dataset + '_' + data['uid']
             data['dataset'] = dataset
-            #data['lat'] = data['lat'].apply(lambda x: float(x.replace('/','')) if type(x) == str else x)
-            #data['lon'] = data['lon'].apply(lambda x: float(x.replace('/','')) if type(x) == str else x)
+            data['lat'] = data['lat'].apply(lambda x: float(x.replace('/','')) if type(x) == str else x)
+            data['lon'] = data['lon'].apply(lambda x: float(x.replace('/','')) if type(x) == str else x)
 
             # Parse Location objects
             data['location'] = data.apply(lambda row:
@@ -191,12 +191,12 @@ def main(debug=True):
         # Multiple threads for download
         {   'logname'     : 'worker1',
             'queues'      : ['download', 'celery'],
-            'concurrency' : 2,
+            'concurrency' : 1,
         },
         # Multiple threads for correction
         {   'logname'     : 'worker2',
             'queues'      : ['correct'],
-            'concurrency' : 4,
+            'concurrency' : 3,
         },
         # Multiple threads for extraction
         {   'logname'     : 'worker3',
@@ -206,7 +206,7 @@ def main(debug=True):
         # Multiple threads for plotting
         {   'logname'     : 'worker4',
             'queues'      : ['plot'],
-            'concurrency' : 1,
+            'concurrency' : 3,
         },
         # Single dedicated thread (i.e. for writing)
         {   'logname'     : 'worker5',
@@ -214,7 +214,7 @@ def main(debug=True):
             'concurrency' : 1,
         },
     ]
-    
+    #assert(0)
     with CeleryManager(worker_kws, data, gc.ac_methods) as manager:
         for i, row in data.iterrows():
             #row['location'] = Location(lat=47.443, lon=-61.8168)
@@ -228,7 +228,7 @@ def main(debug=True):
                 #if len(row_kwargs):
                    # for row_kwarg in row_kwargs:
             row = row.to_dict()
-            row['scene_details'] = eval(row['scene_details'])
+            #row['scene_details'] = eval(row['scene_details'])
             pipeline(row) if debug  else pipeline.delay(row)
             # if i >= 10: break
 

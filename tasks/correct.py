@@ -28,6 +28,13 @@ def correct(self,
     }
     kwargs.update(global_config.extra_cmd[ac_method][sample_config['sensor']] if ac_method in global_config.extra_cmd.keys() and sample_config['sensor'] in global_config.extra_cmd[ac_method].keys() else {})
     kwargs['correction_path'] = AC_FUNCTIONS[ac_method](**kwargs)
+    if global_config.remove_L1_tile: 
+        for L1A_path in list(inp_path.glob('**/*.L1A*')):
+            L1A_path.unlink()
+        for GEO_path in list(inp_path.glob('**/*.GEO*')):
+            GEO_path.unlink()
+        for L1B_path in list(inp_path.glob('**/*.L1B*')):
+            L1B_path.unlink()
     kwargs.update(sample_config)
     kwargs.update({'ac_method': ac_method})
 

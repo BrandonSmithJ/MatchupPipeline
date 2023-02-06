@@ -22,7 +22,7 @@ def fix_projection(y, lon, lat, reproject=True, exact=True,nearestNeighborInterp
     from scipy.interpolate import griddata, LinearNDInterpolator, NearestNDInterpolator
     from scipy.spatial import ConvexHull, Delaunay
     import skimage.transform as st
-
+    fill_value_float = -32767.0
     shape = lon.shape 
     dtype = y.dtype    
     y     = np.ma.masked_invalid(y.astype(np.float32)).filled(fill_value=np.nan)
@@ -55,9 +55,9 @@ def fix_projection(y, lon, lat, reproject=True, exact=True,nearestNeighborInterp
         lat2 = np.arange(min_val[1], max_val[1], step_val[1])[::-1]
     if nearestNeighborInterp:
         interp = NearestNDInterpolator(_triangulations[tri_key], np.int32(y))
-        interp_fill_vals = LinearNDInterpolator(_triangulations[tri_key], y, fill_value=-32767.0)
+        interp_fill_vals = LinearNDInterpolator(_triangulations[tri_key], y, fill_value=fill_value_float)
     else:
-        interp = LinearNDInterpolator(_triangulations[tri_key], y, fill_value=-32767.0)
+        interp = LinearNDInterpolator(_triangulations[tri_key], y, fill_value=fill_value_float)
     grid   = np.meshgrid(lon2, lat2)
     #Find the nearest lat lon for each original finite point
     def sparse_resampling(grid,y,lonlat):
@@ -78,7 +78,7 @@ def fix_projection(y, lon, lat, reproject=True, exact=True,nearestNeighborInterp
     if nearestNeighborInterp:
         square_fill_vals = interp_fill_vals(tuple(grid))
         square=square.astype(np.int32)
-        square[square_fill_vals == -32767.0] = np.int32(-2**31)
+        square[square_fill_vals == fill_value_float] = np.int32(-2**31)
     
     
     if not reproject:

@@ -130,10 +130,13 @@ cleanup_parameters = parser.add_argument_group(
     'Cleanup Parameters', 
     'Set any parameters associated with removing unnecesary data from scenes',
 )
+cleanup_parameters.add_argument('--remove_L1_tile', type=bool, 
+    default=config.remove_L1_tile,
+    help='Removes the Level 1 file after correction')
 
 cleanup_parameters.add_argument('--remove_L2_tile', type=bool, 
     default=config.remove_L2_tile,
-    help='Removes the Level 2 file if True')
+    help='Removes the Level 2 file')
 
 cleanup_parameters.add_argument('--remove_scene_folder', type=bool, 
     default=config.remove_scene_folder,

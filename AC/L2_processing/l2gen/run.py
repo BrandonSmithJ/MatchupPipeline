@@ -28,6 +28,7 @@ FILENAME = {
     'S3B'   : '**/xfdumanifest.xml',
 
     # Landsat
+    'OLI2'   : '**/*_MTL.txt',
     'OLI'   : '**/*_MTL.txt',
     'ETM'   : '**/*_MTL.txt',
     'TM'    : '**/*_MTL.txt',
@@ -382,3 +383,22 @@ def convert(
             shutil.copyfile(txt.as_posix(), converted.as_posix())
 
     return inp_file.parent / 'converted' / inp_file.name
+
+if __name__ == '__main__':
+    
+    sensor = 'OLI'
+    inp_file = Path('/data/roshea/SCRATCH/Gathered/Scenes/OLI/LC08_L1TP_020030_20220823_20220923_02_T1')
+    out_dir = Path('/data/roshea/SCRATCH/Gathered/Scenes/OLI/LC08_L1TP_020030_20220823_20220923_02_T1/out/Erie_OLI_08_23_2022_XCI0001')
+    ac_path = '/home/roshea/SeaDAS/SeaDAS_V2022_3/ocssw'
+    overwrite = False
+    timeout = 30
+    # location = Location(n:43.0, s:41.25, e:-78.63, w:-83.75)
+    extra_cmd = {}
+    run_l2gen(
+        sensor=sensor, inp_file =inp_file, out_dir=out_dir,ac_path=ac_path,
+        overwrite=overwrite,
+        timeout=30, 
+        # location  : Optional[Location] = None,
+        # **extra_cmd, 
+    )
+    

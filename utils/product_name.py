@@ -32,7 +32,7 @@ def product_name(inp_file, out_path,date,dataset,sensor,ac_method,product,extens
     
     """
    sensor = identify_subsensor(inp_file,sensor)
-   date=date.strftime("%Y_%m_%d")
+   date=date if type(date) == str else date.strftime("%Y_%m_%d")
    product='_'.join((product.split(',')))
    product_name = '_'.join([prefix,date,dataset,sensor,ac_method,product+extension])
    extension_folder = extension.split('.')[-1]+'s'

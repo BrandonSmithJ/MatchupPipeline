@@ -23,7 +23,7 @@ app.conf.update(**{
 
     'task_acks_late' : True,
     'worker_prefetch_multiplier' : 1,
-    'task_always_eager' : False, # Processes in serial, locally 
+    'task_always_eager' : True, # Processes in serial, locally 
 
 })
 
@@ -38,10 +38,11 @@ app.conf.task_routes = {
 
 # If we're on pardees, we're using TLS for RabbitMQ
 cert_root = '/home/bsmith16/workspace/rabbitmq_server-3.10.7/etc/pki/tls'
+#cert_root = '/home/roshea/rabbitMQ/rabbitmq_server-3.10.7/etc/pki/tls'
 if os.path.exists(cert_root):
   import ssl
   app.conf.update(**{
-    'broker_url'     : 'pyamqp://localhost:5671',
+    'broker_url'     :'pyamqp://localhost:5671' ,#'pyamqp://roshea:password@localhost:5671/IP_4', #'pyamqp://roshea:password@localhost:5671/IP_1'
     'broker_use_ssl' : {
       'keyfile'    : f'{cert_root}/server-key.pem',
       'certfile'   : f'{cert_root}/server-cert.pem',

@@ -53,7 +53,7 @@ def download(self,
     # Quick hack to minimize risk of running out of space
     try:
         folders = list(out_path.glob('*'))
-        while (len(folders)>400):
+        while (len(folders)>4000):
             import numpy as np
             import shutil
             oldest = min(folders, key=lambda f: f.stat().st_ctime)#i = np.random.randint(0, len(folders))

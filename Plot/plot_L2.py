@@ -161,12 +161,14 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
             save_nc(inp_file,nc_filename,products,slices,overwrite)
     
         rgb, extent, (_, _)  = fix_projection(rgb,im_lon,im_lat,False)
+        rgb[np.any(rgb<0,axis=2),:] = 0
         Rrs, extent, (im_lon, im_lat)  = fix_projection(Rrs,im_lon,im_lat,reproject=False,nearestNeighborInterp=False, sparse_resample=True)        
 
     try:
         products, slices = image_estimates(Rrs, **kwargs)
     except:
         print('Failed to produce products for ', png_filename)
+        return False
 
     # Create plot for each product, bounding the colorbar per product
     f, axes = plt.subplots(1, len(slices), figsize=(4*len(slices), 8))
