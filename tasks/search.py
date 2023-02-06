@@ -2,7 +2,7 @@ from .. import API, app
 from argparse import Namespace
 
 
-@app.task(bind=True, name='search', queue='search', priority=1)
+@app.task(bind=True, name='search', queue='search', priority=8)
 def search(self,
     sample_config : dict,      # Config for this sample
     sensor        : str,       # Sensor to perform search for
