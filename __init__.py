@@ -20,13 +20,18 @@ app.conf.update(**{
 
     'result_extended'         : True, # Enables extended task result attributes
     'worker_send_task_events' : True, # Send task-related events for Flower
+    #'worker_send_sent_event'  : True, 
+    'event_queue_ttl'         : 30,
 
     'task_acks_late' : True,
     'worker_prefetch_multiplier' : 1,
+
+    'task_queue_max_priority' : 10,
+    'task_queue_default_priority' : 5,
 })
 
-# Need to allow larger representations to properly reconstruct arguments in 
-# the Monitor. Otherwise, (kw)args are cut off with '...' past a certain size
+# Need to allow larger representations to reconstruct arguments in the
+# Monitor. Otherwise, [kw]args are cutoff with '...' after certain length
 app.amqp.argsrepr_maxsize = 32768
 app.amqp.kwargsrepr_maxsize = 32768
 
@@ -38,11 +43,20 @@ app.conf.task_routes = {
    'write'   : {'queue': 'write'},
 }
 
+from kombu import Exchange, Queue
+app.conf.task_queues = [
+    Queue('search',  Exchange('search'),  routing_key='search',  queue_arguments={'x-max-priority': 10}),
+    Queue('correct', Exchange('correct'), routing_key='correct', queue_arguments={'x-max-priority': 10}),
+    Queue('extract', Exchange('extract'), routing_key='extract', queue_arguments={'x-max-priority': 10}),
+    Queue('write',   Exchange('write'),   routing_key='write',   queue_arguments={'x-max-priority': 10}),
+]
+
 # If we're on pardees, we're using TLS for RabbitMQ
 cert_root = '/home/bsmith16/workspace/rabbitmq_server-3.10.7/etc/pki/tls'
 if os.path.exists(cert_root):
   import ssl
   app.conf.update(**{
+    #'broker_url'     : 'pyamqp://bsmith16:mpbsmith16@localhost:5671/matchups_bsmith16',
     'broker_url'     : 'pyamqp://localhost:5671',
     'broker_use_ssl' : {
       'keyfile'    : f'{cert_root}/server-key.pem',
