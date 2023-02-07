@@ -24,8 +24,10 @@ def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
         try:
             try:    data = pd.read_csv(path, parse_dates=['date']).dropna()
             except: data = pd.read_csv(path, parse_dates=['datetime']).dropna()
+            #data = pd.read_csv(path, parse_dates=['datetime'])
+            assert(len(data)), 'No data available'
 
-            if 'time' in data.columns:
+            if 'time' in data.columns and 'datetime' not in data.columns:
                 data['datetime'] = data['date'].astype(str) + ' ' + data['time']
 
             # Assume 'date' columns don't contain valid time information
@@ -125,7 +127,30 @@ def filter_completed(
             matched  = matched[matched.isin(written.unique())]
             complete = pd.concat([no_match, matched]).unique()
         else: complete = no_match
-    else:     complete = []
+    #else:     complete = []
+    else:
+        metapaths = get_exists('meta.csv', datasets, sensors, ac_methods)
+        metanames = map(get_name, metapaths)
+        written   = [df['uid'] for df in read_files(metapaths, **{
+            'index_col' : None,
+            'header'    : 0,
+            'delimiter' : '\|\|',
+            'engine'    : 'python',
+        })]
+
+        if len(written):
+            uids = pd.concat(written)
+            done = uids.value_counts()
+            complete = done[done >= len(written)].index 
+
+            process_count = color(f'{len(uids.unique()):,}', 'blue')
+            finish_count  = color(f'{len(complete.unique()):,}', 'green')
+
+            print(f'Total samples currently processed: {process_count}')
+            print(f'Samples completed for all sources: {finish_count}')
+            print(f'\nSamples currently written for each data source: ',end='')
+            print(pretty_print(dict(zip(metanames,map(len, written)))), end='\n\n')
+        else: complete = []            
 
     total_count = color(f'{len(data):,}', 'blue') 
     done_count  = color(f'{len(complete):,}', 'green')
@@ -161,7 +186,7 @@ def main():
         # Multiple threads for search
         {   'logname'     : 'worker1',
             'queues'      : ['search', 'correct', 'extract', 'celery'],
-            'concurrency' : 4,
+            'concurrency' : 3,
         },
         # Multiple threads for correction
         {   'logname'     : 'worker2',
