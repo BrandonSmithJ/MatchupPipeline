@@ -169,7 +169,8 @@ def start_monitor(total_samples, total_ac, show_plot=plt is not None):
                 # plot each group member state separately
                 if 'correct' in count:
                     frac = 0.5 / len(ac_method_stats)
-                    plt.bar(np.arange(len(ac_method_stats)) * 1/len(ac_method_stats) + x.index('correct') + frac, [ac_method_stats[ac][s_state] for ac in acs], color=s_color, width=.8 / len(ac_method_stats), orientation='horizontal') 
+                    plt.bar(np.arange(len(ac_method_stats)) * 1/len(ac_method_stats) + x.index('correct') + frac, [sum([ac_method_stats[ac][s] if s in ac_method_stats[ac] else 0 for i,s in enumerate(e) if i <= e.index(s_state)]) for ac in acs], color=s_color, width=.8 / len(ac_method_stats), orientation='horizontal') 
+
 
             # plot labels
             if 'correct' in count:
