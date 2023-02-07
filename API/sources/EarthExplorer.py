@@ -5,12 +5,14 @@ from datetime import datetime as dt
 from functools import partial
 from pathlib import Path 
 from typing import Union 
+from tqdm import tqdm
 
 from landsatxplore.util import guess_dataset, is_display_id
 from landsatxplore import earthexplorer
 from landsatxplore.api import API
 from landsatxplore.earthexplorer import (
     EarthExplorer as EE,
+    EarthExplorerError,
     DATA_PRODUCTS,
     EE_LOGIN_URL, 
     EE_DOWNLOAD_URL,
@@ -18,7 +20,7 @@ from landsatxplore.earthexplorer import (
 
 earthexplorer.tqdm = partial(earthexplorer.tqdm, leave=False)
 
-import re, os
+import requests, re, os
 
 
 
@@ -45,7 +47,8 @@ class EE_Fixed(EE):
             "password" : password,
             "csrf"     : re.findall(r'name="csrf" value="(.+?)"', login_page.text)[0],
         }
-        self.session.post(EE_LOGIN_URL, data=login_data, allow_redirects=True)
+        resp = self.session.post(EE_LOGIN_URL, data=login_data, allow_redirects=True)
+        assert(resp.status_code == 200), [resp.text, resp.status_code, resp.reason]
         assert(self.logged_in()), 'EarthExplorer login failed'
 
 
@@ -70,6 +73,50 @@ class EE_Fixed(EE):
             filename = self._download(url, output_dir, timeout=timeout, skip=skip)
         return filename
 
+    def _download(self, url, output_dir, timeout, chunk_size=1024, skip=False):
+        """Download remote file given its URL."""
+        # Check availability of the requested product
+        # EarthExplorer should respond with JSON
+        with self.session.get(
+            url, allow_redirects=False, stream=True, timeout=timeout
+        ) as r:
+            r.raise_for_status()
+            error_msg = r.json().get("errorMessage")
+            if error_msg:
+                raise EarthExplorerError(error_msg)
+            download_url = r.json().get("url")
+
+        try:
+            with self.session.get(
+                download_url, stream=True, allow_redirects=True, timeout=timeout
+            ) as r:
+                file_size = int(r.headers.get("Content-Length"))
+                with tqdm(
+                    total=file_size, unit_scale=True, unit="B", unit_divisor=1024
+                ) as pbar:
+                    try:
+                        local_filename = r.headers["Content-Disposition"].split("=")[-1]
+                        local_filename = local_filename.replace('"', "")
+                        local_filename = os.path.join(output_dir, local_filename)
+                    except Exception as e:
+                        message = f'Exception parsing EarthExplorer response: {e}'
+                        message+= f'\nResponse headers: {r.headers}'
+                        message+= f'\nResponse text:\n{r.text}'
+                        raise EarthExplorerError(message)
+
+                    if skip:
+                        return local_filename
+                    with open(local_filename, "wb") as f:
+                        for chunk in r.iter_content(chunk_size=chunk_size):
+                            if chunk:
+                                f.write(chunk)
+                                pbar.update(chunk_size)
+        except requests.exceptions.Timeout:
+            raise EarthExplorerError(
+                "Connection timeout after {} seconds.".format(timeout)
+            )
+        return local_filename
+
 
 
 class EarthExplorer(BaseSource, API):   
@@ -81,8 +128,8 @@ class EarthExplorer(BaseSource, API):
     site_url      = 'earthexplorer.usgs.gov'
     valid_sensors = { # EarthExplorer dataset names
         'OLI' : 'landsat_ot_c2_l1', #LANDSAT_8_C1
-        'ETM' : 'LANDSAT_ETM_C1',
-        'TM'  : 'LANDSAT_TM_C1',
+        'ETM' : 'landsat_etm_c2_l1', # 'LANDSAT_ETM_C1',
+        'TM'  : 'landsat_tm_c2_l1', #'LANDSAT_TM_C1',
     }
     valid_dates = { # Dates available for the sensors
         'OLI' : (dt(2013,  2, 11), dt.now()),
@@ -156,3 +203,5 @@ class EarthExplorer(BaseSource, API):
             decompress(Path(archive), output) 
             output.joinpath('.complete').touch()
         return output
+
+
