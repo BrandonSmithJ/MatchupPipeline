@@ -23,7 +23,7 @@ app.conf.update(**{
     #'worker_send_sent_event'  : True, 
     'event_queue_ttl'         : 30,
 
-    'task_acks_late' : True,
+    'task_acks_late' : False, # Results in task loop if worker fails
     'worker_prefetch_multiplier' : 1,
 
     'task_queue_max_priority' : 10,
