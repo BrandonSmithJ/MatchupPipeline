@@ -179,7 +179,7 @@ def start_monitor(total_samples, total_ac, show_plot=plt is not None):
             
             plt.yticks(np.arange(len(count)) + 0.5, list(map(label, x)))
             plt.ylim(0, len(count))
-            plt.xlim(0, max(map(sum, [[count[name][event] for event in e] for name in x])))
+            plt.xlim(max(min([count[name]['Success'] for name in x if 'Success' in count[name]] or [0])-10, 0), max(map(sum, [[count[name][event] for event in e] for name in x])))
             plt.xfrequency(5)
             plt.plotsize(70, 40)
             plt.show()
