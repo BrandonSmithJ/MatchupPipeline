@@ -23,13 +23,15 @@ class PipelineTask(Task):
 
     def before_start(self, task_id, args, kwargs):
         """ Run by the worker before the task starts executing """
-        self.logger.debug(f'Starting task={self.name}: {pretty_print(args)}')
+        try: self.logger.debug(f'Starting task={self.name}: {pretty_print(args)}')
+        except: self.logger.debug(f'Starting task={self.name}: {args}')
         super().before_start(task_id, args, kwargs)
 
 
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         """ Handler called after the task returns """
-        self.logger.debug(f'Finished task={self.name}: {pretty_print(retval)}')
+        try: self.logger.debug(f'Finished task={self.name}: {pretty_print(retval)}')
+        except: self.logger.debug(f'Finished task={self.name}: {retval}')            
         super().after_return(status, retval, task_id, args, kwargs, einfo)
 
 
