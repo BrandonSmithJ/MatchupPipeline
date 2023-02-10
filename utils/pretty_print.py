@@ -53,5 +53,7 @@ def pretty_print(obj: Iterable, indent: str = '  ', _depth: int = 1) -> str:
 
     except Exception as e: 
         print(f'pretty_print failed to parse object {obj}:\n{e}')
+    except:
+        print(f'pretty_print failed to parse object {obj}')
     return str(obj) 
 
