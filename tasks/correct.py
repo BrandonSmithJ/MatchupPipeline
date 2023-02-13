@@ -3,7 +3,7 @@ from .. import app
 from argparse import Namespace
 
 
-@app.task(bind=True, name='correct', queue='correct', priority=2, max_retries=0)
+@app.task(bind=True, name='correct', queue='correct', priority=2, retry=False, max_retries=0)
 def correct(self,
     sample_config : dict,      # Config for this sample
     ac_method     : str,       # AC method to use for correction
@@ -17,6 +17,11 @@ def correct(self,
                 inp_path.parent).joinpath('out', sample_config['uid'])
     out_path.mkdir(exist_ok=True, parents=True)
 
+    # Input file has been deleted
+    if not inp_path.exists():
+        self.request.chain = None
+        return
+
     kwargs = {
         'sensor'    : sample_config['sensor'],
         'inp_file'  : inp_path,
@@ -26,7 +31,12 @@ def correct(self,
         'timeout'   : global_config.ac_timeout,
         'location'  : sample_config['location'],
     }
-    kwargs['correction_path'] = AC_FUNCTIONS[ac_method](**kwargs)
+    try:
+        kwargs['correction_path'] = AC_FUNCTIONS[ac_method](**kwargs)
+    except Exception as e:
+        self.logger.error(f'Error running AC: {e}')
+        self.request.chain = None
+        return 
     kwargs.update(sample_config)
     kwargs.update({'ac_method': ac_method})
     return kwargs
