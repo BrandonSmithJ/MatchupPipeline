@@ -3,7 +3,8 @@ from argparse import Namespace
 from celery.contrib import rdb
 
 
-def search(
+@app.task(bind=True, name='search', queue='search', priority=8)#, rate_limit='1/m')
+def search(self,
     sample_config : dict,      # Config for this sample
     sensor        : str,       # Sensor to perform search for
     global_config : Namespace, # Config for the pipeline

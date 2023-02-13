@@ -14,7 +14,7 @@ def serialize(values, separators=['||', '<>', ',']):
 
 
 
-@app.task(bind=True, name='write', queue='write')
+@app.task(bind=True, name='write', queue='write', priority=4)
 def write(self,
     sample_config : dict,      # Config for this sample
     global_config : Namespace, # Config for the pipeline
