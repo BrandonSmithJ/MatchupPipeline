@@ -29,9 +29,9 @@ class Copernicus(BaseSource, SentinelAPI):
 
     def __init__(self, *args, **kwargs):
         username, password = get_credentials(self.site_url)
-        SentinelAPI.__init__(self, username, password)
         BaseSource.__init__(self, *args, **kwargs)
-
+        SentinelAPI.__init__(self, username, password)
+        
 
     def _tqdm(self, **kwargs):
         """ Ensure progress bars created by sentinelsat are removed """
