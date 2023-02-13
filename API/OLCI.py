@@ -11,8 +11,8 @@ class OLCI(BaseAPI):
         - LAADS: uncertain
 
     Current priority ordering:
-        search:   Copernicus, OBPG, LAADS
+        search:   OBPG, Copernicus, LAADS
         download: OBPG, LAADS, Copernicus
     """
-    search_sources   = ['Copernicus', 'OBPG', 'LAADS']
+    search_sources   = ['OBPG', 'Copernicus',  'LAADS']
     download_sources = ['OBPG', 'LAADS', 'Copernicus']

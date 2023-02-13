@@ -3,8 +3,8 @@ from pathlib import Path
 import os
 
 username = getoutput('whoami') #SaltonSea_08_27_2016
-datasets = ['Erie_OLI_08_23_2022'] #Erie_2021 #SaltonSea_2022 #SaltonSea_10_09_2022 #SaltonSea_shifted SaltonSea_1999_2022 GSL_02_13_2019 #GSL_High_quality
-sensors  = ['OLI']
+datasets = ['Erie_2021'] #Erie_2021 #SaltonSea_2022 #SaltonSea_10_09_2022 #SaltonSea_shifted SaltonSea_1999_2022 GSL_02_13_2019 #GSL_High_quality
+sensors  = ['OLCI']
 
 
 #===================================
@@ -22,7 +22,7 @@ output_path  = scratch_path.joinpath('Gathered')
 #===================================
 #    Data Search Parameters
 #===================================  
-max_cloud_cover = 100 #Max cloud cover for downloading/processing.
+max_cloud_cover = 100 #Max cloud cover for downloading/processing. Only works for Sentinel 2.
 search_day_window = None
 search_minute_window = None
 search_year_range = None
@@ -121,6 +121,16 @@ if  'SaltonSea' in datasets[0] or 'GSL' in datasets[0]:
 if  'AugGloria' in datasets[0]: 
     search_day_window=2 #30*60 #h*m
     sensors  = ['OLI']
+
+if  'Erie' in datasets[0] or 'Chesapeake_Bay' in datasets[0]: 
+    overwrite=True
+    ac_methods = ['acolite']  #,'l2gen',
+    search_year_range = 8
+    remove_scene_folder=True
+    remove_L1_tile=True
+    fix_projection_Rrs=True
+    # search_day_window=91
+
 
 if search_day_window is None  and search_year_range is None and search_minute_window is None:
     search_day_window=0

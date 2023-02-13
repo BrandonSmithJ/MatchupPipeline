@@ -29,7 +29,8 @@ class Copernicus(BaseSource, SentinelAPI):
 
     def __init__(self, *args, **kwargs):
         username, password = get_credentials(self.site_url)
-        SentinelAPI.__init__(self, username, password)
+        # self.api = SentinelAPI.__init__(self, username, password)
+        self.api  = SentinelAPI(username, password)
         BaseSource.__init__(self, *args, **kwargs)
 
 
@@ -75,6 +76,7 @@ class Copernicus(BaseSource, SentinelAPI):
         config.update({
             'productlevel' : 'L1',
             'producttype'  : 'OL_1_EFR___',
+            #'cloudcoverpercentage' : (0, max_cloud_cover), # not supported for OLCI
         } if sensor == 'OLCI' else {
             'processinglevel'      : 'Level-1C',
             'cloudcoverpercentage' : (0, max_cloud_cover),
@@ -84,7 +86,7 @@ class Copernicus(BaseSource, SentinelAPI):
         config.update(kwargs)
 
         return { scene['title']: scene 
-                 for _, scene in self.query(**config).items() }
+                 for _, scene in self.api.query(**config).items() }
 
 
 

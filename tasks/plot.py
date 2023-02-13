@@ -17,7 +17,7 @@ def plot(self,
         'out_path' : sample_config['out_path'],
         'overwrite': global_config.overwrite,
         'dataset'  : sample_config['dataset'],
-        'date'     : str(sample_config['inp_file']).split('/')[-1][1:] if sample_config['sensor'] == 'MOD' else str(sample_config['inp_file']).split('/')[-1].split('.')[1],
+        'date'     : str(sample_config['inp_file']).split('/')[-1][1:] if sample_config['sensor'] == 'MOD' else  str(sample_config['inp_file']).split('/')[-1].split('____')[1].split('_')[0] if sample_config['sensor'] in ['S3A','S3B','OLCI'] else str(sample_config['inp_file']).split('/')[-1].split('.')[1],
         'ac_method': sample_config['ac_method'],
         'fix_projection_Rrs': global_config.fix_projection_Rrs,
  	}

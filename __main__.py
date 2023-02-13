@@ -191,22 +191,22 @@ def main(debug=True):
         # Multiple threads for download
         {   'logname'     : 'worker1',
             'queues'      : ['download', 'celery'],
-            'concurrency' : 1,
+            'concurrency' : 2,
         },
         # Multiple threads for correction
         {   'logname'     : 'worker2',
             'queues'      : ['correct'],
-            'concurrency' : 3,
+            'concurrency' : 4,
         },
         # Multiple threads for extraction
         {   'logname'     : 'worker3',
             'queues'      : ['extract'],
-            'concurrency' : 3,
+            'concurrency' : 1,
         },
         # Multiple threads for plotting
         {   'logname'     : 'worker4',
             'queues'      : ['plot'],
-            'concurrency' : 3,
+            'concurrency' : 4,
         },
         # Single dedicated thread (i.e. for writing)
         {   'logname'     : 'worker5',

@@ -93,12 +93,22 @@ def extract_data(image, avail_bands, req_bands, allow_neg=False, key='Rrs',apply
     # Return the data, filling any masked values with nan
     return extracted.filled(fill_value=np.nan)
 
-
+def fix_rgb_errors(rgb,nan_val=250):
+    min_val = .1
+    max_val = 10
+    bool_01 = np.logical_or((rgb[:,:,0]/rgb[:,:,1] > max_val), (rgb[:,:,0]/rgb[:,:,1] < min_val))
+    bool_02 = np.logical_or((rgb[:,:,0]/rgb[:,:,2] > max_val), (rgb[:,:,0]/rgb[:,:,2] < min_val))
+    bool_21 = np.logical_or((rgb[:,:,2]/rgb[:,:,1] > max_val), (rgb[:,:,2]/rgb[:,:,1] < min_val))
+    final_bool = np.logical_or(np.logical_or(bool_01,bool_02),bool_21)
+    rgb[final_bool,:] = nan_val#.astype(np.uint8) 
+    rgb[np.any(rgb<=1,axis=2),:] = nan_val#.astype(np.uint8) 
+    rgb[np.any(rgb>=250,axis=2),:] = nan_val#.astype(np.uint8) 
+    return rgb
 
 def plot_product(ax, title, product, rgb, vmin, vmax):
     ''' Plot a given product on the axis using vmin/vmax as the 
         colorbar min/max, and rgb as the visible background '''
-    ax.imshow( gamma_stretch(rgb) )
+    ax.imshow( fix_rgb_errors(gamma_stretch(rgb) ))
     ax.axis('off')
     ax.set_title(title.upper())
 
@@ -151,23 +161,28 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     #if sensor in ['VI'] or (Aqua_or_Terra =='A' and 'MOD' in sensor): Rrs = Rrs[::-1, ::-1, :] 
 
     rgb   = extract_data(image, bands, rgb_bands,key='rhos')
+ 
     if sensor in ['PACE']: rgb = rgb[::-1, :, :] 
     #if sensor in ['VI'] or (Aqua_or_Terra =='A' and 'MOD' in sensor): rgb = rgb[::-1, ::-1, :] 
     if fix_projection_Rrs:
         try:
             products, slices = image_estimates(Rrs, **kwargs)
         except:
+            print('----------------------------------')
             print('Failed to produce products for ', png_filename)
-            save_nc(inp_file,nc_filename,products,slices,overwrite)
+            print('----------------------------------')
+            return False
     
-        rgb, extent, (_, _)  = fix_projection(rgb,im_lon,im_lat,False)
-        rgb[np.any(rgb<0,axis=2),:] = 0
+        rgb, extent, (_, _)  = fix_projection(rgb,im_lon,im_lat,reproject=False,nearestNeighborInterp=False, sparse_resample=True)
+
         Rrs, extent, (im_lon, im_lat)  = fix_projection(Rrs,im_lon,im_lat,reproject=False,nearestNeighborInterp=False, sparse_resample=True)        
 
     try:
         products, slices = image_estimates(Rrs, **kwargs)
     except:
+        print('----------------------------------')
         print('Failed to produce products for ', png_filename)
+        print('----------------------------------')
         return False
 
     # Create plot for each product, bounding the colorbar per product
@@ -180,7 +195,6 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     }
     for i, (key, idx) in enumerate(slices.items()):
         plot_product(np.atleast_1d(axes)[i], key, products[..., idx], rgb, *bounds[key])
-
 
 
     f.suptitle(f'{loc} {location.stem} {date} {sensor}')

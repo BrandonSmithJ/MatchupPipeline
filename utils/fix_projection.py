@@ -6,6 +6,7 @@ Created on Tue Dec 20 11:14:06 2022
 @author: ryanoshea
 """
 import numpy as np
+from scipy.spatial import KDTree
 
 _triangulations = {}
 def fix_projection(y, lon, lat, reproject=True, exact=True,nearestNeighborInterp=False,sparse_resample =False):
@@ -60,20 +61,22 @@ def fix_projection(y, lon, lat, reproject=True, exact=True,nearestNeighborInterp
         interp = LinearNDInterpolator(_triangulations[tri_key], y, fill_value=fill_value_float)
     grid   = np.meshgrid(lon2, lat2)
     #Find the nearest lat lon for each original finite point
-    def sparse_resampling(grid,y,lonlat):
+    def sparse_resampling(grid,y,lonlat,distance_upper_bound = 0.01):
         not_nan_locations = list(np.where(~np.isnan(y).any(axis=1)))[0]
         y_nan = np.empty((np.shape(grid[0])[0]*np.shape(grid[0])[1],np.shape(y[-1])[0]))
         y_nan.fill(np.nan)
-        # y_nan = y_nan.flatten()
-        for x in not_nan_locations:
-            curr_lon = lonlat[0][x]
-            curr_lat = lonlat[1][x]
-            min_dist = np.argmin(((grid[0] - curr_lon)**2 +  (grid[1] - curr_lat)**2)**0.5)
-            y_nan[min_dist,:] = y[x,:]
+        
+       
+        tree = KDTree(np.c_[lonlat[0].ravel(), lonlat[1].ravel()])
+        value, index = tree.query(np.transpose([grid[0].ravel(), grid[1].ravel()]), k=1,distance_upper_bound=0.01)        
+        y_nan[np.isfinite(value),:] = y[index[np.isfinite(value)],:]
+        
         y_nan = y_nan.reshape((np.shape(grid[0])[0],np.shape(grid[0])[1],np.shape(y[-1])[0]))
         return y_nan
-           
-    square = sparse_resampling(grid,y,lonlat) if sparse_resample else  interp(tuple(grid))     
+    lon_degrees_per_pixel = (extent[1] - extent[0])/lon.shape[1]
+    lat_degrees_per_pixel = (extent[3] - extent[2])/lon.shape[0]
+    average_pixel_diagonal = np.sqrt(np.square(lon_degrees_per_pixel)+np.square(lat_degrees_per_pixel))
+    square = sparse_resampling(grid,y,lonlat,distance_upper_bound=average_pixel_diagonal) if sparse_resample else  interp(tuple(grid))     
     
     if nearestNeighborInterp:
         square_fill_vals = interp_fill_vals(tuple(grid))
