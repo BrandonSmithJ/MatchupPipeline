@@ -147,7 +147,6 @@ def start_monitor(total_samples, total_ac, show_plot=plt is not None):
 
         if show_plot:
             print()
-            plt.cld()
 
             # plt.stacked_bar(list(map(label, x)), y, label=e, color=[colors[event] for event in e])
             y = np.array(y)
@@ -157,6 +156,7 @@ def start_monitor(total_samples, total_ac, show_plot=plt is not None):
 
             acs = sorted(ac_method_stats)
             max_split = 6 # This is going to change based on how many ac processors / api sources have been encountered
+            plt.cld()
             for idx, series in enumerate(total_y[::-1]):
                 s_state = e[::-1][idx]
                 s_color = colors[s_state]
@@ -183,7 +183,7 @@ def start_monitor(total_samples, total_ac, show_plot=plt is not None):
             plt.xfrequency(5)
             plt.plotsize(70, 40)
             plt.show()
-            plt.sleep(0.1)
+            plt.sleep(0.01)
 
 
         if name not in bars:
