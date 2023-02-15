@@ -42,6 +42,7 @@ class PipelineTask(Task):
 
     def on_retry(self, exc, task_id, args, kwargs, einfo):
         """ This is run by the worker when the task is to be retried """
+        self.logger.warning(f'Retrying task={self.name} {task_id}')
         super().on_retry(exc, task_id, args, kwargs, einfo)
 
 
