@@ -59,6 +59,10 @@ SENSOR_CONFIG = {
   'OLI' : {
     'l2prod_exclude' : ['depth'],
   },
+  
+  'MSI' : {
+    'l2prod_exclude' : ['depth'],
+  },
 
   'MOD' : {
     'aer_opt'        : '-2',
