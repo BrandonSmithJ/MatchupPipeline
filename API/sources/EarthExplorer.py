@@ -42,11 +42,15 @@ class EE_Fixed(EE):
     def login(self, username, password):
         """ Login is broken due to changed html tags """
         login_page = self.session.get(EE_LOGIN_URL)
-        login_data = {
-            "username" : username,
-            "password" : password,
-            "csrf"     : re.findall(r'name="csrf" value="(.+?)"', login_page.text)[0],
-        }
+        try:
+            login_data = {
+                "username" : username,
+                "password" : password,
+                "csrf"     : re.findall(r'name="csrf" value="(.+?)"', login_page.text)[0],
+            }
+        except Exception as e:
+            print(f'Could not get csrf value: {login_page.text}')
+            raise e
         resp = self.session.post(EE_LOGIN_URL, data=login_data, allow_redirects=True)
         assert(resp.status_code == 200), [resp.text, resp.status_code, resp.reason]
         assert(self.logged_in()), 'EarthExplorer login failed'
