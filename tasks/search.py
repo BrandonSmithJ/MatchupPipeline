@@ -1,6 +1,5 @@
 from .. import API, app
 from argparse import Namespace
-from ..utils import pretty_print
 
 
 @app.task(bind=True, name='search', queue='search', priority=1)#, rate_limit='3/m')
@@ -20,7 +19,7 @@ def search(self,
     if len(scenes):
         # Quick hack to minimize risk of running out of space
         try:
-            folders = [f for f in out_path.glob('*') if len(list(f.glob('.complete')))]
+            folders = [f for f in out_path.glob('*') if f.joinpath('.complete').exists()]
             
             if len(folders) > 20:
                 import numpy as np
