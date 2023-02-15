@@ -1,8 +1,9 @@
 from .. import API, app
 from argparse import Namespace
+from ..utils import pretty_print
 
 
-@app.task(bind=True, name='search', queue='search', priority=8)#, rate_limit='3/m')
+@app.task(bind=True, name='search', queue='search', priority=1)#, rate_limit='3/m')
 def search(self,
     sample_config : dict,      # Config for this sample
     sensor        : str,       # Sensor to perform search for
@@ -19,13 +20,17 @@ def search(self,
     if len(scenes):
         # Quick hack to minimize risk of running out of space
         try:
-            folders = list(out_path.glob('*'))
-            if len(folders) > 50:
+            folders = [f for f in out_path.glob('*') if len(list(f.glob('.complete')))]
+            
+            if len(folders) > 20:
                 import numpy as np
                 import shutil
                 # Doesn't work on linux?
                 #oldest = min(folders, key=lambda f: f.stat().st_ctime)#i = np.random.randint(0, len(folders))
-                oldest = min(folders, key=lambda f: min(f.glob('*'), key=lambda f2: min(f2.stat().st_ctime, f2.stat().st_atime)))
+                oldest = min(folders, key=lambda f: min(f.joinpath('.complete').stat().st_ctime, f.joinpath('.complete').stat().st_atime))
+                #parse_f = lambda f: dt.fromtimestamp(min(f.stat().st_ctime, f.stat().st_atime))
+                #options = {f.name: parse_f(f.joinpath('.complete')) for f in folders}
+                #self.logger.info(f'Removing folder {oldest} out of options: \n{pretty_print(options)}')
                 shutil.rmtree(oldest) #folders[i].as_posix())
         except Exception as e: self.logger.error(f'Error removing folders: {e}')
 
@@ -37,6 +42,7 @@ def search(self,
             'scene_folder'  : out_path,
             'overwrite'     : global_config.overwrite,
         }
+        self.logger.info(f'Downloading scene {scene}')
         kwargs['scene_path'] = api.download_scene(**kwargs)
         kwargs.update(sample_config)
         return kwargs
