@@ -2,7 +2,7 @@ from .. import API, app
 from argparse import Namespace
 
 
-@app.task(bind=True, name='search', queue='search', priority=8)#, rate_limit='1/m')
+@app.task(bind=True, name='search', queue='search', priority=8, rate_limit='3/m')
 def search(self,
     sample_config : dict,      # Config for this sample
     sensor        : str,       # Sensor to perform search for
@@ -23,7 +23,9 @@ def search(self,
             if len(folders) > 50:
                 import numpy as np
                 import shutil
-                oldest = min(folders, key=lambda f: f.stat().st_ctime)#i = np.random.randint(0, len(folders))
+                # Doesn't work on linux?
+                #oldest = min(folders, key=lambda f: f.stat().st_ctime)#i = np.random.randint(0, len(folders))
+                oldest = min(folders, key=lambda f: min(f.glob('*'), key=lambda f2: min(f2.stat().st_ctime, f2.stat().st_atime)))
                 shutil.rmtree(oldest) #folders[i].as_posix())
         except Exception as e: self.logger.error(f'Error removing folders: {e}')
 
