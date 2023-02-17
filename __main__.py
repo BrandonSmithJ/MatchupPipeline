@@ -190,13 +190,13 @@ def main(debug=True):
     worker_kws = [
         # Multiple threads for download
         {   'logname'     : 'worker1',
-            'queues'      : ['download', 'celery'],
-            'concurrency' : 2,
+            'queues'      : ['download','correct','extract','plot','celery'],
+            'concurrency' : 4,
         },
         # Multiple threads for correction
         {   'logname'     : 'worker2',
             'queues'      : ['correct'],
-            'concurrency' : 4,
+            'concurrency' : 2,
         },
         # Multiple threads for extraction
         {   'logname'     : 'worker3',
@@ -206,7 +206,7 @@ def main(debug=True):
         # Multiple threads for plotting
         {   'logname'     : 'worker4',
             'queues'      : ['plot'],
-            'concurrency' : 4,
+            'concurrency' : 2,
         },
         # Single dedicated thread (i.e. for writing)
         {   'logname'     : 'worker5',

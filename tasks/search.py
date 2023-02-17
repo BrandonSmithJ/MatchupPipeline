@@ -3,7 +3,7 @@ from argparse import Namespace
 from celery.contrib import rdb
 
 
-@app.task(bind=True, name='search', queue='search', priority=8)#, rate_limit='1/m')
+@app.task(bind=True, name='search', queue='search', priority=0)#, rate_limit='1/m')
 def search(self,
     sample_config : dict,      # Config for this sample
     sensor        : str,       # Sensor to perform search for
@@ -36,7 +36,7 @@ def search(self,
     # If there aren't any scenes found, break out of the pipeline chain
     # self.request.chain = None
 
-@app.task(bind=True, name='download', queue='download')
+@app.task(bind=True, name='download', queue='download',priority=0)
 def download(self,
     sample_config : dict,      # Config for this sample
     global_config : Namespace, # Config for the pipeline
@@ -54,7 +54,7 @@ def download(self,
     # Quick hack to minimize risk of running out of space
     try:
         folders = list(out_path.glob('*'))
-        while (len(folders)>4000):
+        while (len(folders)>200):
             import numpy as np
             import shutil
             oldest = min(folders, key=lambda f: f.stat().st_ctime)#i = np.random.randint(0, len(folders))

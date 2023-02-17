@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 
 username = getoutput('whoami') #SaltonSea_08_27_2016
-datasets = ['Erie_2021'] #Erie_2021 #SaltonSea_2022 #SaltonSea_10_09_2022 #SaltonSea_shifted SaltonSea_1999_2022 GSL_02_13_2019 #GSL_High_quality
+datasets = ['Erie_2016_2023']#'Chesapeake_Bay_2016_2023'] #Erie_2021 #SaltonSea_2022 #SaltonSea_10_09_2022 #SaltonSea_shifted SaltonSea_1999_2022 GSL_02_13_2019 #GSL_High_quality
 sensors  = ['OLCI']
 
 
@@ -12,7 +12,7 @@ sensors  = ['OLCI']
 #===================================
 l2gen_path   = '/home/roshea/SeaDAS/SeaDAS_V2022_3/ocssw' #'/tis/m2cross/scratch/f004/roshea/Seadas_versions/Seadas_V2022_3/ocssw' #'/tis/m2cross/scratch/f004/roshea/Seadas_versions/Seadas_8_2_0/SeaDAS/ocssw' # '/tis/m2cross/scratch/f004/roshea/Seadas_versions/Seadas_V2022_0/ocssw' #/tis/m2cross/scratch/f004/roshea/Seadas_versions/Seadas_V2021_2/ocssw'#/tis/m2cross/scratch/f004/roshea/test_folder/SeaDAS_01_13_2022'#'/home/bsmith16/workspace/SeaDAS'#'/tis/m2cross/scratch/f002/bsmith/SeaDAS_01_13_2022' # '/tis/m2cross/scratch/f002/roshea/SeaDAS_06_13_2022/ocssw_R_2022_3' supports collection 2 imagery
 polymer_path = '/home/bsmith16/AC/polymer/polymer-unknown/polymer' #Path(__file__).parent.joinpath('AC', 'L2_processing', 'polymer', 'polymer')
-acolite_path = '/home/bsmith16/AC/acolite/acolite-20220222.0/acolite' #Path(__file__).parent.joinpath('AC', 'L2_processing', 'acolite', 'acolite')
+acolite_path = '/home/roshea/AC/acolite/acolite-20221114.0/acolite' #'/home/bsmith16/AC/acolite/acolite-20220222.0/acolite' #Path(__file__).parent.joinpath('AC', 'L2_processing', 'acolite', 'acolite')
 
 scratch_path = Path(f'/data/{username}').joinpath('SCRATCH') #Path(__file__).parent.parent.
 insitu_path  = scratch_path.joinpath('Insitu') 
@@ -124,12 +124,12 @@ if  'AugGloria' in datasets[0]:
 
 if  'Erie' in datasets[0] or 'Chesapeake_Bay' in datasets[0]: 
     overwrite=True
-    ac_methods = ['acolite']  #,'l2gen',
+    ac_methods = ['l2gen','acolite']  #,'l2gen',
     search_year_range = 8
-    remove_scene_folder=True
-    remove_L1_tile=True
+    remove_scene_folder=True #Should be false
+    remove_L1_tile=False
     fix_projection_Rrs=True
-    # search_day_window=91
+    # search_day_window=0 #91
 
 
 if search_day_window is None  and search_year_range is None and search_minute_window is None:

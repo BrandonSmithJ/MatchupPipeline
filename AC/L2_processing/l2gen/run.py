@@ -178,6 +178,8 @@ def run_l2gen(
             msg+= '\n'.join([sep, 'Subprocess Output:', out, ''])
             msg+= '\n'.join([sep, 'Subprocess Error:',  err, ''])
             logger.error(msg)
+            if 'Scenes' in inp_file.as_posix() and sensor in inp_file.as_posix() and False:
+                shutil.rmtree(inp_file.as_posix())
             raise AtmosphericCorrectionError(msg)
 
     return out_file

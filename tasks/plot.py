@@ -2,7 +2,7 @@ from ..Plot.plot_L2 import plot_products
 from .. import app
 from argparse import Namespace
 
-@app.task(bind=True, name='plot', queue='plot')
+@app.task(bind=True, name='plot', queue='plot',priority=5)
 def plot(self,
  	sample_config : dict,      # Config for this sample
  	global_config : Namespace, # Config for the pipeline

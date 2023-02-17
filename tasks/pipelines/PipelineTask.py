@@ -1,8 +1,9 @@
 from ...utils import pretty_print
-
+from ...utils.write_complete import write_complete
 from celery import Task
 from celery.utils.log import get_task_logger
 
+import os
 
 class PipelineTask(Task):
     """ 
@@ -37,6 +38,17 @@ class PipelineTask(Task):
 
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         """ This is run by the worker when the task fails """
+        #Write failure to specific log file
+        out_string = task_id + '\n' + args[0]['scene_id'] + '\n' + str(einfo) + '\n' + "-------------------------------------------------\n"
+        with open("/home/roshea/matchup_pipeline_development/pipeline/Logs/errors.txt","a") as error_file:
+            error_file.write(out_string)
+        
+        #Write finished state 
+        scene_path = args[0]['scene_path']
+        ac_method = kwargs['ac_method']
+        ac_methods = kwargs['global_config'].ac_methods
+        
+        write_complete(scene_path,ac_method,ac_methods,out_string,kwargs['global_config'].remove_scene_folder)
         super().on_failure(exc, task_id, args, kwargs, einfo)
 
 

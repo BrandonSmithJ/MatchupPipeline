@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from pipeline.MDNs.MDN_MODIS_VIIRS_OLCI import image_estimates, get_tile_data, get_sensor_bands
+import matplotlib
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
@@ -21,6 +23,7 @@ from pipeline.utils.identify_subsensor import identify_subsensor
 import pandas as pd
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt 
+
 import numpy as np
 import time 
 import os
@@ -190,8 +193,8 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     bounds  = {
         'chl' : (1,  100),
         'tss' : (1,  100),
-        'pc'  : (1,  100),
-        'cdom': (0.1, 10),
+        'pc'  : (0.1,  100),
+        'cdom': (0.1, 3),
     }
     for i, (key, idx) in enumerate(slices.items()):
         plot_product(np.atleast_1d(axes)[i], key, products[..., idx], rgb, *bounds[key])

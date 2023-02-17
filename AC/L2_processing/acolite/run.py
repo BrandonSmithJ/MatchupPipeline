@@ -4,6 +4,7 @@ from typing import Union, Optional
 
 import numpy as np
 import tempfile, sys
+import shutil
 
 try: 
     from ...atm_utils import subprocess_wrapper
@@ -138,6 +139,8 @@ def run_acolite(
         outputs = list(out_file.parent.glob('*L2W.nc'))
         if len(outputs) != 1:
             msg = f'Acolite failure. Output directory contents: {outputs}'
+            if 'Scenes' in settings['inputfile'] and sensor in settings['inputfile'] and False:
+                shutil.rmtree(settings['inputfile'])
             raise AtmosphericCorrectionError(msg)
 
         # Delete previous output file if it exists

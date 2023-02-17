@@ -1,4 +1,5 @@
 from .. import app
+from ..utils.write_complete import write_complete
 from argparse import Namespace
 from pathlib import Path
 # import zarr
@@ -77,7 +78,7 @@ def write(self,
             for suffix in ['L1R', 'L1R_pan', 'L2R']:
                 for path in sample_config['correction_path'].glob(f'*{suffix}.nc'):
                     path.unlink()
-        if global_config.remove_scene_folder: shutil.rmtree(sample_config['scene_path']) #print("Removeing scenes folder")#sample_config['scene_folder']sample_config['scene_path'].rmdir()
+        if global_config.remove_scene_folder: write_complete(scene_path=sample_config['scene_path'],ac_method=sample_config['ac_method'],ac_methods=global_config.ac_methods,out_string="Succes") #shutil.rmtree(sample_config['scene_path']) #print("Removeing scenes folder")#sample_config['scene_folder']sample_config['scene_path'].rmdir()
             
             
         return ["Finished Writing"]

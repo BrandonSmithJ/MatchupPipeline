@@ -1,6 +1,6 @@
 from typing import Iterable
 import numpy as np
-
+from collections.abc import Iterable
 def pretty_print(obj: Iterable, indent: str = '  ', _depth: int = 1) -> str:
     """Return a nicely formatted string of the given iterable object.
 
@@ -20,6 +20,7 @@ def pretty_print(obj: Iterable, indent: str = '  ', _depth: int = 1) -> str:
         
     """
     try:
+        if not isinstance(obj,Iterable): return str(obj)
         brackets = {
             dict  : '{',
             list  : '[',
