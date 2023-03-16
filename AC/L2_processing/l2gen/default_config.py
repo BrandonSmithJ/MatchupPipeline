@@ -115,6 +115,7 @@ SENSOR_CONFIG = {
   },
 
   'VI' : {
+    #'aer_opt'        : '-3',      
     'aer_wave_short' : '868',
     'aer_wave_long'  : '2258',
     'l2prod_exclude' : ['depth'],
@@ -130,7 +131,7 @@ SENSOR_CONFIG = {
   },
   
   'OLCI': {
-
+    #'aer_opt'        : '-2',
     'l2prod_exclude' : [ 'depth'],
   },
 }
