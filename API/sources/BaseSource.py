@@ -223,6 +223,7 @@ class BaseSource(Picklable, metaclass=BaseSourceMeta):
                 'unit'         : 'B',
                 'leave'        : False,
                 'disable'      : not show_pbar,
+                'ascii'        : True,
             }
             with tqdm(**pbar_kwargs) as pbar:
                 with archive.open('wb') as f:

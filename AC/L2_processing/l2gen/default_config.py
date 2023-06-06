@@ -120,6 +120,12 @@ SENSOR_CONFIG = {
     'aer_wave_long'  : '2258',
     'l2prod_exclude' : ['depth'],
   },
+  'MERIS' : {
+    #'aer_opt'        : '-3',      
+    'aer_wave_short' : '779',
+    'aer_wave_long'  : '865',
+    'l2prod_exclude' : ['depth'],
+  },
 
   'HICO' : {
     'aer_opt'        : '-2',

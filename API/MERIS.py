@@ -13,5 +13,5 @@ class MERIS(BaseAPI):
     However, sources other than LAADS currently do not provide the correct processing
     for MERIS scenes. 
     """
-    search_sources   = ['LAADS']
-    download_sources = ['LAADS']
+    search_sources   = ['OBPG','LAADS'] #
+    download_sources = ['OBPG','LAADS'] #'LAADS'

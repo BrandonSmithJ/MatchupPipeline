@@ -41,8 +41,9 @@ def decompress(
     
     operators = {
         '.zip'    : lambda f: zipfile.ZipFile(f, 'r'),
+        '.ZIP'    : lambda f: zipfile.ZipFile(f, 'r'),
         '.tar'    : lambda f: tarfile.open(f),
-        '.gz' : lambda f: tarfile.open(f, 'r:gz'),
+        '.gz'     : lambda f: tarfile.open(f, 'r:gz'),
         '.bz2'    : lambda f: BZ2Helper(f, 'rb'),
     }
 

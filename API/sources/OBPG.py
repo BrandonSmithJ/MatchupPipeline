@@ -85,6 +85,7 @@ class OBPG(BaseSource):
         sensor          : str,            # Sensor to search scenes for 
         location        : Location,       # Object representing location to search at
         dt_range        : DatetimeRange,  # Object representing start & end datetime to search between
+        data_selector   : str="Rrs",            # 
         **kwargs,                         # Any other keyword arguments
     ) -> dict:                            # Return a dictionary of found scenes: {scene_id: scene_detail_dict}
         """ Search for scenes on OBPG matching the given criteria """
@@ -105,7 +106,7 @@ class OBPG(BaseSource):
         config = {
             'sub' : 'level1or2list',  # request type
             'per' : 'CSTM',           # date range mode (CSTM=custom)
-            'prm' : 'TC',             # parameter = True Color
+            'prm' : 'TC' if data_selector =="Rrs" else 'OC' if data_selector == "OC" else 'TC' ,             # parameter = True Color
             'ndx' : '0',              # result index
             'dnm' : 'D',              # day / night selection (D=day, N=night, [D,N]=both)
             'rad' : '0',              # radius around location, 0=72km
@@ -140,7 +141,7 @@ class OBPG(BaseSource):
                 url = tree.xpath(f'//a[{s1} and {s2}]')
                 if not len(url):
                     logger.error(f'Possible error: response from OBPG for {sensor} @ {location} for {dt_range}, but no tiles were found; Response:\n{req.text}')
-                return {Path(url[0].get('href')).stem: {'instrument': sensor}}
+                return {Path(url[0 if data_selector=="Rrs" else 1 if data_selector == "OC" else 0].get('href')).stem: {'instrument': sensor}}
         return {}
 
 
@@ -151,16 +152,17 @@ class OBPG(BaseSource):
         scene_details : dict,             # Any additional details about the scene
         scene_folder  : Union[Path, str], # Folder which holds all downloaded scenes
         overwrite     : bool = False,     # Whether to overwrite an already existing file
+        data_selector : str = "Rrs",
     ) -> Path:                            # Return path to the downloaded scene
         """ Download the requested scene from OBPG """
         complete, output = self.get_output(scene_folder, scene_id, overwrite)
-
+        archive = ''
         if not complete:
             def download_suffix(suffix):
                 scene_id_VIIRS = '.'.join(scene_id.split('.')[:-1])
-                dl_url  = f'{self.data_url}/ob/getfile/{scene_id_VIIRS}.{suffix}' if 'VIIRS' in scene_id else f'{self.data_url}/ob/getfile/{scene_id}.{suffix}'
+                dl_url  = f'{self.data_url}/ob/getfile/{scene_id_VIIRS}.{suffix}' if 'VIIRS' in scene_id   or 'MODIS' in scene_id else f'{self.data_url}/ob/getfile/{scene_id}.{suffix}'
                 suffix  = suffix.replace('GEO.nc', 'GEO').replace('L1A.nc','nc')
-                archive = output.joinpath(f'{scene_id}.{suffix}')
+                archive = output.joinpath(f'{scene_id_VIIRS}.{suffix}') if 'VIIRS' in scene_id  or 'MODIS' in scene_id  else output.joinpath(f'{scene_id}.{suffix}')
 
                 self.stream_download(dl_url, archive, **{
                     'stream'          : True,
@@ -171,9 +173,9 @@ class OBPG(BaseSource):
 
             suffixes =  {
                 'MOD_L2' : ['L2_LAC_OC.nc'], # L2 product direct 
-                'MOD'    : ['L1A_LAC.bz2'],
-                'VI'     : ['GEO.nc', 'L1A.nc'],
-                'OLCI'   : ['zip'],
+                'MOD'    : ['L1A_LAC.bz2']  if data_selector=="Rrs"  else ['OC.nc'] if data_selector=="OC"  else ['L1A_LAC.bz2'],
+                'VI'     : ['GEO.nc', 'L1A.nc'] if data_selector=="Rrs" else ['OC.nc'] if data_selector=="OC" else ['GEO.nc', 'L1A.nc'],
+                'OLCI'   : ['zip' if data_selector=="Rrs" else 'nc' if data_selector=="OC" else 'zip'],
                 'HICO'   : ['L1B_ISS.bz2'],
                 'MERIS'  : ['ZIP'],
             }
@@ -181,10 +183,13 @@ class OBPG(BaseSource):
             for suffix in suffixes[sensor]:
                 archive = download_suffix(suffix)
 
-            if sensor in ['MOD', 'OLCI', 'HICO', 'MERIS']:
+            if sensor in ['MOD', 'OLCI', 'HICO', 'MERIS'] and data_selector == "Rrs":
                 decompress(archive, output)
             output.joinpath('.complete').touch()
-        return output.joinpath(f'{scene_id}.SEN3') if sensor == 'OLCI' else output
+        if data_selector == 'OC':
+            for archive_path in Path(output).rglob('*.nc'):
+                archive = str(archive_path)
+        return output.joinpath(f'{scene_id}.SEN3') if sensor == 'OLCI' and data_selector=="Rrs" else archive if  data_selector == "OC" else output
         
 
 
