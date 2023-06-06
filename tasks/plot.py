@@ -8,20 +8,25 @@ def plot(self,
  	global_config : Namespace, # Config for the pipeline
 ) -> dict:                     # Returns new sample config state
     """ Plot mapped products from the given scene """
+    # if global_config.plot_products:
     sample_config['out_path'] = global_config.output_path.joinpath(*[ sample_config[k] 
                           for k in ['dataset', 'sensor', 'ac_method']])
     
     kwargs = {
-		'sensor'   : sample_config['sensor'],
-		'inp_file' : sample_config['correction_path'],
+    		'sensor'   : sample_config['sensor'],
+    		'inp_file' : sample_config['correction_path'],
         'out_path' : sample_config['out_path'],
         'overwrite': global_config.overwrite,
         'dataset'  : sample_config['dataset'],
-        'date'     : str(sample_config['inp_file']).split('/')[-1][1:] if sample_config['sensor'] == 'MOD' else  str(sample_config['inp_file']).split('/')[-1].split('____')[1].split('_')[0] if sample_config['sensor'] in ['S3A','S3B','OLCI'] else str(sample_config['inp_file']).split('/')[-1].split('.')[1],
+        'date'     : str(sample_config['inp_file']).split('/')[-1].split('_')[5].split('T')[0] if sample_config['sensor']=='MERIS' else str(sample_config['inp_file']).split('/')[-1][1:] if sample_config['sensor'] == 'MOD' else  str(sample_config['inp_file']).split('/')[-1].split('____')[1].split('_')[0] if sample_config['sensor'] in ['S3A','S3B','OLCI'] else str(sample_config['inp_file']).split('/')[-1].split('.')[1],
         'ac_method': sample_config['ac_method'],
         'fix_projection_Rrs': global_config.fix_projection_Rrs,
- 	}
-    plot_products(**kwargs)
+     	}
+    if global_config.plot_products: plot_products(**kwargs)
     kwargs.update(sample_config)
     return kwargs
+    # kwargs = {
+    # 		'sensor'   : sample_config['sensor'],}
+    # print(22)
+    # return kwargs
  

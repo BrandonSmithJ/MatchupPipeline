@@ -3,8 +3,8 @@ from pathlib import Path
 import os
 
 username = getoutput('whoami') #SaltonSea_08_27_2016
-datasets = ['Erie_2016_2023']#'Chesapeake_Bay_2016_2023'] #Erie_2021 #SaltonSea_2022 #SaltonSea_10_09_2022 #SaltonSea_shifted SaltonSea_1999_2022 GSL_02_13_2019 #GSL_High_quality
-sensors  = ['OLCI']
+datasets = ['MOD_VI_test_image']#MERIS_test_image #'Chesapeake_Bay_2016_2023'] #Erie_2021 #SaltonSea_2022 #SaltonSea_10_09_2022 #SaltonSea_shifted SaltonSea_1999_2022 GSL_02_13_2019 #GSL_High_quality
+sensors  = ['MOD','VI']
 
 
 #===================================
@@ -42,7 +42,7 @@ extract_window = 2 # pixels to extract around the center pixel (e.g. 1 -> 3x3 wi
 #    Plotting Parameters
 #===================================
 fix_projection_Rrs=False
-
+plot_products     =True
 #===================================
 #    Data Cleanup Parameters
 #===================================
@@ -125,12 +125,30 @@ if  'AugGloria' in datasets[0]:
 if  'Erie' in datasets[0] or 'Chesapeake_Bay' in datasets[0]: 
     overwrite=True
     ac_methods = ['l2gen','acolite']  #,'l2gen',
-    search_year_range = 8
-    remove_scene_folder=True #Should be false
+    # search_year_range = 8
+    remove_scene_folder=False #Should be false
     remove_L1_tile=False
     fix_projection_Rrs=True
-    # search_day_window=0 #91
+    search_day_window=0 #91
 
+if  'MERIS_test_image' in datasets[0] or 'MOD_VI_test_image' in datasets[0]: 
+    overwrite           = True
+    ac_methods          = ['l2gen']  #,'l2gen',
+    # search_year_range = 8
+    remove_scene_folder = False #Should be false
+    remove_L1_tile      = False
+    fix_projection_Rrs  = False
+    search_day_window   = 0 #91
+    plot_products       = False
+    extract_window      = 1 #3x3
+
+    extra_cmd = {'l2gen': {'MOD' : {'aer_wave_short' : '869','aer_wave_long'  : '2130','l2prod' : [ 'Rrs_nnn', 'rhos_nnn', 'Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
+                            'VI' : {'aer_wave_short' : '868','aer_wave_long'  : '2258','l2prod' : [ 'Rrs_nnn', 'rhos_nnn','Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
+                         'MERIS' : {'aer_wave_short' : '779','aer_wave_long'  :  '865','l2prod' : [ 'Rrs_nnn', 'rhos_nnn','Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
+
+                            },
+                  'acolite': {},
+                  'polymer': {},}
 
 if search_day_window is None  and search_year_range is None and search_minute_window is None:
     search_day_window=0

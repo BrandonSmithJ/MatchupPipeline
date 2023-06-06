@@ -9,7 +9,7 @@ import numpy as np
 from scipy.spatial import KDTree
 
 _triangulations = {}
-def fix_projection(y, lon, lat, reproject=True, exact=True,nearestNeighborInterp=False,sparse_resample =False):
+def fix_projection(y, lon, lat, reproject=True, exact=True,nearestNeighborInterp=False,sparse_resample =False,lon2=None,lat2=None):
     ''' 
     Project y into its native rectangular coordinate grid 
         (e.g. diagonal image -> rectangular)
@@ -40,25 +40,27 @@ def fix_projection(y, lon, lat, reproject=True, exact=True,nearestNeighborInterp
     step_val = np.mean([min_val2 - min_val, max_val - max_val2], 0)
 
     # Create a Delaunay triangulation for the original grid, if it doesn't already exist
-    if tri_key not in _triangulations:
+    if tri_key not in _triangulations and not sparse_resample:
         print('Calculating Delaunay triangulation...')
         _triangulations[tri_key] = Delaunay(lonlat.T)
 
     # Apply a linear interpolation over the values for the new grid
-    if exact or (max_val[0]-min_val[0])/step_val[0] > 5000:
-        # size = [min(1000, lon.shape[1]), min(1000, lat.shape[0])] #Ryan edit to remmove size limitation....
-        size = [lon.shape[1],lat.shape[0],] #
-
-        lon2 = np.linspace(min_val[0], max_val[0], size[0])
-        lat2 = np.linspace(min_val[1], max_val[1], size[1])[::-1]
-    else: 
-        lon2 = np.arange(min_val[0], max_val[0], step_val[0])
-        lat2 = np.arange(min_val[1], max_val[1], step_val[1])[::-1]
-    if nearestNeighborInterp:
-        interp = NearestNDInterpolator(_triangulations[tri_key], np.int32(y))
-        interp_fill_vals = LinearNDInterpolator(_triangulations[tri_key], y, fill_value=fill_value_float)
-    else:
-        interp = LinearNDInterpolator(_triangulations[tri_key], y, fill_value=fill_value_float)
+    if lon2 is None and lat2 is None:
+        if exact or (max_val[0]-min_val[0])/step_val[0] > 5000:
+            # size = [min(1000, lon.shape[1]), min(1000, lat.shape[0])] #Ryan edit to remmove size limitation....
+            size = [lon.shape[1],lat.shape[0],] #
+    
+            lon2 = np.linspace(min_val[0], max_val[0], size[0])
+            lat2 = np.linspace(min_val[1], max_val[1], size[1])[::-1]
+        else: 
+            lon2 = np.arange(min_val[0], max_val[0], step_val[0])
+            lat2 = np.arange(min_val[1], max_val[1], step_val[1])[::-1]
+    if not sparse_resample:
+        if nearestNeighborInterp:
+            interp = NearestNDInterpolator(_triangulations[tri_key], np.int32(y))
+            interp_fill_vals = LinearNDInterpolator(_triangulations[tri_key], y, fill_value=fill_value_float)
+        else:
+            interp = LinearNDInterpolator(_triangulations[tri_key], y, fill_value=fill_value_float)
     grid   = np.meshgrid(lon2, lat2)
     #Find the nearest lat lon for each original finite point
     def sparse_resampling(grid,y,lonlat,distance_upper_bound = 0.01):

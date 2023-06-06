@@ -122,6 +122,9 @@ plot_parameters.add_argument('--fix_projection_Rrs', type=int,
     default=config.fix_projection_Rrs,
     help='Fix projection of Rrs.')
 
+plot_parameters.add_argument('--plot_products', type=int, 
+    default=config.plot_products,
+    help='plot water quality products.')
 
 #===================================
 #    Data Cleanup Parameters

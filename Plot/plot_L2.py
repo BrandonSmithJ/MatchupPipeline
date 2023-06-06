@@ -65,6 +65,44 @@ def gamma_stretch(data, gamma=2):
     ''' Apply gamma stretching to brighten imagery '''
     return (255. * data ** 0.5).astype(np.uint8) 
 
+def rgb_enhance(rgb:'np.ndarray') -> 'np.ndaray':
+    """ Rescale a rgb image to enhance the visual quality, adapted from:
+    https://gis.stackexchange.com/questions/350663/automated-image-enhancement-in-python
+    
+    Parameters:
+    rgb : numpy.ndarray of type float - size row*col*3
+    
+    Returns:
+    rgb_enhanced: numpy.ndarray of type float - size row*col*3
+    
+    """
+    
+    import skimage.exposure as exposure
+    import numpy as np
+    
+    rgb_vector = rgb.reshape([rgb.shape[0] * rgb.shape[1], rgb.shape[2]])
+    rgb_vector = rgb_vector[~np.isnan(rgb_vector).any(axis=1)]
+    
+    # Get cutoff values based on standard deviations. Ideally these would be 
+    # on either side of each histogram peak and cutoff the tail. 
+    lims = []
+    for i in range(3):
+        x = np.mean(rgb_vector[:, i])
+        sd = np.std(rgb_vector[:, i])
+        low = x-(1.75*sd)  # Adjust the coefficient here if the image doesn't look right
+        high = x + (1.75 * sd)  # Adjust the coefficient here if the image doesn't look right
+        if low < 0:
+            low = 0
+        if high > 1:
+            high = 1
+        lims.append((low, high))
+    
+    r = exposure.rescale_intensity(rgb[:, :, 0], in_range=lims[0])
+    g = exposure.rescale_intensity(rgb[:, :, 1], in_range=lims[1])
+    b = exposure.rescale_intensity(rgb[:, :, 2], in_range=lims[2])
+    rgb_enhanced = np.dstack((r, g, b))
+    
+    return rgb_enhanced
 
 def extract_lat_lon(image):
     if 'lon' in image.variables.keys() and 'lat' in image.variables.keys():
@@ -111,7 +149,8 @@ def fix_rgb_errors(rgb,nan_val=250):
 def plot_product(ax, title, product, rgb, vmin, vmax):
     ''' Plot a given product on the axis using vmin/vmax as the 
         colorbar min/max, and rgb as the visible background '''
-    ax.imshow( fix_rgb_errors(gamma_stretch(rgb) ))
+    # ax.imshow( fix_rgb_errors(gamma_stretch(rgb) ))
+    ax.imshow( rgb_enhance(rgb) )
     ax.axis('off')
     ax.set_title(title.upper())
 
@@ -211,6 +250,8 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     if not fix_projection_Rrs: 
         save_nc(inp_file,nc_filename,products,slices,overwrite)
         products, extent, (im_lon, im_lat)  = fix_projection(products,im_lon,im_lat,reproject=False,nearestNeighborInterp=False, sparse_resample=True)        
+    if True:
+        create_geotiff(products=rgb_enhance(rgb),im_lat=im_lat,im_lon=im_lon,filename=geotiff_filename.split('.tif')[0]+'_RGB.tif')
     create_geotiff(products=products,im_lat=im_lat,im_lon=im_lon,filename=geotiff_filename)
 
     return True
