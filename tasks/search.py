@@ -31,7 +31,7 @@ def search(self,
             }
             kwargs.update(sample_config)
             total_kwargs.append(kwargs)
-    return total_kwargs
+    return kwargs if global_config.timeseries_or_matchups == 'matchups' else total_kwargs
 
     # If there aren't any scenes found, break out of the pipeline chain
     # self.request.chain = None

@@ -64,6 +64,10 @@ dt_range.add_argument('--search_year_range', type=int,
     help='Number of years after provided date to search\n'+
     'Overrides both search_day_window and search_minute_window')
 
+dt_range.add_argument('--timeseries_or_matchups', nargs=2, action='append',
+  default=config.timeseries_or_matchups,
+    help='Should we search as if it is a timeseries of a location, or as if it is matchups from different locations')
+
 #===================================
 # Atmospheric Correction Parameters
 #===================================

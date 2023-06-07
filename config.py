@@ -22,11 +22,11 @@ output_path  = scratch_path.joinpath('Gathered')
 #===================================
 #    Data Search Parameters
 #===================================  
-max_cloud_cover = 100 #Max cloud cover for downloading/processing. Only works for Sentinel 2.
-search_day_window = None
-search_minute_window = None
-search_year_range = None
-
+max_cloud_cover        = 100 #Max cloud cover for downloading/processing. Only works for Sentinel 2.
+search_day_window      = None
+search_minute_window   = None
+search_year_range      = None
+timeseries_or_matchups = 'matchups'
 #===================================
 # Atmospheric Correction Parameters
 #===================================

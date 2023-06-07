@@ -11,19 +11,34 @@ from celery import group
 def extraction(global_config):
     """ Chain together the matchup extraction pipeline """
     k = {'global_config' : global_config}
+    
+    if global_config.timeseries_or_matchups == 'matchups':
+        
+        return ( group([
+                search.s(sensor, **k)    # 1. Search for matching scenes 
+                | download.s(**k)              # 1. Download the specified tile
 
-    # Execute all steps in parallel over sensors
-    return (group([
-              download.s(**k)              # 1. Download the specified tile
-
-              | group([(      
-                                        
-                correct.s(ac_method=ac, **k) # 2. Correct L1 scene with each AC processor
-                | extract.s(**k)               # 3. Extract window from L2 scene
-                | plot.s(**k)                  # 4. Plot product from L2 scene
-                | write.s(**k)                 # 5. Write the data
-            ) for ac in global_config.ac_methods])
-            ]) ) #for sensor in global_config.sensors
+                # Execute steps 2-4 in parallel over AC processors
+                | group([(                                          
+                      correct.s(ac_method=ac, **k) # 2. Correct L1 scene with each AC processor
+                    | extract.s(**k)     # 3. Extract window from L2 scene
+                    | plot.s(**k)        # 4. Plot product from L2 scene
+                    |   write.s(**k)     # 5. Write the data
+                ) for ac in global_config.ac_methods])
+            for sensor in global_config.sensors]) )
+    if global_config.timeseries_or_matchups == 'timeseries':
+        # Execute all steps in parallel over sensors
+        return (group([
+                  download.s(**k)              # 1. Download the specified tile
+    
+                  | group([(      
+                                            
+                    correct.s(ac_method=ac, **k) # 2. Correct L1 scene with each AC processor
+                    | extract.s(**k)               # 3. Extract window from L2 scene
+                    | plot.s(**k)                  # 4. Plot product from L2 scene
+                    | write.s(**k)                 # 5. Write the data
+                ) for ac in global_config.ac_methods])
+                ]) ) #for sensor in global_config.sensors
 
 # ( group([
 #     search.s(sensor, **k)    # 1. Search for matching scenes 

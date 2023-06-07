@@ -88,19 +88,25 @@ def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
         except Exception as e: 
             raise Exception(f'Could not parse {path}: {e}')
         j=0
-        for i, row in data.iterrows():
-            for sensor in global_config.sensors: 
-                data_kwargs =search(sample_config=row.to_dict(),sensor=sensor,global_config = global_config)
-                for data_kwarg in data_kwargs:
-                    data_kwarg['scene_details'] =  str(data_kwarg['scene_details'])
-                    current_dataset.append(pd.DataFrame.from_dict([data_kwarg])) 
-                    if not j%100: print(f"Found {j} Matchups")
-                    j= j + 1
+        if global_config.timeseries_or_matchups == 'timeseries':
+            for i, row in data.iterrows():
+                for sensor in global_config.sensors: 
+                    data_kwargs =search(sample_config=row.to_dict(),sensor=sensor,global_config = global_config)
+                    for data_kwarg in data_kwargs:
+                        data_kwarg['scene_details'] =  str(data_kwarg['scene_details'])
+                        current_dataset.append(pd.DataFrame.from_dict([data_kwarg])) 
+                        if not j%100: print(f"Found {j} Matchups")
+                        j= j + 1
                     
-        pd.concat(current_dataset).to_pickle(dataset_path)
-        datasets.append(current_dataset)
-    datasets = [dataframe for sub_dataset in datasets for dataframe in sub_dataset]
-    return pd.concat(datasets)
+            pd.concat(current_dataset).to_pickle(dataset_path)
+            datasets.append(current_dataset)
+            datasets = [dataframe for sub_dataset in datasets for dataframe in sub_dataset]
+            return pd.concat(datasets)
+ 
+        if global_config.timeseries_or_matchups == 'matchups':
+             datasets.append(data)
+             
+    if global_config.timeseries_or_matchups == 'matchups': return pd.concat(datasets)
 
 
 
@@ -190,7 +196,7 @@ def main(debug=True):
     worker_kws = [
         # Multiple threads for download
         {   'logname'     : 'worker1',
-            'queues'      : ['download','correct','extract','plot','celery'],
+            'queues'      : ['search','download','correct','extract','plot','celery'],
             'concurrency' : 4,
         },
         # Multiple threads for correction
