@@ -167,6 +167,8 @@ def extract_window(
 
             # Single key variable
             else:
+                if data[key].shape != shape: 
+                    continue
                 vars_single[key] = extract(data[key][:])
                 if data[key].ndim == 3:
                     vars_single[key] = list(map(list, vars_single[key]))

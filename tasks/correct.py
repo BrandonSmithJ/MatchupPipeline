@@ -1,7 +1,7 @@
 from ..AC.L2_processing import AC_FUNCTIONS
 from .. import app
 from argparse import Namespace
-
+from ..utils.convert_tif_nc import convert_tif_nc
 
 @app.task(bind=True, name='correct', queue='correct', priority=2, max_retries=0)
 def correct(self,
@@ -27,7 +27,10 @@ def correct(self,
         'location'  : sample_config['location'],
     }
     kwargs.update(global_config.extra_cmd[ac_method][sample_config['sensor']] if ac_method in global_config.extra_cmd.keys() and sample_config['sensor'] in global_config.extra_cmd[ac_method].keys() else {})
+    if not global_config.apply_bounding_box: kwargs['location'] = None
+    
     kwargs['correction_path'] = AC_FUNCTIONS[ac_method](**kwargs)
+    if ac_method == 'aquaverse': kwargs['correction_path']  = convert_tif_nc(str(out_path)+'/')
     if global_config.remove_L1_tile: 
         for L1A_path in list(inp_path.glob('**/*.L1A*')):
             L1A_path.unlink()

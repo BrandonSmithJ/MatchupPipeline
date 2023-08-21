@@ -45,7 +45,7 @@ def write(self,
             lambda x: x[0] + x.title().replace('_', '')[1:]
         ]:
             key = transform(dt_key)
-            if key in sample_config['scene_details']:
+            if key in sample_config['scene_details'] and type(sample_config['scene_details']) != str:
                 metadata_keys += [key]
                 break
         if len(metadata_keys) > 5: break

@@ -23,8 +23,9 @@ def get_latlon(data : netCDF4.Dataset) -> tuple:
     """
     if 'navigation_data' in data.groups.keys():
         data = data['navigation_data']
-    lon, lat = (('lon', 'lat') if 'lon' in data.variables.keys() else
-                ('longitude', 'latitude'))
+    lon, lat = (('lon', 'lat') if 'lon' in data.variables.keys() else 
+                ('longitude', 'latitude') if 'longitude' in  data.variables.keys()
+                else ('x', 'y'))
 
     if lon in data.variables.keys():
         return data[lat][:], data[lon][:]

@@ -21,7 +21,7 @@ parser.add_argument('-s', '--sensors',     type=str, nargs='+',
 parser.add_argument('-a', '--ac_methods',  type=str, nargs='+', 
     default=config.ac_methods,
     help='Atmospheric Correction methods to apply\n(options: %(choices)s)\n\n',
-    choices=['l2gen', 'polymer', 'acolite'])
+    choices=['l2gen', 'polymer', 'acolite', 'aquaverse'])
 
 parser.add_argument('-u', '--username',    type=str,            
     default=config.username, 
@@ -68,6 +68,9 @@ dt_range.add_argument('--timeseries_or_matchups', nargs=2, action='append',
   default=config.timeseries_or_matchups,
     help='Should we search as if it is a timeseries of a location, or as if it is matchups from different locations')
 
+dt_range.add_argument('--scene_id', nargs=2, action='append',
+  default=config.scene_id,
+    help='Filters available scenes and only processes scenes containing the substring.')
 #===================================
 # Atmospheric Correction Parameters
 #===================================
@@ -80,9 +83,18 @@ ac_parameters.add_argument('--ac_path',   nargs=2, action='append',
     metavar=('AC_METHOD', 'PATH [--ac_path AC_METHOD PATH ...]'), 
     default=[[  'l2gen', config.l2gen_path], 
              ['polymer', config.polymer_path], 
-             ['acolite', config.acolite_path]],
+             ['acolite', config.acolite_path],
+             ['aquaverse', config.aquaverse_path],],
     help='Set the install path for any AC methods\n'+
          'Multiple AC paths can be set by using --ac_path multiple times\n\n')
+
+ac_parameters.add_argument('--stream_backend_path', nargs=2, action='append',
+  default=config.stream_backend_path,
+    help='Set the install path of stream backend')
+
+ac_parameters.add_argument('--stream_env_path', nargs=2, action='append',
+  default=config.stream_env_path,
+    help='Set the install path of stream environment')
 
 ac_parameters.add_argument('--ac_kwargs', nargs=3, action='append',
     metavar=('AC_METHOD','KEY','VALUE [--ac_kwargs AC_METHOD KEY VALUE ...]'),
@@ -101,6 +113,9 @@ ac_parameters.add_argument('--ac_timeout',  type=int,
          'Timeout can also be set for AC processors individually, by using '+
          'the --ac_kwargs flag')
 
+parser.add_argument('--apply_bounding_box', action='store_true', 
+    default=config.apply_bounding_box,
+    help='Applies bounding box during correction, if true')
 
 #===================================
 #    Data Extraction Parameters
@@ -129,6 +144,10 @@ plot_parameters.add_argument('--fix_projection_Rrs', type=int,
 plot_parameters.add_argument('--plot_products', type=int, 
     default=config.plot_products,
     help='plot water quality products.')
+
+plot_parameters.add_argument('--plot_Rrs', type=int, 
+    default=config.plot_Rrs,
+    help='plot Rrs comparison with aquaverse products.')
 
 #===================================
 #    Data Cleanup Parameters

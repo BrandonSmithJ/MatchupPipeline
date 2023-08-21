@@ -32,7 +32,7 @@ app.conf.update(**{
     'task_queue_max_priority' : 10,
     'task_queue_default_priority' : 5,
 
-    'task_always_eager' : False, # Processes in serial, locally 
+    'task_always_eager' : True, # Processes in serial, locally 
 
 })
 # Need to allow larger representations to reconstruct arguments in the

@@ -107,7 +107,7 @@ def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
              datasets.append(data)
              
     if global_config.timeseries_or_matchups == 'matchups': return pd.concat(datasets)
-
+    if global_config.timeseries_or_matchups == 'timeseries' and dataset_path.exists() and not global_config.overwrite: return pd.concat(datasets[0])
 
 
 def filter_completed(
@@ -197,12 +197,12 @@ def main(debug=True):
         # Multiple threads for download
         {   'logname'     : 'worker1',
             'queues'      : ['search','download','correct','extract','plot','celery'],
-            'concurrency' : 4,
+            'concurrency' : 3,
         },
         # Multiple threads for correction
         {   'logname'     : 'worker2',
             'queues'      : ['correct'],
-            'concurrency' : 2,
+            'concurrency' : 2, 
         },
         # Multiple threads for extraction
         {   'logname'     : 'worker3',
@@ -220,23 +220,13 @@ def main(debug=True):
             'concurrency' : 1,
         },
     ]
-    #assert(0)
+    
     with CeleryManager(worker_kws, data, gc.ac_methods) as manager:
-        for i, row in data.iterrows():
-            #row['location'] = Location(lat=47.443, lon=-61.8168)
-            #print(row)
-            #print()
-            #print('Running:',manager.running())
-            # Searches each sensor for available imagery, appends it to individual rows
-            #for sensor in gc.sensors:   
-                
-                #row_kwargs = search(sample_config=row.to_dict(),sensor=sensor,global_config = gc)
-                #if len(row_kwargs):
-                   # for row_kwarg in row_kwargs:
-            row = row.to_dict()
-            #row['scene_details'] = eval(row['scene_details'])
-            pipeline(row) if debug  else pipeline.delay(row)
-            # if i >= 10: break
+        for i, row in data.iterrows(): 
+            if global_config.scene_id in row['scene_id']: #'T18SUG' '044033' 'T2017252150500'
+                row = row.to_dict()
+                pipeline(row) if debug  else pipeline.delay(row)
+            
 
 
 if __name__ == '__main__':
