@@ -44,8 +44,9 @@ class PipelineTask(Task):
             error_file.write(out_string)
         
         #Write finished state 
-        scene_path = args[0]['scene_path']
-        ac_method = kwargs['ac_method']
+        scene_path = args[0]['scene_path'] if 'scene_path' in args[0].keys() else 'no scene path defined' #args[0]['scene_path'] 
+        #print(kwargs)
+        ac_method  = kwargs['ac_method'] if 'ac_method' in kwargs.keys() else 'download'
         ac_methods = kwargs['global_config'].ac_methods
         
         write_complete(scene_path,ac_method,ac_methods,out_string,kwargs['global_config'].remove_scene_folder)

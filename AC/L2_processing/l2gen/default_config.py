@@ -19,7 +19,7 @@ DEFAULT_CONFIG = {
     'angstrom', 'Kd_490', 'smoke', 
 
     # Unable to be used by some sensors
-    'pic', 'poc', 'calcite', 'chlor_a', 'depth',
+    'pic', 'poc', 'calcite', 'chlor_a', #'depth',
 
     # Miscellaneous
     'elev', 'pixnum',
@@ -140,6 +140,36 @@ SENSOR_CONFIG = {
     #'aer_opt'        : '-2',
     'l2prod_exclude' : [ 'depth'],
   },
+  
+  'OLCI': {
+    #'aer_opt'        : '-2',
+    'l2prod_exclude' : [ 'depth'],
+  },
+  
+  'MSI' : {
+    'l2prod_exclude' : [ 
+        'Rrs_unc_vvv', 'aot_nnn', 
+        'rhos_nnn', 'rhot_nnn', 'polcor_nnn',
+         
+
+        # Ancillary parameter
+        'solz', 'senz', 'sola', 'sena', 'relaz', 'scattang', 'ozone', 'no2_frac', 'mwind', 
+        'zwind', 'windangle', 'windspeed', 'height', 'humidity', 'ice_frac', 'water_vapor',
+        'pressure', 'no2_strat', 'no2_tropo', 'sstref', 'sssref',
+
+        # Atmospheric correction intermediate products
+        'aer_model_min', 'aer_model_max', 'brdf', 'cloud_albedo', 'glint_coef',
+
+        # Derived geophysical parameters
+        'angstrom', 'Kd_490', 'smoke', 
+
+        # Unable to be used by some sensors
+        'pic', 'poc', 'calcite', 'chlor_a', 'depth',
+
+        # Miscellaneous
+        'elev', 'pixnum',],
+  },
+  
 }
 
 

@@ -30,9 +30,22 @@ class EE_Fixed(EE):
         "landsat_tm_c1"     : "5e83d08fd9932768",
         "landsat_etm_c1"    : "5e83a507d6aaa3db",
         "landsat_8_c1"      : "5e83d0b84df8d8c2",
-        "landsat_tm_c2_l1"  : "5e83d0a0f94d7d8d",
+        "landsat_tm_c2_l1"  : "5e83d0a0f94d7d8d",  
         "landsat_etm_c2_l1" : "5e83d0d08fec8a66",
-        "landsat_ot_c2_l1"  : "5e81f14f92acf9ef",
+        "landsat_ot_c2_l1"  : "5e81f14f92acf9ef",#632211e26883b1f7
+        "landsat_tm_c2_l2"  : "5e83d11933473426",
+        "landsat_etm_c2_l2" : "5e83d12aed0efa58",
+        "landsat_ot_c2_l2"  : "5e83d14fec7cae84",
+        "sentinel_2a"       : "5e83a42c6eba8084",
+    }
+    
+    DATA_PRODUCTS_III = {
+        "landsat_tm_c1"     : "5e83d08fd9932768",
+        "landsat_etm_c1"    : "5e83a507d6aaa3db",
+        "landsat_8_c1"      : "5e83d0b84df8d8c2",
+        "landsat_tm_c2_l1"  : "5e83d0a0f94d7d8d", 
+        "landsat_etm_c2_l1" : "5e83d0d08fec8a66",
+        "landsat_ot_c2_l1"  : "632211e26883b1f7",
         "landsat_tm_c2_l2"  : "5e83d11933473426",
         "landsat_etm_c2_l2" : "5e83d12aed0efa58",
         "landsat_ot_c2_l2"  : "5e83d14fec7cae84",
@@ -67,10 +80,16 @@ class EE_Fixed(EE):
             )
             filename = self._download(url, output_dir, timeout=timeout, skip=skip)
         except:
-            url = EE_DOWNLOAD_URL.format(
-                data_product_id=self.DATA_PRODUCTS_II[dataset], entity_id=entity_id
-            )
-            filename = self._download(url, output_dir, timeout=timeout, skip=skip)
+            try:
+                url = EE_DOWNLOAD_URL.format(
+                    data_product_id=self.DATA_PRODUCTS_II[dataset], entity_id=entity_id
+                )
+                filename = self._download(url, output_dir, timeout=timeout, skip=skip)
+            except:
+                url = EE_DOWNLOAD_URL.format(
+                    data_product_id=self.DATA_PRODUCTS_III[dataset], entity_id=entity_id
+                )
+                filename = self._download(url, output_dir, timeout=timeout, skip=skip)
         return filename
 
     def _download(self, url, output_dir, timeout, chunk_size=1024, skip=False):
@@ -142,7 +161,8 @@ class EarthExplorer(BaseSource, API):
         self.ee = EE_Fixed(username, password)
         BaseSource.__init__(self, *args, **kwargs)
         API.__init__(self, username, password)
-
+        self.username=username
+        self.password=password
 
 
     def search_scenes(self, 
@@ -168,7 +188,7 @@ class EarthExplorer(BaseSource, API):
             'dataset'         : self.valid_sensors[sensor],
             'months'          : kwargs.get('months', None),
             'max_cloud_cover' : kwargs.get('max_cloud_cover', None),
-            'max_results'     : kwargs.get('max_results', 20),
+            'max_results'     : kwargs.get('max_results', 10000),
         }
 
         # ISO 8601 formatted date
@@ -182,7 +202,7 @@ class EarthExplorer(BaseSource, API):
             'given'     : True, 
             'dict_keys' : ['latitude', 'longitude'],
         }) or {'bbox': location.get_bbox('wsen')} )
-        return {scene['display_id']: scene for scene in self.search(**config)}
+        return {scene['display_id']: scene for scene in self.search(**config) if scene['day-night_indicator'] !='NIGHT'} #{scene['display_id']: scene for scene in self.search(**config)}
 
 
 
@@ -194,13 +214,22 @@ class EarthExplorer(BaseSource, API):
         overwrite     : bool = False,     # Whether to overwrite an already existing file
     ) -> Path:                            # Return path to the downloaded scene
         """ Downloads the requested scene from EarthExplorer """
+        import tarfile
         complete, output = self.get_output(scene_folder, scene_id, overwrite)
 
         if not complete:
             assert(self.ee.logged_in()), 'EarthExplorer session expired.'
-
+            #self.ee.logout()
+            #self.ee.login(self.username,self.password)
             archive = self.ee.download(scene_id, output)
-            decompress(Path(archive), output) 
+            # decompress(Path(archive), output) 
+            tar = tarfile.open(archive)
+            tf_contents = tar.getnames()
+            tf_matching_scene_id_list = [file for file in tf_contents if scene_id in file]
+            for file in tf_matching_scene_id_list:
+                tar.extract(member=file,path=str(output))
+            # tar.extractall(output_folder)
+            tar.close()
             output.joinpath('.complete').touch()
         return output
 

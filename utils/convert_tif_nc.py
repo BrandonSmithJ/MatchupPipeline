@@ -147,21 +147,57 @@ def save_nc(inp_file,out_path,products,slices,overwrite,prefix='AQV'):
                 dst[varname][:] = np.squeeze(products[:,:,slices[product]].astype(np.float32))
 
 
+
+
+
+def return_lat_lon_Aquaverse(path):
+    gtif = gdal.Open(path)
+    image = gtif.ReadAsArray()
+    xoffset, px_w, rot1, yoffset, rot2, px_h  = list(gtif.GetGeoTransform())
+    
+    #Transform
+    crs = osr.SpatialReference()
+    crs.ImportFromWkt(gtif.GetProjectionRef())
+    crsGeo = osr.SpatialReference()
+    crsGeo.ImportFromEPSG(4326)
+    image_transform = osr.CoordinateTransformation(crs, crsGeo)
+    
+    
+    width = len(image[0])
+    height = len(image)
+    rows = np.arange(0,height)
+    cols = np.arange(0,width)
+    
+    #Get a grid of lat and long values
+    getarray_coords = np.vectorize(array_coords(image_transform, xoffset, px_w, rot1, yoffset, rot2, px_h),otypes=[float,float])
+    lat,long = getarray_coords(rows[:,None],cols[None,:])
+    return lat,long
+
+def array_coords(image_transform, xoffset, px_w, rot1, yoffset, rot2, px_h):
+    def get_array_coords(r,c):
+        posX = px_w * c + rot1 * r + xoffset + px_w / 2
+        posY = rot2 * c + px_h * r + yoffset + px_h / 2
+        lat,long,z = image_transform.TransformPoint(posX,posY)
+        
+        return lat,long
+    return get_array_coords
+
 def convert_tif_nc(base_location):
     available_tifs = [name for name in glob.glob(base_location+'*RRS*nm.TIF')]
     tif            = available_tifs[0]
-                    
-    zone_number    = 10
+    lat,lon = return_lat_lon_Aquaverse(tif)  
+    lon_min, lat_min, lon_max, lat_max = [min(lon[:,0]), min(lat[0,:]),max(lon[:,0]), max(lat[0,:])]
+    # zone_number    = 10
     
-    extent         = GetExtent(gdal.Open(tif),min_max=True)
-    lat_lon        = utm_to_latlong(extent[0],extent[1], [zone_number], northern=True)
+    # extent         = GetExtent(gdal.Open(tif),min_max=True)
+    # lat_lon        = utm_to_latlong(extent[0],extent[1], [zone_number], northern=True)
     
-    lon_min, lat_min, lon_max, lat_max = [min(lat_lon[1]), min(lat_lon[0]),max(lat_lon[1]), max(lat_lon[0])]
+    # lon_min, lat_min, lon_max, lat_max = [min(lat_lon[1]), min(lat_lon[0]),max(lat_lon[1]), max(lat_lon[0])]
     raster = xarray.open_rasterio(tif)
     #lon,lat = np.meshgrid(raster.x,raster.y)
-    lat = utm_to_latlong(raster.x[0],raster.y, [zone_number], northern=True)[0]
-    lon = utm_to_latlong(raster.x,raster.y[0], [zone_number], northern=True)[1]
-    lon,lat = np.meshgrid(lon,lat)
+    # lat = utm_to_latlong(raster.x[0],raster.y, [zone_number], northern=True)[0]
+    # lon = utm_to_latlong(raster.x,raster.y[0], [zone_number], northern=True)[1]
+    # lon,lat = np.meshgrid(lon,lat)
     
     products       = np.squeeze(rasterio.open(tif).read()).astype(float)#[np.squeeze(rasterio.open(tif).read()).astype(float) for tif in available_tifs]
     wavelengths    = [tif.split('_')[-1].split('.')[0].split('nm')[0]] 
@@ -183,7 +219,7 @@ def convert_tif_nc(base_location):
     slices = {wavelength: i for i,wavelength in enumerate(wavelengths)}
     save_nc(out_file_nc,out_file_nc_labels,products,slices,overwrite=True,prefix='Rrs')
     
-    print(lat_lon)
+    # print(lat_lon)
     return Path(out_file_nc_labels)
 
 #base_location  = '/data/roshea/SCRATCH/Gathered/Scenes/OLI/LC08_L1TP_044034_20200708_20200912_02_T1/out/OLI_test_image_san_fran_XCI0001/044034/'

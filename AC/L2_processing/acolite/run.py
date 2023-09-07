@@ -13,8 +13,8 @@ try:
 
 
 except: 
-    sys.path.append(Path(__file__).parent.parent.parent.as_posix())
-    sys.path.append(Path(__file__).parent.parent.parent.parent.as_posix())
+    # sys.path.append(Path(__file__).parent.parent.parent.as_posix())
+    # sys.path.append(Path(__file__).parent.parent.parent.parent.as_posix())
     from atm_utils import subprocess_wrapper
     from utils import get_credentials, Location, assert_contains
     from exceptions import MissingProcessorError, AtmosphericCorrectionError
@@ -101,6 +101,7 @@ def run_acolite(
 
     # Setup paths
     inp_file = Path(inp_file).absolute()
+    if sensor in ['MSI']: inp_file = Path(inp_file).joinpath(str(inp_file.stem) + '.SAFE')
     out_file = Path(out_dir).absolute().joinpath('acolite.nc')
 
     # Only run if output doesn't yet exist, or we want to overwrite
@@ -111,7 +112,7 @@ def run_acolite(
         if not ac_path.exists():
             message = f'Acolite installation does not exist at "{ac_path}"'
             raise MissingProcessorError(message)
-        sys.path.append(ac_path.parent.as_posix())
+        sys.path.insert(0,ac_path.parent.as_posix())
         import acolite as ac 
     
         # Get the earthdata username and password
@@ -168,7 +169,7 @@ if __name__ == '__main__':
     output = Path(folder).parent.joinpath('out').as_posix()
 
     print(Path(__file__).parent.absolute().as_posix())
-    sys.path.append( Path(__file__).parent.absolute().as_posix() )
+    sys.path.insert(0, Path(__file__).parent.absolute().as_posix() )
     import acolite as ac
     settings = {
         'inputfile'      : Path(folder).parent.as_posix(),

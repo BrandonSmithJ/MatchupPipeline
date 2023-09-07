@@ -42,7 +42,7 @@ app.amqp.kwargsrepr_maxsize = 32768
 
 # Set task routes
 app.conf.task_routes = {
-   'search': {'queue': 'search'},
+   'search'  : {'queue': 'search'},
    'download': {'queue': 'download'},
    'correct' : {'queue': 'correct'},
    'extract' : {'queue': 'extract'},
@@ -51,12 +51,12 @@ app.conf.task_routes = {
 }
 from kombu import Exchange, Queue
 app.conf.task_queues = [
-    Queue('search',  Exchange('search'),  routing_key='search',  queue_arguments={'x-max-priority': 10}),
-    Queue('download',Exchange('download'),routing_key='download',queue_arguments={'x-max-priority': 10}),
-    Queue('correct', Exchange('correct'), routing_key='correct',queue_arguments={'x-max-priority': 10}),
-    Queue('extract', Exchange('extract'), routing_key='extract',queue_arguments={'x-max-priority': 10}),
-    Queue('plot'   , Exchange('plot'),    routing_key='plot',queue_arguments={'x-max-priority': 10}),
-    Queue('write',   Exchange('write'),   routing_key='write',queue_arguments={'x-max-priority': 10}),
+        Queue('search',  Exchange('search'),  routing_key='search'  ,queue_arguments={'x-max-priority': 10}, consumer_arguments={'x-priority': 0}),
+        Queue('download',Exchange('download'),routing_key='download',queue_arguments={'x-max-priority': 10}, consumer_arguments={'x-priority': 1}),
+        Queue('correct', Exchange('correct'), routing_key='correct' ,queue_arguments={'x-max-priority': 10}, consumer_arguments={'x-priority': 2}),
+        Queue('extract', Exchange('extract'), routing_key='extract' ,queue_arguments={'x-max-priority': 10}, consumer_arguments={'x-priority': 3}),
+        Queue('plot'   , Exchange('plot'),    routing_key='plot'    ,queue_arguments={'x-max-priority': 10}, consumer_arguments={'x-priority': 4}),
+        Queue('write',   Exchange('write'),   routing_key='write'   ,queue_arguments={'x-max-priority': 10}, consumer_arguments={'x-priority': 5}),
 ]
 # If we're on pardees, we're using TLS for RabbitMQ
 #cert_root = '/home/bsmith16/workspace/rabbitmq_server-3.10.7/etc/pki/tls'

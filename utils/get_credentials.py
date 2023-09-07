@@ -31,7 +31,10 @@ def get_credentials(site: str) -> Union[list, str]:
         Raises exception if an invalid site is requested.
 
     """
-    auth_folder = Path(__file__).parent.parent.joinpath('credentials')
+    from subprocess import getoutput
+
+    username = getoutput('whoami')
+    auth_folder = Path(__file__).parent.parent.joinpath('credentials').joinpath(username)
     #auth_folder = Path('/tis/m2cross/scratch/f002/roshea/Simultaneous/workspace/pipeline/authentication/')
     valid_sites = [
         'earthexplorer.usgs.gov',         # Username + Password

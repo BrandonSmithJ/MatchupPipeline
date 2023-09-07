@@ -16,7 +16,7 @@ def search(self,
     out_path = global_config.output_path.joinpath('Scenes', sensor)
 
     api    = API.API[sensor]()
-    scenes = api.search_scenes(sensor, location, dt_range)
+    scenes = api.search_scenes(sensor, location, dt_range,**{'max_cloud_cover': global_config.max_cloud_cover})
     total_kwargs = []
     if len(scenes):
         for scene in list(scenes.keys()):
@@ -41,22 +41,25 @@ def run_aquaverse_download(scene_id,sensor,output_folder,stream_backend_path,str
     import csv, os,time
     from pathlib import Path
     from subprocess import Popen, PIPE, check_output, STDOUT
-    
+    #assert(0)
     AQV_download = AQV_location+'/download_AQV'
     scene_output = str(output_folder)+'/'+scene_id +'/' 
     Path(scene_output).mkdir(parents=True,exist_ok=True)
     #Checks if the scene is already downloaded
     downloaded_file = '/tis/stream/data/' + scene_id + '.tar.gz'
+    if overwrite and os.path.exists(downloaded_file):
+        print("Removing:",downloaded_file)
+        os.remove(Path(downloaded_file))
     
     if not os.path.exists(downloaded_file) or overwrite:
         aquaverse_csv_filename = scene_output + 'aquaverse_scene.csv'
         print(aquaverse_csv_filename)
         with open(aquaverse_csv_filename, 'w', newline='') as csvfile:
             row_writer = csv.writer(csvfile, delimiter=',')
-            row_writer.writerow([scene_id,location])
+            row_writer.writerow([scene_id])
             
         #activates environment and runs download, waiting for return (timeout)
-        running_procs = Popen([AQV_download, str(stream_backend_path), str(stream_env_path), str(aquaverse_csv_filename), '-redownload' ,str(sensor)], stdout=PIPE, stderr=PIPE)
+        running_procs = Popen([AQV_download, str(stream_backend_path), str(stream_env_path), str(aquaverse_csv_filename), '--redownload' ,str(sensor)], stdout=PIPE, stderr=PIPE)
         run_subprocess(running_procs,timeout=timeout)
         start = time.time()
         while not os.path.exists(downloaded_file) and time.time()-start < timeout:
@@ -73,11 +76,15 @@ def run_aquaverse_pull_tar(scene_id, AQV_location,output_folder,timeout=600):
     
     # finds and unpacks tar
     import tarfile
-    print('Unziping tar file ...')
+    print('Unzipping tar file ...')
     scene_id_path = str(output_folder) + '/' + scene_id + '/'
     tar_path = scene_id_path + scene_id +'.tar.gz'
     tar = tarfile.open(tar_path)
-    tar.extractall(scene_id_path)
+    tf_contents = tar.getnames()
+    tf_matching_scene_id_list = [file for file in tf_contents if scene_id in file]
+    for file in tf_matching_scene_id_list:
+        tar.extract(member=file,path=scene_id_path)
+    # tar.extractall(scene_id_path)
     tar.close()
     Path(scene_id_path).joinpath('.complete').touch()
     
@@ -96,11 +103,16 @@ def download(self,
         'overwrite'     : global_config.overwrite,
     }
     out_path = sample_config['scene_folder']
-
+    from pathlib import Path
     # Quick hack to minimize risk of running out of space
     try:
         folders = list(out_path.glob('*'))
-        while (len(folders)>200):
+        if (len(folders)>global_config.max_processing_scenes):
+            import time
+            time.sleep(3600)
+            folders = list(out_path.glob('*'))
+
+        while (len(folders)>global_config.max_processing_scenes):
             import numpy as np
             import shutil
             oldest = min(folders, key=lambda f: f.stat().st_ctime)#i = np.random.randint(0, len(folders))
@@ -109,12 +121,17 @@ def download(self,
     except Exception as e: print(e)#self.logger.error(f'Error removing folders: {e}')
     
     api    = API.API[sample_config['sensor']]()
+    scene_output = str(kwargs['scene_folder'])+'/'+str(sample_config['scene_id']) +'/'
+    kwargs['scene_path'] = Path(scene_output)
+    
+    sample_config['scene_path'] = kwargs['scene_path']
     if 'aquaverse' in global_config.ac_methods:
         run_aquaverse_download(scene_id=sample_config['scene_id'],sensor = sample_config['sensor'],AQV_location=global_config.ac_path['aquaverse'],stream_backend_path=global_config.stream_backend_path,stream_env_path=global_config.stream_env_path,output_folder=kwargs['scene_folder'],overwrite = global_config.overwrite)
         #copy tar to local repo
         run_aquaverse_pull_tar(scene_id=sample_config['scene_id'], AQV_location=global_config.ac_path['aquaverse'],output_folder=kwargs['scene_folder'],timeout=600)
         
-        
+    kwargs.pop('scene_path')    
+    sample_config.pop('scene_path')
     kwargs['scene_path'] = api.download_scene(**kwargs)
     kwargs.update(sample_config)
     return kwargs

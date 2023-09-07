@@ -1,8 +1,12 @@
 from pathlib import Path
 import argparse
 
-from . import config
+#from . import config
+from importlib import import_module
+from subprocess import getoutput
 
+username = getoutput('whoami')
+config   = import_module('..configs.'+username,package=__name__)
 
 
 parser = argparse.ArgumentParser(prog='pipeline', epilog="""
@@ -64,6 +68,10 @@ dt_range.add_argument('--search_year_range', type=int,
     help='Number of years after provided date to search\n'+
     'Overrides both search_day_window and search_minute_window')
 
+dt_range.add_argument('--max_cloud_cover', type=int,
+  default=config.max_cloud_cover,
+    help='Max cloud cover allowed (0-100, only works for OLI/MSI).')
+
 dt_range.add_argument('--timeseries_or_matchups', nargs=2, action='append',
   default=config.timeseries_or_matchups,
     help='Should we search as if it is a timeseries of a location, or as if it is matchups from different locations')
@@ -71,6 +79,10 @@ dt_range.add_argument('--timeseries_or_matchups', nargs=2, action='append',
 dt_range.add_argument('--scene_id', nargs=2, action='append',
   default=config.scene_id,
     help='Filters available scenes and only processes scenes containing the substring.')
+
+dt_range.add_argument('--max_processing_scenes', type=int,
+  default=config.max_processing_scenes,
+    help='Maximum number of folders/scenes allowed, oldest folder deleted first.')
 #===================================
 # Atmospheric Correction Parameters
 #===================================

@@ -6,7 +6,7 @@ import shutil
 from modules.ParamUtils import ParamProcessing
 import modules.ProcUtils as ProcUtils
 import get_obpg_file_type
-import modules.next_level_name_finder
+import get_output_name_utils
 
 
 class ModisL1B:
@@ -71,24 +71,26 @@ class ModisL1B:
 
         # determine geo file name
         if self.geofile is None:
-            self.geofile = '.'.join([self.filename.split('.')[0], "GEO"])
-            if not os.path.exists(self.geofile):
-                geofile_parts = self.filename.split('.')[:-1]
-                geofile_parts.append('GEO')
-                self.geofile = '.'.join(geofile_parts)
-            if not os.path.exists(self.geofile):
-                file_typer = mlp.get_obpg_file_type.ObpgFileTyper(self.filename)
-                ftype, sensor = file_typer.get_file_type()
-                stime, etime = file_typer.get_file_times()
-                data_files_list = list([mlp.obpg_data_file.ObpgDataFile(self.filename,
+            file_typer = mlp.get_obpg_file_type.ObpgFileTyper(self.filename)
+            ftype, sensor = file_typer.get_file_type()
+            stime, etime = file_typer.get_file_times()
+            data_files_list = list([mlp.obpg_data_file.ObpgDataFile(self.filename,
                                                                    ftype,
                                                                    sensor,
                                                                    stime,
                                                                    etime)])
-                name_finder = mlp.next_level_name_finder.ModisNextLevelNameFinder(
-                                data_files_list, 'geo')
-                self.geofile = name_finder.get_next_level_name()
+            self.geofile = mlp.get_output_name_utils.get_output_name(data_files_list, 'geo', None)
 
+            if not os.path.exists(self.geofile):
+                self.geofile = os.path.join(os.path.dirname(self.filename), self.geofile)
+
+            if not os.path.exists(self.geofile):
+                self.geofile = '.'.join([self.filename.split('.')[0], "GEO"])
+                if not os.path.exists(self.geofile):
+                    geofile_parts = self.filename.split('.')[:-1]
+                    geofile_parts.append('GEO')
+                    self.geofile = '.'.join(geofile_parts)
+            
             if self.verbose:
                 print("Assuming GEOFILE is %s" % self.geofile)
 

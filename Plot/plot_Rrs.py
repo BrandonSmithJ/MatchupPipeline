@@ -198,7 +198,7 @@ def plot_Rrs(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,vbounds,wavelengths = [443,482,561,6
     plt.rcParams["axes.labelweight"] = "bold"
     plt.rcParams["font.size"] = 18
     plt.tight_layout()
-    plt.savefig(base_dir + f'/{atm_corr_label}_Rrs_{scene_id}.png')
+    plt.savefig(base_dir + f'/{scene_id}_{atm_corr_label}_Rrs.png')
 
 def plot_Rrs_composite(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,vbounds,wavelengths = [443,482,561,655],atm_corrs = 'ACOLITE',rgb = True,scene_id=""):
     from matplotlib.colors import LogNorm
@@ -237,7 +237,7 @@ def plot_Rrs_composite(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,vbounds,wavelengths = [443
     plt.rcParams["axes.labelweight"] = "bold"
     plt.rcParams["font.size"] = 18
     plt.tight_layout()
-    plt.savefig(base_dir + f'/Rrs_{scene_id}.png')
+    plt.savefig(base_dir + f'/{scene_id}_Rrs.png')
     
 def plot_Rrs_diff(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,wavelengths = [443,482,561,655],atm_corr_label = 'ACOLITE',rgb = True,scene_id=""):
     box = dict(boxstyle="square",
@@ -285,7 +285,7 @@ def plot_Rrs_diff(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,wavelengths = [443,482,561,655]
     plt.rcParams["axes.labelweight"] = "bold"
     plt.rcParams["font.size"] = 18
     plt.tight_layout()
-    plt.savefig(base_dir + f'/{atm_corr_label}_Rrs_diff_{scene_id}.png')
+    plt.savefig(base_dir + f'/{scene_id}_{atm_corr_label}_Rrs_diff.png')
     
 def plot_Rrs_diff_composite(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,wavelengths = [443,482,561,655],atm_corrs = 'ACOLITE',rgb = True,scene_id=""):
     box = dict(boxstyle="square",
@@ -337,12 +337,12 @@ def plot_Rrs_diff_composite(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,wavelengths = [443,48
     plt.rcParams["axes.labelweight"] = "bold"
     plt.rcParams["font.size"] = 18
     plt.tight_layout()
-    fig.savefig(base_dir + f'/Rrs_diff_{scene_id}.png')
+    #fig.savefig(base_dir + f'/{scene_id}_Rrs_diff.png')
     
     # plt.rcParams["axes.labelweight"] = "bold"
     # plt.rcParams["font.size"] = 18
     # plt.tight_layout()
-    fig_diff.savefig(base_dir + f'/Rrs_diff_prc_{scene_id}.png')
+    fig_diff.savefig(base_dir + f'/{scene_id}_Rrs_diff_prc.png')
     
 ################
 def plot_OLI_Rrs(base_dir, scene_id, atm_corrs,sensor,out_path):

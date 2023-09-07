@@ -30,7 +30,7 @@ class Copernicus(BaseSource, SentinelAPI):
     def __init__(self, *args, **kwargs):
         username, password = get_credentials(self.site_url)
         # self.api = SentinelAPI.__init__(self, username, password)
-        self.api  = SentinelAPI(username, password)
+        self.api  = SentinelAPI(username, password,show_progressbars =False)
         BaseSource.__init__(self, *args, **kwargs)
 
 
@@ -99,13 +99,11 @@ class Copernicus(BaseSource, SentinelAPI):
     ) -> Path:                            # Return path to the downloaded scene
         """ Download the requested scene from Copernicus """
         complete, output = self.get_output(scene_folder, scene_id, overwrite)
-
+        import datetime
+        if type(scene_details) == str:
+            scene_details = eval(scene_details)
         if not complete:
-            self.download(**{
-                'id'              : scene_id,#scene_details['uuid'], 
-                'directory_path'  : output,
-                'checksum'        : False,
-            })
+            self.api.download_all(products = [scene_details['uuid']],directory_path = output, checksum = False )
 
             archive = output.joinpath(f'{scene_id}.zip')
             decompress(archive, output)

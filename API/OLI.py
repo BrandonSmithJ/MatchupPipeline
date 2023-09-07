@@ -18,5 +18,5 @@ class OLI(BaseAPI):
     downloaded on Pardees.
     """
     search_sources   = ['EarthExplorer']
-    download_sources = ['Google', 'EarthExplorer'][1:]
+    download_sources = ['Google', 'EarthExplorer'][0:]
 

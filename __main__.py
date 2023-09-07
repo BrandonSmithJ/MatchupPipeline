@@ -197,12 +197,12 @@ def main(debug=True):
         # Multiple threads for download
         {   'logname'     : 'worker1',
             'queues'      : ['search','download','correct','extract','plot','celery'],
-            'concurrency' : 3,
+            'concurrency' : 1,
         },
         # Multiple threads for correction
         {   'logname'     : 'worker2',
             'queues'      : ['correct'],
-            'concurrency' : 2, 
+            'concurrency' : 8, 
         },
         # Multiple threads for extraction
         {   'logname'     : 'worker3',
@@ -223,7 +223,8 @@ def main(debug=True):
     
     with CeleryManager(worker_kws, data, gc.ac_methods) as manager:
         for i, row in data.iterrows(): 
-            if global_config.scene_id in row['scene_id']: #'T18SUG' '044033' 'T2017252150500'
+            print(row['scene_id'],global_config.scene_id)
+            if global_config.scene_id in row['scene_id'] and 'LC09' not in row['scene_id'] and 'LO09' not in row['scene_id']: #'T18SUG' '044033' 'T2017252150500'
                 row = row.to_dict()
                 pipeline(row) if debug  else pipeline.delay(row)
             
