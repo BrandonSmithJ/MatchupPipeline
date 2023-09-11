@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+echo "The stream backend directory is: $1"
+echo "The stream environment is: $2"
+echo "The date for ancillary data is: $3 to $4"
+
+cd $1
+source $2
+echo "Downloading ancillary data..."
+ 
+python downloads/date_range_ancillary.py $3 $4

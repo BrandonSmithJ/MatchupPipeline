@@ -347,7 +347,8 @@ def plot_Rrs_diff_composite(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,wavelengths = [443,48
 ################
 def plot_OLI_Rrs(base_dir, scene_id, atm_corrs,sensor,out_path):
     Path(out_path).mkdir(parents=True, exist_ok=True)
-    if len(glob.glob(base_dir +'/*RRS*nm.TIF')):
+    atm_corrs_list = ['acolite','polymer','l2gen']
+    if len(glob.glob(base_dir +'/*RRS*nm.TIF')) and all([len(glob.glob(base_dir +f'/*{atm_corr}.nc'))  for atm_corr in atm_corrs_list]):
         nir_mask = nir_mask_gen(base_dir)
         pixel_bounds = gen_pixel_bounds()
         wavelengths = {
@@ -357,18 +358,18 @@ def plot_OLI_Rrs(base_dir, scene_id, atm_corrs,sensor,out_path):
         AQV_Rrs, AQV_Rrs_mask = load_Rrs_aquaverse(base_dir,scene_id, nir_mask,pixel_bounds, wavelengths = wavelengths[sensor]['aquaverse'])
         l8_rgb = gen_RGB(base_dir,pixel_bounds,sensor)
         vbounds = set_vbounds()
-        atm_corrs_list = ['acolite','polymer','l2gen']
+        #atm_corrs_list = ['acolite','polymer','l2gen']
         # for atm_corr in atm_corrs_list:
             
         #     if len(glob.glob(base_dir +f'/*{atm_corr}.nc')) :
         #            AC_Rrs = load_Rrs(base_dir, AQV_Rrs_mask, pixel_bounds, wavelengths = wavelengths[sensor][atm_corr],atm_corr=atm_corr,sensor=sensor)
         #            plot_Rrs(out_path,     AC_Rrs, AQV_Rrs, l8_rgb, vbounds, wavelengths = wavelengths[sensor]['output'], atm_corr_label = atm_corr,scene_id=scene_id)
         #            plot_Rrs_diff(out_path,AC_Rrs, AQV_Rrs, l8_rgb,          wavelengths = wavelengths[sensor]['output'], atm_corr_label = atm_corr,scene_id=scene_id)
-        if all([len(glob.glob(base_dir +f'/*{atm_corr}.nc'))  for atm_corr in atm_corrs_list]):
-            AC_Rrs_dict = {atm_corr: load_Rrs(base_dir, AQV_Rrs_mask, pixel_bounds, wavelengths = wavelengths[sensor][atm_corr],atm_corr=atm_corr,sensor=sensor) for atm_corr in atm_corrs_list}
+        #if all([len(glob.glob(base_dir +f'/*{atm_corr}.nc'))  for atm_corr in atm_corrs_list]):
+        AC_Rrs_dict = {atm_corr: load_Rrs(base_dir, AQV_Rrs_mask, pixel_bounds, wavelengths = wavelengths[sensor][atm_corr],atm_corr=atm_corr,sensor=sensor) for atm_corr in atm_corrs_list}
     
-            plot_Rrs_composite(out_path,     AC_Rrs_dict, AQV_Rrs, l8_rgb, vbounds, wavelengths = wavelengths[sensor]['output'], atm_corrs = atm_corrs_list,scene_id=scene_id)
-            plot_Rrs_diff_composite(out_path,AC_Rrs_dict, AQV_Rrs, l8_rgb,          wavelengths = wavelengths[sensor]['output'], atm_corrs = atm_corrs_list,scene_id=scene_id)
+        plot_Rrs_composite(out_path,     AC_Rrs_dict, AQV_Rrs, l8_rgb, vbounds, wavelengths = wavelengths[sensor]['output'], atm_corrs = atm_corrs_list,scene_id=scene_id)
+        plot_Rrs_diff_composite(out_path,AC_Rrs_dict, AQV_Rrs, l8_rgb,          wavelengths = wavelengths[sensor]['output'], atm_corrs = atm_corrs_list,scene_id=scene_id)
          
         return True
     # if 'acolite' in atm_corrs : 

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+echo "The stream backend directory is: $1"
+echo "The stream environment is: $2"
+echo "The csv input is: $3"
+echo "redownload is: $4"
+echo "sensor is: $5"
+cd $1
+source $2
+#if [ $5 == "MSI" ];
+#then
+#	echo "Downloading MSI tile..."
+#	python downloads/sentinel_download_manager.py -file $3 $4
+#fi
+
+#if [ $5 == "OLI" ];
+#then
+#	echo "Downloading OLI tile..."
+#        python downloads/landsat_download_manager.py -file $3 $4
+#fi
+
+echo "Downloading $5 tile..." 
+echo "--site $3 $4"
+python downloads/stream_download_manager.py --site $3 $4
+
+

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+echo "The stream backend directory is $1"
+echo "the stream environment is $2"
+echo "The scene_id is: $3"
+
+cd $1
+source $2
+
+sbatch slurm/aquaverse_mdn_ac.sh $3 --redo

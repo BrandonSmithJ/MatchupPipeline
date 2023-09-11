@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+echo "Copying scene id: $1 to $2"
+cp "/tis/stream/data/$1.tar.gz" $2
