@@ -109,7 +109,9 @@ def download(self,
         folders = list(out_path.glob('*'))
         if (len(folders)>global_config.max_processing_scenes):
             import time
-            time.sleep(3600)
+            pause_duration = 3600
+            print('Length of folders is:', len(folders),' which is > the limit of:',global_config.max_processing_scenes,'. pausing for: ',pause_duration,' seconds for AC to catch up before deleting oldest files.')
+            time.sleep(pause_duration)
             folders = list(out_path.glob('*'))
 
         while (len(folders)>global_config.max_processing_scenes):
@@ -125,14 +127,34 @@ def download(self,
     kwargs['scene_path'] = Path(scene_output)
     
     sample_config['scene_path'] = kwargs['scene_path']
-    if 'aquaverse' in global_config.ac_methods:
-        run_aquaverse_download(scene_id=sample_config['scene_id'],sensor = sample_config['sensor'],AQV_location=global_config.ac_path['aquaverse'],stream_backend_path=global_config.stream_backend_path,stream_env_path=global_config.stream_env_path,output_folder=kwargs['scene_folder'],overwrite = global_config.overwrite)
+    #if 'aquaverse' in global_config.ac_methods and False:
+    #    run_aquaverse_download(scene_id=sample_config['scene_id'],sensor = sample_config['sensor'],AQV_location=global_config.ac_path['aquaverse'],stream_backend_path=global_config.stream_backend_path,stream_env_path=global_config.stream_env_path,output_folder=kwargs['scene_folder'],overwrite = global_config.overwrite)
         #copy tar to local repo
-        run_aquaverse_pull_tar(scene_id=sample_config['scene_id'], AQV_location=global_config.ac_path['aquaverse'],output_folder=kwargs['scene_folder'],timeout=600)
+    #    run_aquaverse_pull_tar(scene_id=sample_config['scene_id'], AQV_location=global_config.ac_path['aquaverse'],output_folder=kwargs['scene_folder'],timeout=600)
         
     kwargs.pop('scene_path')    
     sample_config.pop('scene_path')
     kwargs['scene_path'] = api.download_scene(**kwargs)
+    if 'aquaverse' in global_config.ac_methods:
+        #compress output
+        
+        #push to stream
+        from ..utils.compress import compress
+        import os
+        tis_output_path = '/tis/stream/data/'+str(kwargs['scene_id']) + '.tar.gz'
+        if global_config.overwrite and os.path.exists(tis_output_path):
+            print("Removing:",tis_output_path)
+            os.remove(Path(tis_output_path))
+        if not os.path.exists(tis_output_path):
+            if 'OLI' == sample_config['sensor']:
+                compress(tis_output_path, kwargs['scene_path'],directory_or_contents='contents')
+            if 'MSI' == sample_config['sensor']:
+                compress(tis_output_path,kwargs['scene_path'].joinpath(kwargs['scene_id']+'.SAFE'),directory_or_contents='directory')
+            #update database
+            from ..utils.insert_satellite_data import insert_satellite_data
+            insert_satellite_data(sample_config['scene_id'])
+
+
     kwargs.update(sample_config)
     return kwargs
 
@@ -142,5 +164,6 @@ def download(self,
     #     print("Running Aquaverse download for:", scene_id)
     #     print(time.time() - start)
     #     "-redownload" #if overwrite
+    t 
         #aquaverse_csv_filename
     

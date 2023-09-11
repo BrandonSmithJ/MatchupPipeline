@@ -44,7 +44,7 @@ class Copernicus(BaseSource, SentinelAPI):
         sensor          : str,            # Sensor to search scenes for 
         location        : Location,       # Object representing location to search at
         dt_range        : DatetimeRange,  # Object representing start & end datetime to search between
-        limit           : int = 20,       # Max number of results returned
+        limit           : int = 2000,       # Max number of results returned
         max_cloud_cover : int = 100,      # Max cloud cover in percent (1-100)
         **kwargs,                         # Any other keyword arguments
     ) -> dict:                            # Return a dictionary of found scenes: {scene_id: scene_detail_dict}

@@ -29,6 +29,9 @@ class Google(BaseSource):
         overwrite     : bool = False,     # Whether to overwrite an already existing file
     ) -> Path:                            # Return path to the downloaded scene
         """ Downloads the requested scene from Google Cloud """
+        from subprocess import getoutput
+        username = getoutput('whoami')
+
         self.check_sensor(sensor)
         
         complete, output = self.get_output(scene_folder, scene_id, overwrite)
@@ -36,7 +39,7 @@ class Google(BaseSource):
         if not complete:
             root_path   = Path(__file__).parent.joinpath('gsutil')
             exec_path   = root_path.joinpath('gsutil').as_posix()
-            config_path = root_path.joinpath('gsutil_config').as_posix()
+            config_path = Path(f'/home/{username}/.boto') #root_path.joinpath('gsutil_config').as_posix()
             search_path = 'gs://gcp-public-data-{bucket}/{search}'.format(**{
                 'bucket' : self.valid_sensors[sensor],
                 'search' : get_params(sensor, scene_id)['search'],
