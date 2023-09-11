@@ -109,7 +109,7 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] :
     search_day_window      = 1
     max_cloud_cover        = 20
     #scene_id               = 'T18SUG' if 'MSI' in sensors[0] else '014034' if 'OLI' in sensors[0] else '' #'019031' '044033' 020031 #T18SUG
-    scene_id               = tiles[sensors[0]][datasets[0].split('_')[-1]]
+    #scene_id               = tiles[sensors[0]][datasets[0].split('_')[-1]]
 
 #Checks
 if search_day_window is None  and search_year_range is None and search_minute_window is None:
