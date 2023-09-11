@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 import sys
 username = getoutput('whoami') 
-datasets = ['OLI_test_image_AQV_GB']
+datasets = ['OLI_test_image']
 sensors  = ['OLI'] # 'MOD','VI'
 
 
@@ -96,7 +96,7 @@ if  'MERIS_test_image' in datasets[0] or 'MOD_VI_test_image' in datasets[0]:
     
 if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] : 
     overwrite              = True
-    ac_methods             = ['aquaverse']#['l2gen','acolite','polymer','aquaverse'] 
+    ac_methods             = ['l2gen','acolite','polymer','aquaverse'] 
     timeseries_or_matchups = 'timeseries'
     remove_scene_folder    = False 
     remove_L1_tile         = False
@@ -106,7 +106,7 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] :
     plot_Rrs               = True
     extract_window         = 1 #3x3
     apply_bounding_box     = False
-    search_day_window      = 300
+    search_day_window      = 1
     max_cloud_cover        = 20
     #scene_id               = 'T18SUG' if 'MSI' in sensors[0] else '014034' if 'OLI' in sensors[0] else '' #'019031' '044033' 020031 #T18SUG
     scene_id               = tiles[sensors[0]][datasets[0].split('_')[-1]]
