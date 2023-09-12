@@ -39,6 +39,7 @@ class PipelineTask(Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         """ This is run by the worker when the task fails """
         #Write failure to specific log file
+        from pathlib import Path
         out_string = task_id + '\n' + args[0]['scene_id'] + '\n' + str(einfo) + '\n' + "-------------------------------------------------\n"
         with open( str(Path(__file__).resolve().parent.parent.parent.joinpath('Logs').joinpath('errors.txt')),"a") as error_file:
             error_file.write(out_string)
