@@ -67,33 +67,41 @@ def nir_mask_gen(base_dir):
     return nir_mask
 
 #finds bounds based on provided lat lon box
-def load_Rrs_aquaverse(base_dir,scene_id, nir_mask,pixel_bounds, wavelengths = [443,482,561,655]):
+def load_Rrs_aquaverse(base_dir,scene_id, nir_mask,pixel_bounds, wavelengths = [443,482,561,655],zoom_dict={'OLI':1/3,'MSI':1/3}):
     rrs = {}
     rrs_mask = {}
     for wavelength in wavelengths:
         rrs_file = base_dir + '/'+ scene_id + f'_RRS_{wavelength}nm.TIF'
         rrs[wavelength] = np.squeeze(rasterio.open(rrs_file).read()).astype(float)*nir_mask
         rrs[wavelength][rrs[wavelength] <= 0] = np.nan
-        if 'OLI' in base_dir: rrs[wavelength] = rrs[wavelength][pixel_bounds['row']:pixel_bounds['row_u'], pixel_bounds['col']:pixel_bounds['col_u']]
+        if 'OLI' in base_dir: 
+            rrs[wavelength] = rrs[wavelength][pixel_bounds['row']:pixel_bounds['row_u'], pixel_bounds['col']:pixel_bounds['col_u']]
+            rrs[wavelength] = zoom(rrs[wavelength],zoom_dict['OLI'],order=0)
         rrs_mask[wavelength] = rrs[wavelength].copy()
         rrs_mask[wavelength][rrs_mask[wavelength]>0] = 1.0
     return rrs,rrs_mask
     
-def gen_pixel_bounds():
+def gen_pixel_bounds(image_shape):
     pixel_bounds={}
-    pixel_bounds['row']   = 1000
-    pixel_bounds['row_u'] = 4500
-    pixel_bounds['col']   = 2000
-    pixel_bounds['col_u'] = 4800
+    #pixel_bounds['row']   = 1000
+    #pixel_bounds['row_u'] = 4500
+    #pixel_bounds['col']   = 2000
+    #pixel_bounds['col_u'] = 4800
+    pixel_bounds['row']   = 0
+    pixel_bounds['row_u'] = image_shape[0]
+    pixel_bounds['col']   = 0
+    pixel_bounds['col_u'] = image_shape[1]
+
+
     return pixel_bounds
 
-def gen_RGB(base_dir,pixel_bounds,sensor):
+def gen_RGB(base_dir,pixel_bounds,sensor,zoom_dict={'OLI':1/3,'MSI':1/3}):
     l8_sr = glob.glob(base_dir +'/*_L2R.nc')[0]
     sr_l8 = netCDF4.Dataset(l8_sr, 'r')
 
-    l8_rhos_483 = np.array(sr_l8.variables['rhos_483']) if sensor == 'OLI' else zoom(np.array(sr_l8.variables['rhos_492']), 1/3, order=0)
-    l8_rhos_561 = np.array(sr_l8.variables['rhos_561']) if sensor == 'OLI' else zoom(np.array(sr_l8.variables['rhos_560']), 1/3, order=0)
-    l8_rhos_655 = np.array(sr_l8.variables['rhos_655']) if sensor == 'OLI' else zoom(np.array(sr_l8.variables['rhos_665']), 1/3, order=0)
+    l8_rhos_483 = zoom(np.array(sr_l8.variables['rhos_483']),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_l8.variables['rhos_492']), zoom_dict['MSI'], order=0)
+    l8_rhos_561 = zoom(np.array(sr_l8.variables['rhos_561']),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_l8.variables['rhos_560']), zoom_dict['MSI'], order=0)
+    l8_rhos_655 = zoom(np.array(sr_l8.variables['rhos_655']),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_l8.variables['rhos_665']), zoom_dict['MSI'], order=0)
 
     l8_rhos_483[l8_rhos_483<=0]= np.nan
     l8_rhos_561[l8_rhos_561<=0]= np.nan
@@ -114,9 +122,10 @@ def gen_RGB(base_dir,pixel_bounds,sensor):
     plt.figure()
     plt.imshow(l8_rgb)
     plt.savefig(base_dir +'rgb.png')
+    plt.close()
     return l8_rgb
 
-def load_Rrs(base_dir, AQV_rrs_mask,pixel_bounds, wavelengths = [443,483,561,655],atm_corr='acolite',sensor='MSI'):
+def load_Rrs(base_dir, AQV_rrs_mask,pixel_bounds, wavelengths = [443,483,561,655],atm_corr='acolite',sensor='MSI',zoom_dict={'OLI':1/3,'MSI':1/3}):
     l8_ac = glob.glob(base_dir +f'/{atm_corr}.nc')[0]
     prefix_Rrs = 'Rw' if atm_corr == 'polymer' else 'Rrs_'
     wavelength_swap = {'OLI': {'acolite': {483: 482, 492:490},'polymer': {440: 443, 480:482, 560:561},'l2gen': {},},
@@ -138,9 +147,13 @@ def load_Rrs(base_dir, AQV_rrs_mask,pixel_bounds, wavelengths = [443,483,561,655
             zoom_amount = 1/3 if atm_corr == 'acolite' else 2/3 if atm_corr == 'l2gen' else 2
             AC_Rrs[wavelength]  = zoom(AC_Rrs[wavelength], zoom_amount, order=0)
         if 'OLI' == sensor:
+            zoom_amount = zoom_dict['OLI']
             AC_Rrs[wavelength] = AC_Rrs[wavelength][pixel_bounds['row']:pixel_bounds['row_u'], pixel_bounds['col']:pixel_bounds['col_u']]
-
-        AC_Rrs[wavelength] = AQV_rrs_mask[wavelength]*AC_Rrs[wavelength]
+            AC_Rrs[wavelength] = zoom(AC_Rrs[wavelength],zoom_amount,order=0)
+            #print(np.shape(AC_Rrs[wavelength]),np.shape(AQV_rrs_mask[wavelength]))
+            #AQV_rrs_mask[wavelength] = zoom(AQV_rrs_mask[wavelength],zoom_amount,order=0)
+        local_AQV_rrs_mask = AQV_rrs_mask[wavelength] #zoom(AQV_rrs_mask[wavelength],zoom_amount,order=0) if sensor =='OLI' else AQV_rrs_mask[wavelength]
+        AC_Rrs[wavelength] = local_AQV_rrs_mask*AC_Rrs[wavelength]
 
     return AC_Rrs
        
@@ -199,6 +212,7 @@ def plot_Rrs(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,vbounds,wavelengths = [443,482,561,6
     plt.rcParams["font.size"] = 18
     plt.tight_layout()
     plt.savefig(base_dir + f'/{scene_id}_{atm_corr_label}_Rrs.png')
+    plt.close()
 
 def plot_Rrs_composite(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,vbounds,wavelengths = [443,482,561,655],atm_corrs = 'ACOLITE',rgb = True,scene_id=""):
     from matplotlib.colors import LogNorm
@@ -238,7 +252,8 @@ def plot_Rrs_composite(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,vbounds,wavelengths = [443
     plt.rcParams["font.size"] = 18
     plt.tight_layout()
     plt.savefig(base_dir + f'/{scene_id}_Rrs.png')
-    
+    plt.close()
+
 def plot_Rrs_diff(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,wavelengths = [443,482,561,655],atm_corr_label = 'ACOLITE',rgb = True,scene_id=""):
     box = dict(boxstyle="square",
          ec= 'black',
@@ -286,7 +301,8 @@ def plot_Rrs_diff(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,wavelengths = [443,482,561,655]
     plt.rcParams["font.size"] = 18
     plt.tight_layout()
     plt.savefig(base_dir + f'/{scene_id}_{atm_corr_label}_Rrs_diff.png')
-    
+    plt.close()
+
 def plot_Rrs_diff_composite(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,wavelengths = [443,482,561,655],atm_corrs = 'ACOLITE',rgb = True,scene_id=""):
     box = dict(boxstyle="square",
          ec= 'black',
@@ -343,20 +359,22 @@ def plot_Rrs_diff_composite(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,wavelengths = [443,48
     # plt.rcParams["font.size"] = 18
     # plt.tight_layout()
     fig_diff.savefig(base_dir + f'/{scene_id}_Rrs_diff_prc.png')
-    
+    plt.close('all')
+
 ################
 def plot_OLI_Rrs(base_dir, scene_id, atm_corrs,sensor,out_path):
     Path(out_path).mkdir(parents=True, exist_ok=True)
     atm_corrs_list = ['acolite','polymer','l2gen']
+    zoom_dict = {'OLI':1/3 ,'MSI':1/3}
     if len(glob.glob(base_dir +'/*RRS*nm.TIF')) and all([len(glob.glob(base_dir +f'/*{atm_corr}.nc'))  for atm_corr in atm_corrs_list]):
         nir_mask = nir_mask_gen(base_dir)
-        pixel_bounds = gen_pixel_bounds()
+        pixel_bounds = gen_pixel_bounds(image_shape=np.shape(nir_mask))
         wavelengths = {
                        'OLI': {'aquaverse':[443,482,561,655],'acolite':[443,483,561,655],'polymer':[440,480,560,655],'l2gen':[443,482,561,655],'output':[443,482,561,655]},
                        'MSI': {'aquaverse':[443,490,560,665],'acolite':[443,492,560,665],'polymer':[443,490,560,665],'l2gen':[443,492,560,665],'output':[443,490,560,665]},
                        }
-        AQV_Rrs, AQV_Rrs_mask = load_Rrs_aquaverse(base_dir,scene_id, nir_mask,pixel_bounds, wavelengths = wavelengths[sensor]['aquaverse'])
-        l8_rgb = gen_RGB(base_dir,pixel_bounds,sensor)
+        AQV_Rrs, AQV_Rrs_mask = load_Rrs_aquaverse(base_dir,scene_id, nir_mask,pixel_bounds, wavelengths = wavelengths[sensor]['aquaverse'],zoom_dict=zoom_dict)
+        l8_rgb = gen_RGB(base_dir,pixel_bounds,sensor,zoom_dict=zoom_dict)
         vbounds = set_vbounds()
         #atm_corrs_list = ['acolite','polymer','l2gen']
         # for atm_corr in atm_corrs_list:
@@ -366,11 +384,11 @@ def plot_OLI_Rrs(base_dir, scene_id, atm_corrs,sensor,out_path):
         #            plot_Rrs(out_path,     AC_Rrs, AQV_Rrs, l8_rgb, vbounds, wavelengths = wavelengths[sensor]['output'], atm_corr_label = atm_corr,scene_id=scene_id)
         #            plot_Rrs_diff(out_path,AC_Rrs, AQV_Rrs, l8_rgb,          wavelengths = wavelengths[sensor]['output'], atm_corr_label = atm_corr,scene_id=scene_id)
         #if all([len(glob.glob(base_dir +f'/*{atm_corr}.nc'))  for atm_corr in atm_corrs_list]):
-        AC_Rrs_dict = {atm_corr: load_Rrs(base_dir, AQV_Rrs_mask, pixel_bounds, wavelengths = wavelengths[sensor][atm_corr],atm_corr=atm_corr,sensor=sensor) for atm_corr in atm_corrs_list}
+        AC_Rrs_dict = {atm_corr: load_Rrs(base_dir, AQV_Rrs_mask, pixel_bounds, wavelengths = wavelengths[sensor][atm_corr],atm_corr=atm_corr,sensor=sensor,zoom_dict=zoom_dict) for atm_corr in atm_corrs_list}
     
         plot_Rrs_composite(out_path,     AC_Rrs_dict, AQV_Rrs, l8_rgb, vbounds, wavelengths = wavelengths[sensor]['output'], atm_corrs = atm_corrs_list,scene_id=scene_id)
         plot_Rrs_diff_composite(out_path,AC_Rrs_dict, AQV_Rrs, l8_rgb,          wavelengths = wavelengths[sensor]['output'], atm_corrs = atm_corrs_list,scene_id=scene_id)
-         
+        plt.close('all') 
         return True
     # if 'acolite' in atm_corrs : 
     #     AC_Rrs = load_Rrs(base_dir, AQV_Rrs_mask, pixel_bounds, wavelengths = wavelengths[sensor]['acolite'],atm_corr='acolite',sensor=sensor)

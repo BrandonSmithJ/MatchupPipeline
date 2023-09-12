@@ -130,8 +130,8 @@ if  'MERIS_test_image' in datasets[0] or 'MOD_VI_test_image' in datasets[0]:
     timeseries_or_matchups = 'matchups'
     
 if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] : 
-    overwrite              = True
-    ac_methods             = ['aquaverse']#['l2gen','acolite','polymer','aquaverse'] #['aquaverse']#['l2gen','acolite','polymer','aquaverse'] # 'l2gen','acolite','polymer', # 'l2gen','acolite','polymer, 'aquaverse'  #,'l2gen','acolite','mdn-ac','polymer' #'mdn-ac',
+    overwrite              = False
+    ac_methods             = ['l2gen','acolite','polymer','aquaverse'] #['aquaverse']#['l2gen','acolite','polymer','aquaverse'] # 'l2gen','acolite','polymer', # 'l2gen','acolite','polymer, 'aquaverse'  #,'l2gen','acolite','mdn-ac','polymer' #'mdn-ac',
     timeseries_or_matchups = 'timeseries'
     remove_scene_folder    = False 
     remove_L1_tile         = False
