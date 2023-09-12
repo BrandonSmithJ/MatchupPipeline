@@ -22,7 +22,7 @@ if 'MOD' in sensors:
     
 polymer_path   = '/home/bsmith16/AC/polymer/polymer-v4.16.1/polymer-v4.16.1/polymer'
 acolite_path   = '/home/roshea/AC/acolite/acolite-20221114.0/acolite' 
-aquaverse_path = '/home/roshea/matchup_pipeline_development/pipeline/AC/L2_processing/aquaverse'
+aquaverse_path = str(Path(__file__).resolve().parent.parent.joinpath('AC').joinpath('L2_processing').joinpath('aquaverse'))
 
 stream_backend_path = '/tis/m2cross/scratch/f002/wwainwr1/stream/backend'
 stream_env_path     = '/tis/m2cross/scratch/f002/wwainwr1/venv/bin/activate'

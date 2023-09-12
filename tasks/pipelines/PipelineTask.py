@@ -40,7 +40,7 @@ class PipelineTask(Task):
         """ This is run by the worker when the task fails """
         #Write failure to specific log file
         out_string = task_id + '\n' + args[0]['scene_id'] + '\n' + str(einfo) + '\n' + "-------------------------------------------------\n"
-        with open("/home/roshea/matchup_pipeline_development/pipeline/Logs/errors.txt","a") as error_file:
+        with open( str(Path(__file__).resolve().parent.parent.parent.joinpath('Logs').joinpath('errors.txt')),"a") as error_file:
             error_file.write(out_string)
         
         #Write finished state 
