@@ -98,10 +98,13 @@ def gen_pixel_bounds(image_shape):
 def gen_RGB(base_dir,pixel_bounds,sensor,zoom_dict={'OLI':1/3,'MSI':1/3}):
     l8_sr = glob.glob(base_dir +'/*_L2R.nc')[0]
     sr_l8 = netCDF4.Dataset(l8_sr, 'r')
+    rhos_483 = 'rhos_483' if 'LC08' in base_dir else 'rhos_482'
+    rhos_561 = 'rhos_561' if 'LC08' in base_dir else 'rhos_561'
+    rhos_655 = 'rhos_655' if 'LC08' in base_dir else 'rhos_654'
 
-    l8_rhos_483 = zoom(np.array(sr_l8.variables['rhos_483']),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_l8.variables['rhos_492']), zoom_dict['MSI'], order=0)
-    l8_rhos_561 = zoom(np.array(sr_l8.variables['rhos_561']),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_l8.variables['rhos_560']), zoom_dict['MSI'], order=0)
-    l8_rhos_655 = zoom(np.array(sr_l8.variables['rhos_655']),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_l8.variables['rhos_665']), zoom_dict['MSI'], order=0)
+    l8_rhos_483 = zoom(np.array(sr_l8.variables[rhos_483]),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_l8.variables['rhos_492']), zoom_dict['MSI'], order=0)
+    l8_rhos_561 = zoom(np.array(sr_l8.variables[rhos_561]),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_l8.variables['rhos_560']), zoom_dict['MSI'], order=0)
+    l8_rhos_655 = zoom(np.array(sr_l8.variables[rhos_655]),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_l8.variables['rhos_665']), zoom_dict['MSI'], order=0)
 
     l8_rhos_483[l8_rhos_483<=0]= np.nan
     l8_rhos_561[l8_rhos_561<=0]= np.nan
@@ -125,17 +128,32 @@ def gen_RGB(base_dir,pixel_bounds,sensor,zoom_dict={'OLI':1/3,'MSI':1/3}):
     plt.close()
     return l8_rgb
 
+def find_Rrs_key(file2read_ar,prefix_Rrs,wavelength):
+    offset=len(prefix_Rrs)
+    keys_list = [i for i in file2read_ar.variables.keys() if prefix_Rrs in i]
+    #print(keys_list,wavelength)
+    int_keys_list_bool = [np.abs(int(key[offset:])-wavelength) <5 for key in keys_list]
+    Rrs_key = keys_list[np.where(int_keys_list_bool)[0][0]] #np.where(int_keys_list_bool)[0][0]
+    return Rrs_key
+
 def load_Rrs(base_dir, AQV_rrs_mask,pixel_bounds, wavelengths = [443,483,561,655],atm_corr='acolite',sensor='MSI',zoom_dict={'OLI':1/3,'MSI':1/3}):
     l8_ac = glob.glob(base_dir +f'/{atm_corr}.nc')[0]
     prefix_Rrs = 'Rw' if atm_corr == 'polymer' else 'Rrs_'
-    wavelength_swap = {'OLI': {'acolite': {483: 482, 492:490},'polymer': {440: 443, 480:482, 560:561},'l2gen': {},},
-                       'MSI': {'acolite': {492:490},'polymer': {},'l2gen': {492:490},},}
+    wavelength_swap = {'OLI2': {'acolite': {483: 482, 492:490},'polymer': {440: 443, 480:482, 560:561},'l2gen': {},},
+                       'OLI' : {'acolite': {483: 482, 492:490},'polymer': {440: 443, 480:482, 560:561},'l2gen': {},},
+                       'MSI' : {'acolite': {492:490},'polymer': {},'l2gen': {492:490},},}
     file2read_ar = netCDF4.Dataset(l8_ac,'r')
     AC_Rrs = {}
+    if sensor == 'OLI' and 'LC09' in base_dir: sensor = 'OLI2'
     for wavelength in wavelengths:
-        if atm_corr in ['acolite','polymer']: AC_Rrs[wavelength] = np.asarray(file2read_ar.variables[f'{prefix_Rrs}{wavelength}'])
+        if atm_corr in ['acolite','polymer']: 
+            #keys_list = [int(i[4:]) for i in file2read_ar.variables.keys() if 'Rrs_' in i]
+            #int_keys_list_bool = [np.abs(int(key[4:])-483) <5 for key in keys_list]
+            #Rrs_key = keys_list[np.where(int_keys_list_bool)[0][0]] #np.where(int_keys_list_bool)[0][0]
+
+            AC_Rrs[wavelength] = np.asarray(file2read_ar.variables[find_Rrs_key(file2read_ar,prefix_Rrs,wavelength)])
         if atm_corr in ['l2gen']: 
-            AC_Rrs[wavelength] = np.asarray(file2read_ar['geophysical_data'].variables[f'{prefix_Rrs}{wavelength}'])
+            AC_Rrs[wavelength] = np.asarray(file2read_ar['geophysical_data'].variables[find_Rrs_key(file2read_ar['geophysical_data'],prefix_Rrs,wavelength)])
         if atm_corr == 'polymer': 
             AC_Rrs[wavelength][AC_Rrs[wavelength]==9.96921e+36] = np.float('nan')
             AC_Rrs[wavelength] = AC_Rrs[wavelength]/np.pi
@@ -146,7 +164,7 @@ def load_Rrs(base_dir, AQV_rrs_mask,pixel_bounds, wavelengths = [443,483,561,655
         if 'MSI'  == sensor:
             zoom_amount = 1/3 if atm_corr == 'acolite' else 2/3 if atm_corr == 'l2gen' else 2
             AC_Rrs[wavelength]  = zoom(AC_Rrs[wavelength], zoom_amount, order=0)
-        if 'OLI' == sensor:
+        if 'OLI' == sensor or 'OLI2' == sensor:
             zoom_amount = zoom_dict['OLI']
             AC_Rrs[wavelength] = AC_Rrs[wavelength][pixel_bounds['row']:pixel_bounds['row_u'], pixel_bounds['col']:pixel_bounds['col_u']]
             AC_Rrs[wavelength] = zoom(AC_Rrs[wavelength],zoom_amount,order=0)

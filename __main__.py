@@ -224,7 +224,7 @@ def main(debug=True):
     with CeleryManager(worker_kws, data, gc.ac_methods) as manager:
         for i, row in data.iterrows(): 
             if debug: print(row['scene_id'],global_config.scene_id)
-            if global_config.scene_id in row['scene_id'] and 'LC09' not in row['scene_id'] and 'LO09' not in row['scene_id']: #'T18SUG' '044033' 'T2017252150500'
+            if global_config.scene_id in row['scene_id']: #'T18SUG' '044033' 'T2017252150500'
                 row = row.to_dict()
                 pipeline(row) if debug  else pipeline.delay(row)
             

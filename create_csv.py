@@ -99,7 +99,7 @@ def parse_feature(global_config, idxs, features, name):
 
 def create_valid_mask(global_config, data, ac_method):
     """ Create a mask column which looks at valid pixels and l2 flags """
-    assert(ac_method in ['l2gen', 'acolite', 'polymer']), ac_method
+    assert(ac_method in ['l2gen', 'acolite', 'polymer','aquaverse']), ac_method
     full_mask = np.zeros(len(data)).astype(bool)
 
     key = 'Rrs_valid_pct'
@@ -138,7 +138,7 @@ def create_csv(global_config, insitu, path):
     idxs  = data.pop('window_idxs')
     parse = lambda name: parse_feature(global_config, idxs, data, name)
     data  = pd.concat(map(parse, data), axis=1)
-    data  = create_valid_mask(global_config, data, path.name)
+    data  = create_valid_mask(global_config, data, path.parent.name)
     data  = data.drop_duplicates(('meta', 'uid'))
     data  = data.set_index(('meta', 'uid'))
     data.index.name = 'uid'
@@ -160,7 +160,7 @@ def main():
     for dataset in global_config.datasets:
         for sensor in global_config.sensors:
             for ac in global_config.ac_methods:
-                path = global_config.output_path.joinpath(dataset, sensor, ac)
+                path = global_config.output_path.joinpath(dataset, sensor,ac,'Matchups')
 
                 if path.exists():
                     create_csv(global_config, data, path)
