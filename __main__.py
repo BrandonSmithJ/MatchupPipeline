@@ -10,7 +10,8 @@ from .utils import pretty_print, color
 from .utils import Location, DatetimeRange
 from .parameters import get_args
 from .tasks.search  import search
-
+from subprocess import getoutput
+username = getoutput('whoami')
 
 
 def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
@@ -192,30 +193,31 @@ def main(debug=True):
     # on the same matching scene at once
     data = data.sample(frac=1)
     print(data, '\n')
-
+    from pathlib import Path
+    Path(Path(__file__).parent.joinpath('Logs').joinpath(username)).mkdir(parents=True, exist_ok=True)
     worker_kws = [
         # Multiple threads for download
-        {   'logname'     : 'worker1',
+        {   'logname'     : f'{username}/worker1',
             'queues'      : ['search','download','correct','extract','plot','celery'],
             'concurrency' : 1,
         },
         # Multiple threads for correction
-        {   'logname'     : 'worker2',
+        {   'logname'     : f'{username}/worker2',
             'queues'      : ['correct'],
             'concurrency' : 8, 
         },
         # Multiple threads for extraction
-        {   'logname'     : 'worker3',
+        {   'logname'     : f'{username}/worker3',
             'queues'      : ['extract'],
             'concurrency' : 1,
         },
         # Multiple threads for plotting
-        {   'logname'     : 'worker4',
+        {   'logname'     : f'{username}/worker4',
             'queues'      : ['plot'],
             'concurrency' : 2,
         },
         # Single dedicated thread (i.e. for writing)
-        {   'logname'     : 'worker5',
+        {   'logname'     : f'{username}/worker5',
             'queues'      : ['write'],
             'concurrency' : 1,
         },

@@ -37,7 +37,10 @@ FILENAME = {
     'MERIS' : '**/xfdumanifest.xml',
     'MOD'   : '**/*.L1A_LAC',
     'VI'    : '*.nc',
-}
+    'HICO'  : '*.nc',
+
+
+    }
 
 
 def run_l2gen(
@@ -110,7 +113,7 @@ def run_l2gen(
     assert_contains(FILENAME, sensor, 'l2gen sensor')
 
     # Setup paths
-    out_file = Path(out_dir).absolute().joinpath('l2gen.nc')
+    out_file = Path(out_dir).absolute().joinpath('l2gen_tmp.nc')
     inp_file = Path(inp_file).absolute()
 
     # Use the appropriate file, if not already given
@@ -181,7 +184,7 @@ def run_l2gen(
             if 'Scenes' in inp_file.as_posix() and sensor in inp_file.as_posix() and False:
                 shutil.rmtree(inp_file.as_posix())
             raise AtmosphericCorrectionError(msg)
-
+    os.rename(out_file,Path(out_dir).absolute().joinpath('l2gen.nc'))
     return out_file
 
 def generate_MODIS_L1B(   

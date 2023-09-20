@@ -17,6 +17,14 @@ import tarfile
 from scipy.ndimage import zoom
 from pathlib import Path
  
+def find_Rrs_key(file2read_ar,prefix_Rrs,wavelength,tol=5):
+    offset=len(prefix_Rrs)
+    keys_list = [i for i in file2read_ar.variables.keys() if prefix_Rrs in i]
+    #print(keys_list,wavelength)
+    int_keys_list_bool = [np.abs(int(key[offset:])-wavelength) <tol for key in keys_list]
+    Rrs_key = keys_list[np.where(int_keys_list_bool)[0][0]] #np.where(int_keys_list_bool)[0][0]
+    return Rrs_key
+
 def rgb_enhance(rgb:'numpy.ndarray') -> 'numpy.ndaray':
     """ Rescale a rgb image to enhance the visual quality, adapted from:
     https://gis.stackexchange.com/questions/350663/automated-image-enhancement-in-python
@@ -60,7 +68,8 @@ def nir_mask_gen(base_dir):
     l8_sr = glob.glob(base_dir +'/*_L2R.nc')[0]
     sr_l8 = netCDF4.Dataset(l8_sr, 'r')
     # read nir rhot
-    l8_rhot_865 = np.array(sr_l8.variables['rhot_865'])
+    rhot_865 = find_Rrs_key(sr_l8,'rhot_',865)
+    l8_rhot_865 = np.array(sr_l8.variables[rhot_865])
     toa_ref_nir =  np.where(l8_rhot_865 < 0.1, l8_rhot_865, 0)
     nir_mask = toa_ref_nir !=0
     if 'MSI' in base_dir: nir_mask  = zoom(nir_mask, 1/3, order=0)
@@ -98,13 +107,13 @@ def gen_pixel_bounds(image_shape):
 def gen_RGB(base_dir,pixel_bounds,sensor,zoom_dict={'OLI':1/3,'MSI':1/3}):
     l8_sr = glob.glob(base_dir +'/*_L2R.nc')[0]
     sr_l8 = netCDF4.Dataset(l8_sr, 'r')
-    rhos_483 = 'rhos_483' if 'LC08' in base_dir else 'rhos_482'
-    rhos_561 = 'rhos_561' if 'LC08' in base_dir else 'rhos_561'
-    rhos_655 = 'rhos_655' if 'LC08' in base_dir else 'rhos_654'
+    rhos_483 = 'rhos_483' if 'LC08' in base_dir else find_Rrs_key(sr_l8,'rhos_',492,tol=20)
+    rhos_561 = 'rhos_561' if 'LC08' in base_dir else find_Rrs_key(sr_l8,'rhos_',561,tol=20)
+    rhos_655 = 'rhos_655' if 'LC08' in base_dir else find_Rrs_key(sr_l8,'rhos_',655,tol=20)
 
-    l8_rhos_483 = zoom(np.array(sr_l8.variables[rhos_483]),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_l8.variables['rhos_492']), zoom_dict['MSI'], order=0)
-    l8_rhos_561 = zoom(np.array(sr_l8.variables[rhos_561]),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_l8.variables['rhos_560']), zoom_dict['MSI'], order=0)
-    l8_rhos_655 = zoom(np.array(sr_l8.variables[rhos_655]),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_l8.variables['rhos_665']), zoom_dict['MSI'], order=0)
+    l8_rhos_483 = zoom(np.array(sr_l8.variables[rhos_483]),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_l8.variables[rhos_483]), zoom_dict['MSI'], order=0)
+    l8_rhos_561 = zoom(np.array(sr_l8.variables[rhos_561]),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_l8.variables[rhos_561]), zoom_dict['MSI'], order=0)
+    l8_rhos_655 = zoom(np.array(sr_l8.variables[rhos_655]),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_l8.variables[rhos_655]), zoom_dict['MSI'], order=0)
 
     l8_rhos_483[l8_rhos_483<=0]= np.nan
     l8_rhos_561[l8_rhos_561<=0]= np.nan
@@ -127,14 +136,6 @@ def gen_RGB(base_dir,pixel_bounds,sensor,zoom_dict={'OLI':1/3,'MSI':1/3}):
     plt.savefig(base_dir +'rgb.png')
     plt.close()
     return l8_rgb
-
-def find_Rrs_key(file2read_ar,prefix_Rrs,wavelength):
-    offset=len(prefix_Rrs)
-    keys_list = [i for i in file2read_ar.variables.keys() if prefix_Rrs in i]
-    #print(keys_list,wavelength)
-    int_keys_list_bool = [np.abs(int(key[offset:])-wavelength) <5 for key in keys_list]
-    Rrs_key = keys_list[np.where(int_keys_list_bool)[0][0]] #np.where(int_keys_list_bool)[0][0]
-    return Rrs_key
 
 def load_Rrs(base_dir, AQV_rrs_mask,pixel_bounds, wavelengths = [443,483,561,655],atm_corr='acolite',sensor='MSI',zoom_dict={'OLI':1/3,'MSI':1/3}):
     l8_ac = glob.glob(base_dir +f'/{atm_corr}.nc')[0]

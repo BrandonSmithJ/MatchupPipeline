@@ -3,15 +3,15 @@ from pathlib import Path
 import os
 import sys
 username = getoutput('whoami') 
-datasets = ['OLI_test_image']
-sensors  = ['OLI'] # 'MOD','VI'
+datasets = ['OLI_test_image'] #'MSI_test_image_CB'
+sensors  = ['OLI'] # 'MSI'
 
 
 #===================================
 #         Path Definitions
 #===================================
 tiles = {'OLI' : {'IRL' : '016040', 'GB': '024029','CB':'014034'},
-        'MSI' : {'CB'  : 'T18SUG', '20201017': ''},}
+        'MSI' : {'CB'  : 'T18SUG_20210709', '20201017': ''},}
 
 l2gen_path     = '/tis/m2cross/scratch/f004/roshea/Seadas_versions/Seadas_V2022_3/ocssw' 
 
@@ -44,7 +44,7 @@ max_processing_scenes  = 20
 #===================================
 # Atmospheric Correction Parameters
 #===================================
-ac_timeout = 120 # number of minutes an AC processor can run before being terminated
+ac_timeout = 180 # number of minutes an AC processor can run before being terminated
 ac_methods = ['l2gen'] # Atmospheric Correction methods to apply
 apply_bounding_box = True
 
@@ -106,7 +106,7 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] :
     plot_Rrs               = True
     extract_window         = 1 #3x3
     apply_bounding_box     = False
-    search_day_window      = 1
+    search_day_window      = 120
     max_cloud_cover        = 20
     #scene_id               = 'T18SUG' if 'MSI' in sensors[0] else '014034' if 'OLI' in sensors[0] else '' #'019031' '044033' 020031 #T18SUG
     #scene_id               = tiles[sensors[0]][datasets[0].split('_')[-1]]
