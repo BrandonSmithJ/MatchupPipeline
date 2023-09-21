@@ -106,7 +106,7 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] :
     plot_Rrs               = True
     extract_window         = 1 #3x3
     apply_bounding_box     = False
-    search_day_window      = 120
+    search_day_window      = 0 if sensors[0] == 'OLI' else 120
     max_cloud_cover        = 20
     #scene_id               = 'T18SUG' if 'MSI' in sensors[0] else '014034' if 'OLI' in sensors[0] else '' #'019031' '044033' 020031 #T18SUG
     #scene_id               = tiles[sensors[0]][datasets[0].split('_')[-1]]

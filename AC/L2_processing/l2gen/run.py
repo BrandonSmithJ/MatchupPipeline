@@ -113,8 +113,9 @@ def run_l2gen(
     assert_contains(FILENAME, sensor, 'l2gen sensor')
 
     # Setup paths
-    out_file = Path(out_dir).absolute().joinpath('l2gen_tmp.nc')
-    inp_file = Path(inp_file).absolute()
+    out_file      = Path(out_dir).absolute().joinpath('l2gen_tmp.nc')
+    out_file_comp = Path(out_dir).absolute().joinpath('l2gen.nc')
+    inp_file      = Path(inp_file).absolute()
 
     # Use the appropriate file, if not already given
     if inp_file.is_dir():
@@ -125,7 +126,7 @@ def run_l2gen(
             logger.warning(f'Suffix file not found for {sensor}: {contents}')
    
     # Only run if output doesn't yet exist, or we want to overwrite
-    if not out_file.exists() or overwrite:
+    if not out_file_comp.exists() or overwrite:
         
         # Ensure the SeaDAS installation exists
         ac_path = Path(ac_path or 'SeaDAS').absolute()
@@ -184,8 +185,10 @@ def run_l2gen(
             if 'Scenes' in inp_file.as_posix() and sensor in inp_file.as_posix() and False:
                 shutil.rmtree(inp_file.as_posix())
             raise AtmosphericCorrectionError(msg)
-    os.rename(out_file,Path(out_dir).absolute().joinpath('l2gen.nc'))
-    return out_file
+    if out_file.exists():
+        if not out_file_comp.exists() or overwrite:
+            os.rename(out_file,out_file_comp)
+    return out_file_comp
 
 def generate_MODIS_L1B(   
     sensor   : str, 
