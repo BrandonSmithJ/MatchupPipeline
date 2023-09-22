@@ -3,15 +3,15 @@ from pathlib import Path
 import os
 import sys
 username = getoutput('whoami') 
-datasets = ['OLI_test_image'] #'MSI_test_image_CB'
-sensors  = ['OLI'] # 'MSI'
+datasets = ['OLCI_test_image'] #['OLI_test_image'] #'MSI_test_image_CB'
+sensors  = ['OLCI']            #['OLI'] # 'MSI'
 
 
 #===================================
 #         Path Definitions
 #===================================
 tiles = {'OLI' : {'IRL' : '016040', 'GB': '024029','CB':'014034'},
-        'MSI' : {'CB'  : 'T18SUG_20210709', '20201017': ''},}
+         'MSI' : {'CB'  : 'T18SUG_20210709', '20201017': ''},}
 
 l2gen_path     = '/tis/m2cross/scratch/f004/roshea/Seadas_versions/Seadas_V2022_3/ocssw' 
 
@@ -110,6 +110,20 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] :
     max_cloud_cover        = 20
     #scene_id               = 'T18SUG' if 'MSI' in sensors[0] else '014034' if 'OLI' in sensors[0] else '' #'019031' '044033' 020031 #T18SUG
     #scene_id               = tiles[sensors[0]][datasets[0].split('_')[-1]]
+
+if  'OLCI_test_image' in datasets[0]:
+    overwrite              = False
+    ac_methods             = ['acolite']
+    timeseries_or_matchups = 'timeseries'
+    remove_scene_folder    = True
+    remove_L1_tile         = True
+    fix_projection_Rrs     = False
+    plot_products          = False
+    plot_Rrs               = True
+    extract_window         = 1
+    apply_bounding_box     = True
+    search_day_window      = 0
+    scene_id               = '20230710T153315'
 
 #Checks
 if search_day_window is None  and search_year_range is None and search_minute_window is None:
