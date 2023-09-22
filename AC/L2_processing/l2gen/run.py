@@ -116,7 +116,7 @@ def run_l2gen(
     out_file      = Path(out_dir).absolute().joinpath('l2gen_tmp.nc')
     out_file_comp = Path(out_dir).absolute().joinpath('l2gen.nc')
     inp_file      = Path(inp_file).absolute()
-
+    
     # Use the appropriate file, if not already given
     if inp_file.is_dir():
         try: 

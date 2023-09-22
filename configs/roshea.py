@@ -3,8 +3,8 @@ from pathlib import Path
 import os
 import sys
 username = getoutput('whoami') #SaltonSea_08_27_2016
-datasets = ['MSI_test_image_CB']#['OLI_test_image_AQV_GB']#['OLI_test_image_Erie_2023'] # MSI_test_image_20201017 # OLI_test_image_san_fran_2023 # 'MOD_VI_test_image' #MERIS_test_image #'Chesapeake_Bay_2016_2023'] #Erie_2021 #SaltonSea_2022 #SaltonSea_10_09_2022 #SaltonSea_shifted SaltonSea_1999_2022 GSL_02_13_2019 #GSL_High_quality
-sensors  = ['MSI'] # 'MOD','VI'
+datasets = ['OLCI_test_image'] #['MSI_test_image_CB']#['OLI_test_image_AQV_GB']#['OLI_test_image_Erie_2023'] # MSI_test_image_20201017 # OLI_test_image_san_fran_2023 # 'MOD_VI_test_image' #MERIS_test_image #'Chesapeake_Bay_2016_2023'] #Erie_2021 #SaltonSea_2022 #SaltonSea_10_09_2022 #SaltonSea_shifted SaltonSea_1999_2022 GSL_02_13_2019 #GSL_High_quality
+sensors  = ['OLCI'] # 'MOD','VI'
 
 
 #===================================
@@ -16,8 +16,8 @@ sensors  = ['MSI'] # 'MOD','VI'
 
 l2gen_path     = '/tis/m2cross/scratch/f004/roshea/Seadas_versions/Seadas_V2022_3/ocssw' #'/tis/m2cross/scratch/f004/roshea/Seadas_versions/Seadas_V2022_3/ocssw' #'/tis/m2cross/scratch/f004/roshea/Seadas_versions/Seadas_8_2_0/SeaDAS/ocssw' # '/tis/m2cross/scratch/f004/roshea/Seadas_versions/Seadas_V2022_0/ocssw' #/tis/m2cross/scratch/f004/roshea/Seadas_versions/Seadas_V2021_2/ocssw'#/tis/m2cross/scratch/f004/roshea/test_folder/SeaDAS_01_13_2022'#'/home/bsmith16/workspace/SeaDAS'#'/tis/m2cross/scratch/f002/bsmith/SeaDAS_01_13_2022' # '/tis/m2cross/scratch/f002/roshea/SeaDAS_06_13_2022/ocssw_R_2022_3' supports collection 2 imagery
 
-tiles = {'OLI' : {'IRL' : '015041', 'GB': '024029','CB':'014034','Sakib':'014035_20211114'},
-        'MSI' : {'CB'  : 'T18SUG_20210709', '20201017': '','fran' : 'T10SEG'},}
+tiles = {'OLI' : {'IRL' : '015041', 'GB': '024029','CB':'014034','Sakib':'014035_20211114','20190316':'LC08_L1TP_044034_20190316'},
+        'MSI' : {'CB'  : 'T18SUG_20210430', '20201017': '','fran' : 'T10SEG'},}
 
 if 'OLI' or 'MSI'  in sensors:
     l2gen_path = '/home/roshea/SeaDAS/SeaDAS_V2022_3/ocssw'
@@ -130,7 +130,7 @@ if  'MERIS_test_image' in datasets[0] or 'MOD_VI_test_image' in datasets[0]:
     timeseries_or_matchups = 'matchups'
     
 if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] : 
-    overwrite              = True
+    overwrite              = False
     ac_methods             = ['l2gen','acolite','polymer','aquaverse'] #['aquaverse']#['l2gen','acolite','polymer','aquaverse'] # 'l2gen','acolite','polymer', # 'l2gen','acolite','polymer, 'aquaverse'  #,'l2gen','acolite','mdn-ac','polymer' #'mdn-ac',
     timeseries_or_matchups = 'timeseries'
     remove_scene_folder    = False 
@@ -146,6 +146,20 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] :
     #scene_id               = 'T18SUG' if 'MSI' in sensors[0] else '014034' if 'OLI' in sensors[0] else '' #'019031' '044033' 020031 #T18SUG
     scene_id               = tiles[sensors[0]][datasets[0].split('_')[-1]]
     
+
+if  'OLCI_test_image' in datasets[0]:
+    overwrite              = False
+    ac_methods             = ['acolite']
+    timeseries_or_matchups = 'timeseries'
+    remove_scene_folder    = True
+    remove_L1_tile         = True
+    fix_projection_Rrs     = False
+    plot_products          = False
+    plot_Rrs               = True
+    extract_window         = 1
+    apply_bounding_box     = True
+    search_day_window      = 0
+    scene_id               = '20230710T153315'
 
 if  'Sundar_dataset' in datasets[0] or 'MOD_dataset_chris' in datasets[0] or 'MOD_test_bahamas' in datasets[0] : 
     overwrite           = False
