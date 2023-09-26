@@ -60,7 +60,8 @@ app.conf.task_queues = [
 ]
 # If we're on pardees, we're using TLS for RabbitMQ
 #cert_root = '/home/bsmith16/workspace/rabbitmq_server-3.10.7/etc/pki/tls'
-cert_root = '/home/roshea/rabbitMQ/rabbitmq_server-3.10.7/etc/pki/tls'
+#cert_root = '/home/roshea/rabbitMQ/rabbitmq_server-3.10.7/etc/pki/tls'
+cert_root = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/rabbitMQ/RabbitMQ/rabbitmq_server-3.12.6/etc/pki/tls'
 if os.path.exists(cert_root):
   import ssl
   app.conf.update(**{

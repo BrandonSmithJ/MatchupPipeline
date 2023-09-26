@@ -112,7 +112,7 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] :
     #scene_id               = tiles[sensors[0]][datasets[0].split('_')[-1]]
 
 if  'OLCI_test_image' in datasets[0]:
-    overwrite              = False
+    overwrite              = True
     ac_methods             = ['acolite']
     timeseries_or_matchups = 'timeseries'
     remove_scene_folder    = True
