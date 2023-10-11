@@ -14,8 +14,8 @@ app  = Celery('pipeline', task_cls=task)
 # Set configuration options
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html
 app.conf.update(**{
-    'broker_url'              : 'pyamqp://localhost',
-    'result_backend'          : 'rpc://localhost',
+    'broker_url'              : 'pyamqp://pardees:5671',
+    'result_backend'          : 'rpc://pardees:5671',
     'timezone'                : 'America/New_York',
     'task_serializer'         : 'pickle',
     'result_serializer'       : 'pickle',
@@ -61,11 +61,14 @@ app.conf.task_queues = [
 # If we're on pardees, we're using TLS for RabbitMQ
 #cert_root = '/home/bsmith16/workspace/rabbitmq_server-3.10.7/etc/pki/tls'
 #cert_root = '/home/roshea/rabbitMQ/rabbitmq_server-3.10.7/etc/pki/tls'
-cert_root = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/rabbitMQ/RabbitMQ/rabbitmq_server-3.12.6/etc/pki/tls'
+#cert_root = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/rabbitMQ/RabbitMQ/rabbitmq_server-3.12.6/etc/pki/tls'
+cert_root = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/rabbitMQ/rabbitmq_server_files/TLS'
+
+
 if os.path.exists(cert_root):
   import ssl
   app.conf.update(**{
-    'broker_url'     :f'pyamqp://{username}:mp{username}@localhost:5671/matchups_{username}', 
+    'broker_url'     :f'pyamqp://{username}:mp{username}@pardees:5671/matchups_{username}', 
     'broker_use_ssl' : {
       'keyfile'    : f'{cert_root}/server-key.pem',
       'certfile'   : f'{cert_root}/server-cert.pem',
