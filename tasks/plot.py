@@ -1,5 +1,5 @@
 from ..Plot.plot_L2  import plot_products
-from ..Plot.plot_Rrs import plot_OLI_Rrs as plot_Rrs
+from ..Plot.plot_Rrs import plot_all_Rrs as plot_Rrs
 from .. import app
 from argparse import Namespace
 

@@ -13,18 +13,11 @@ import numpy
 from matplotlib.colors import LogNorm
 import rasterio
 import glob
+import os
 import tarfile
 from scipy.ndimage import zoom
 from pathlib import Path
  
-def find_Rrs_key(file2read_ar,prefix_Rrs,wavelength,tol=5):
-    offset=len(prefix_Rrs)
-    keys_list = [i for i in file2read_ar.variables.keys() if prefix_Rrs in i]
-    #print(keys_list,wavelength)
-    int_keys_list_bool = [np.abs(int(key[offset:])-wavelength) <tol for key in keys_list]
-    Rrs_key = keys_list[np.where(int_keys_list_bool)[0][0]] #np.where(int_keys_list_bool)[0][0]
-    return Rrs_key
-
 def rgb_enhance(rgb:'numpy.ndarray') -> 'numpy.ndaray':
     """ Rescale a rgb image to enhance the visual quality, adapted from:
     https://gis.stackexchange.com/questions/350663/automated-image-enhancement-in-python
@@ -64,24 +57,59 @@ def rgb_enhance(rgb:'numpy.ndarray') -> 'numpy.ndaray':
     
     return rgb_enhanced
 
+def aqv_proc(file):
+    data = (np.squeeze(rasterio.open(file).read()).astype(float))
+    data[data <= 0] = np.nan
+    
+    return data
+    
 def nir_mask_gen(base_dir):
-    l8_sr = glob.glob(base_dir +'/*_L2R.nc')[0]
-    sr_l8 = netCDF4.Dataset(l8_sr, 'r')
+    '''A simple NIR band based land mask'''
+    
+    sr = glob.glob(base_dir +'/*_L2R.nc')[0]
+    sr_data = netCDF4.Dataset(sr, 'r')
     # read nir rhot
-    rhot_865 = find_Rrs_key(sr_l8,'rhot_',865)
-    l8_rhot_865 = np.array(sr_l8.variables[rhot_865])
-    toa_ref_nir =  np.where(l8_rhot_865 < 0.1, l8_rhot_865, 0)
+    #print(sr_data.variables.keys())
+    
+    # which satellite -> L8, L9, S2A or S2B
+    sat = base_dir.split('/')[-3].split('_')[0]
+    
+    if 'MSI' in base_dir:
+        try:
+            rhot_865 = np.array(sr_data.variables['rhot_865'])
+        except:
+            rhot_865 = np.array(sr_data.variables['rhot_864'])
+    else:
+        rhot_865 = np.array(sr_data.variables['rhot_865'])
+    
+    toa_ref_nir =  np.where(rhot_865 < 0.5, rhot_865, 0)
     nir_mask = toa_ref_nir !=0
     if 'MSI' in base_dir: nir_mask  = zoom(nir_mask, 1/3, order=0)
     return nir_mask
 
+
+def land_mask(base_dir):
+    '''Function to create a land mask based on ndwi'''
+    
+    rho_rc_green = aqv_proc(glob.glob(base_dir+ '/**rayleigh_corrected_560nm.TIF')[0])
+    rho_rc_nir = aqv_proc(glob.glob(base_dir+ '/**rayleigh_corrected_864nm.TIF')[0])
+
+    ndwi = (rho_rc_green - rho_rc_nir)/(rho_rc_green + rho_rc_nir)
+    ndwi_mask =  np.where(ndwi > 0, ndwi, np.nan)
+    land_masked = ndwi_mask !=0
+    
+    #if 'MSI' in base_dir: land_masked  = zoom(land_masked, 1/3, order=0)
+    
+    return land_masked
+
+
 #finds bounds based on provided lat lon box
-def load_Rrs_aquaverse(base_dir,scene_id, nir_mask,pixel_bounds, wavelengths = [443,482,561,655],zoom_dict={'OLI':1/3,'MSI':1/3}):
+def load_Rrs_aquaverse(base_dir, land_masked, scene_id, pixel_bounds, wavelengths = [443,482,561,655],zoom_dict={'OLI':1/3,'MSI':1/3}):
     rrs = {}
     rrs_mask = {}
     for wavelength in wavelengths:
         rrs_file = base_dir + '/'+ scene_id + f'_RRS_{wavelength}nm.TIF'
-        rrs[wavelength] = np.squeeze(rasterio.open(rrs_file).read()).astype(float)*nir_mask
+        rrs[wavelength] = np.squeeze(rasterio.open(rrs_file).read()).astype(float)#*land_masked,
         rrs[wavelength][rrs[wavelength] <= 0] = np.nan
         if 'OLI' in base_dir: 
             rrs[wavelength] = rrs[wavelength][pixel_bounds['row']:pixel_bounds['row_u'], pixel_bounds['col']:pixel_bounds['col_u']]
@@ -89,7 +117,8 @@ def load_Rrs_aquaverse(base_dir,scene_id, nir_mask,pixel_bounds, wavelengths = [
         rrs_mask[wavelength] = rrs[wavelength].copy()
         rrs_mask[wavelength][rrs_mask[wavelength]>0] = 1.0
     return rrs,rrs_mask
-    
+
+ 
 def gen_pixel_bounds(image_shape):
     pixel_bounds={}
     #pixel_bounds['row']   = 1000
@@ -101,25 +130,39 @@ def gen_pixel_bounds(image_shape):
     pixel_bounds['col']   = 0
     pixel_bounds['col_u'] = image_shape[1]
 
-
     return pixel_bounds
 
 def gen_RGB(base_dir,pixel_bounds,sensor,zoom_dict={'OLI':1/3,'MSI':1/3}):
-    l8_sr = glob.glob(base_dir +'/*_L2R.nc')[0]
-    sr_l8 = netCDF4.Dataset(l8_sr, 'r')
-    rhos_483 = 'rhos_483' if 'LC08' in base_dir else find_Rrs_key(sr_l8,'rhos_',492,tol=20)
-    rhos_561 = 'rhos_561' if 'LC08' in base_dir else find_Rrs_key(sr_l8,'rhos_',561,tol=20)
-    rhos_655 = 'rhos_655' if 'LC08' in base_dir else find_Rrs_key(sr_l8,'rhos_',655,tol=20)
-
-    l8_rhos_483 = zoom(np.array(sr_l8.variables[rhos_483]),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_l8.variables[rhos_483]), zoom_dict['MSI'], order=0)
-    l8_rhos_561 = zoom(np.array(sr_l8.variables[rhos_561]),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_l8.variables[rhos_561]), zoom_dict['MSI'], order=0)
-    l8_rhos_655 = zoom(np.array(sr_l8.variables[rhos_655]),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_l8.variables[rhos_655]), zoom_dict['MSI'], order=0)
+    sr_file = glob.glob(base_dir +'/*_L2R.nc')[0]
+    sr_data = netCDF4.Dataset(sr_file, 'r')
+    
+    # which satellite -> L8, L9, S2A or S2B
+    sat = base_dir.split('/')[-3].split('_')[0]
+    
+    # keys for L8, L9, and S2A, S2B
+    if sat in ["LC08", "LC09"]:
+        rhos_483 = 'rhos_483' if 'LC08' in base_dir else 'rhos_482'
+        rhos_561 = 'rhos_561' if 'LC08' in base_dir else 'rhos_561' 
+        rhos_655 = 'rhos_655' if 'LC08' in base_dir else 'rhos_654'
+    
+    elif sat in ["S2A", "S2B"]:
+        rhos_483 = 'rhos_482' if 'S2A' in base_dir else 'rhos_482'
+        rhos_561 = 'rhos_560' if 'S2A' in base_dir else 'rhos_559'
+        rhos_655 = 'rhos_655' if 'S2A' in base_dir else 'rhos_654'
+    
+    else:
+        pass
+    
+    l8_rhos_483 = zoom(np.array(sr_data.variables[rhos_483]),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_data.variables['rhos_492']), zoom_dict['MSI'], order=0)
+    l8_rhos_561 = zoom(np.array(sr_data.variables[rhos_561]),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_data.variables[rhos_561]), zoom_dict['MSI'], order=0)
+    l8_rhos_655 = zoom(np.array(sr_data.variables[rhos_655]),zoom_dict['OLI'],order=0) if sensor == 'OLI' else zoom(np.array(sr_data.variables['rhos_665']), zoom_dict['MSI'], order=0)
 
     l8_rhos_483[l8_rhos_483<=0]= np.nan
     l8_rhos_561[l8_rhos_561<=0]= np.nan
     l8_rhos_655[l8_rhos_655<=0]= np.nan
 
     plt.figure()
+    
     if sensor == 'OLI':
         plt.imshow(l8_rhos_483)
         plt.savefig(base_dir +'483.png')
@@ -137,23 +180,52 @@ def gen_RGB(base_dir,pixel_bounds,sensor,zoom_dict={'OLI':1/3,'MSI':1/3}):
     plt.close()
     return l8_rgb
 
+
+        
+def gen_RGB_aqv(base_dir):
+    '''This function will produce rgb from aqv rho_rc data'''
+    
+    rho_rc_blue = glob.glob(base_dir+ '/**rayleigh_corrected_490nm.TIF')[0]
+    rho_rc_green = glob.glob(base_dir+ '/**rayleigh_corrected_560nm.TIF')[0]
+    rho_rc_red = glob.glob(base_dir+ '/**rayleigh_corrected_665nm.TIF')[0]
+
+    rho_rc_blue = aqv_proc(rho_rc_blue)
+    rho_rc_green = aqv_proc(rho_rc_green)
+    rho_rc_red = aqv_proc(rho_rc_red)
+
+    rho_rc_rgb = np.dstack((rho_rc_red, rho_rc_green,  rho_rc_blue))
+    rho_rc_rgb = rgb_enhance(rho_rc_rgb)
+    
+    return rho_rc_rgb
+
+def find_Rrs_key(file2read_ar,prefix_Rrs,wavelength):
+    offset=len(prefix_Rrs)
+    keys_list = [i for i in file2read_ar.variables.keys() if prefix_Rrs in i]
+    #print(keys_list,wavelength)
+    int_keys_list_bool = [np.abs(int(key[offset:])-wavelength) <5 for key in keys_list]
+    Rrs_key = keys_list[np.where(int_keys_list_bool)[0][0]] #np.where(int_keys_list_bool)[0][0]
+    return Rrs_key
+
 def load_Rrs(base_dir, AQV_rrs_mask,pixel_bounds, wavelengths = [443,483,561,655],atm_corr='acolite',sensor='MSI',zoom_dict={'OLI':1/3,'MSI':1/3}):
     l8_ac = glob.glob(base_dir +f'/{atm_corr}.nc')[0]
     prefix_Rrs = 'Rw' if atm_corr == 'polymer' else 'Rrs_'
     wavelength_swap = {'OLI2': {'acolite': {483: 482, 492:490},'polymer': {440: 443, 480:482, 560:561},'l2gen': {},},
                        'OLI' : {'acolite': {483: 482, 492:490},'polymer': {440: 443, 480:482, 560:561},'l2gen': {},},
-                       'MSI' : {'acolite': {492:490},'polymer': {},'l2gen': {492:490},},}
+                       'MSI' : {'acolite': {492:490,559:561,704:705,739:740,783:780},'polymer': {783:780},'l2gen': {442:443,492:490, 783:780},},}
     file2read_ar = netCDF4.Dataset(l8_ac,'r')
     AC_Rrs = {}
     if sensor == 'OLI' and 'LC09' in base_dir: sensor = 'OLI2'
+    #print(wavelengths)
     for wavelength in wavelengths:
+        
         if atm_corr in ['acolite','polymer']: 
-            #keys_list = [int(i[4:]) for i in file2read_ar.variables.keys() if 'Rrs_' in i]
+            keys_list = [int(i[4:]) for i in file2read_ar.variables.keys() if 'Rrs_' in i]
             #int_keys_list_bool = [np.abs(int(key[4:])-483) <5 for key in keys_list]
             #Rrs_key = keys_list[np.where(int_keys_list_bool)[0][0]] #np.where(int_keys_list_bool)[0][0]
-
+            #print(keys_list)
             AC_Rrs[wavelength] = np.asarray(file2read_ar.variables[find_Rrs_key(file2read_ar,prefix_Rrs,wavelength)])
-        if atm_corr in ['l2gen']: 
+        if atm_corr in ['l2gen']:
+            #print(find_Rrs_key(file2read_ar['geophysical_data'],prefix_Rrs,wavelength))
             AC_Rrs[wavelength] = np.asarray(file2read_ar['geophysical_data'].variables[find_Rrs_key(file2read_ar['geophysical_data'],prefix_Rrs,wavelength)])
         if atm_corr == 'polymer': 
             AC_Rrs[wavelength][AC_Rrs[wavelength]==9.96921e+36] = np.float('nan')
@@ -189,6 +261,9 @@ def set_vbounds(logic='',log_bool=True):
     vbounds['min'][561] = -0.5 if logic=='diff' else -min_max_prc if logic=='diff_prc' else 0.001 if log_bool else 0
     vbounds['min'][655] = -0.5 if logic=='diff' else -min_max_prc if logic=='diff_prc' else 0.001 if log_bool else 0
     vbounds['min'][665] = -0.5 if logic=='diff' else -min_max_prc if logic=='diff_prc' else 0.001 if log_bool else 0
+    vbounds['min'][705] = -0.5 if logic=='diff' else -min_max_prc if logic=='diff_prc' else 0.001 if log_bool else 0
+    vbounds['min'][740] = -0.5 if logic=='diff' else -min_max_prc if logic=='diff_prc' else 0.001 if log_bool else 0
+    vbounds['min'][780] = -0.5 if logic=='diff' else -min_max_prc if logic=='diff_prc' else 0.001 if log_bool else 0
 
     vbounds['max'][443] = 1 if logic=='diff' else min_max_prc if logic=='diff_prc' else .03#0.006
     vbounds['max'][482] = 0.5 if logic=='diff' else min_max_prc if logic=='diff_prc' else .03#0.008
@@ -197,6 +272,11 @@ def set_vbounds(logic='',log_bool=True):
     vbounds['max'][561] = 0.5 if logic=='diff' else min_max_prc if logic=='diff_prc' else .03#0.016
     vbounds['max'][655] = 0.5 if logic=='diff' else min_max_prc if logic=='diff_prc' else .03#0.015
     vbounds['max'][665] = 0.5 if logic=='diff' else min_max_prc if logic=='diff_prc' else .03#0.015
+    vbounds['max'][705] = 0.5 if logic=='diff' else min_max_prc if logic=='diff_prc' else .03#0.016
+    vbounds['max'][740] = 0.5 if logic=='diff' else min_max_prc if logic=='diff_prc' else .03#0.015
+    vbounds['max'][780] = 0.5 if logic=='diff' else min_max_prc if logic=='diff_prc' else .03#0.015
+    
+    # # add MSI bands - 705, 740, 780 nm
 
     return vbounds
 
@@ -233,12 +313,10 @@ def plot_Rrs(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,vbounds,wavelengths = [443,482,561,6
     plt.savefig(base_dir + f'/{scene_id}_{atm_corr_label}_Rrs.png')
     plt.close()
 
-def plot_Rrs_composite(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,vbounds,wavelengths = [443,482,561,655],atm_corrs = 'ACOLITE',rgb = True,scene_id=""):
+def plot_Rrs_composite(out_path, AC_Rrs, AQV_Rrs, l8_rgb,vbounds,wavelengths = [443,482,561,655], atm_corrs = 'acolite', rgb = True, scene_id=""):
     from matplotlib.colors import LogNorm
-    fig, axs = plt.subplots(4, 4, figsize=(18,16))
-    box = dict(boxstyle="square",
-         ec= 'black',
-         fc='white')    
+    fig, axs = plt.subplots(4, len(wavelengths), figsize=(18,16))
+    box = dict(boxstyle="square", ec= 'black', fc='white')    
     txt_x, txt_y = 120, 300
     fsize = 16
 
@@ -254,7 +332,8 @@ def plot_Rrs_composite(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,vbounds,wavelengths = [443
         axs[0,0+i].xaxis.set_ticklabels([])
         axs[0,0+i].yaxis.set_ticklabels([])
         axs[0,0+i].set_title(f'{wavelength} nm', fontsize=24)
-
+        
+        #print(atm_corrs)
         for j,atm_corr in enumerate(atm_corrs):
             if rgb:
                 axs[1+j,0+i].imshow(l8_rgb)
@@ -266,11 +345,18 @@ def plot_Rrs_composite(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,vbounds,wavelengths = [443
             if i == 0: axs[1+j,0+i].text(txt_x, txt_y, atm_corr, color='black', fontsize=fsize, bbox=box)
             axs[1+j,0+i].xaxis.set_ticklabels([])
             axs[1+j,0+i].yaxis.set_ticklabels([])
-
+        
     plt.rcParams["axes.labelweight"] = "bold"
     plt.rcParams["font.size"] = 18
     plt.tight_layout()
-    plt.savefig(base_dir + f'/{scene_id}_Rrs.png')
+    
+    #plt.savefig(out_path + f'/{scene_id}_Rrs.png')
+    
+    if 740 in wavelengths:
+        plt.savefig(out_path + f'/{scene_id}_Rrs_705_740_780.png')
+    else:
+        plt.savefig(out_path + f'/{scene_id}_Rrs.png')
+        
     plt.close()
 
 def plot_Rrs_diff(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,wavelengths = [443,482,561,655],atm_corr_label = 'ACOLITE',rgb = True,scene_id=""):
@@ -319,7 +405,12 @@ def plot_Rrs_diff(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,wavelengths = [443,482,561,655]
     plt.rcParams["axes.labelweight"] = "bold"
     plt.rcParams["font.size"] = 18
     plt.tight_layout()
-    plt.savefig(base_dir + f'/{scene_id}_{atm_corr_label}_Rrs_diff.png')
+    
+    if 740 in wavelengths:
+        plt.savefig(base_dir + f'/{scene_id}_{atm_corr_label}_Rrs_diff_705_740_780.png')
+    else:
+        plt.savefig(base_dir + f'/{scene_id}_{atm_corr_label}_Rrs_diff.png')
+        
     plt.close()
 
 def plot_Rrs_diff_composite(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,wavelengths = [443,482,561,655],atm_corrs = 'ACOLITE',rgb = True,scene_id=""):
@@ -329,7 +420,7 @@ def plot_Rrs_diff_composite(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,wavelengths = [443,48
     txt_x, txt_y = 120, 300
     fsize = 16
     
-    fig, axs = plt.subplots(3, 4, figsize=(18,12))
+    fig, axs = plt.subplots(3, len(wavelengths), figsize=(18,12))
     fig_diff, axs_diff = plt.subplots(3, 4, figsize=(18,12))
     Rrs_diff = {}
     Rrs_diff_prc = {}
@@ -377,7 +468,13 @@ def plot_Rrs_diff_composite(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,wavelengths = [443,48
     # plt.rcParams["axes.labelweight"] = "bold"
     # plt.rcParams["font.size"] = 18
     # plt.tight_layout()
-    fig_diff.savefig(base_dir + f'/{scene_id}_Rrs_diff_prc.png')
+    
+    if 740 in wavelengths:
+        #plt.savefig(base_dir + f'/{scene_id}_{atm_corr_label}_Rrs_diff_705_740_780.png')
+        fig_diff.savefig(base_dir + f'/{scene_id}_Rrs_diff_prc_705_740_780.png')
+    else:
+        fig_diff.savefig(base_dir + f'/{scene_id}_Rrs_diff_prc.png')
+        
     plt.close('all')
 
 ################
@@ -409,24 +506,125 @@ def plot_OLI_Rrs(base_dir, scene_id, atm_corrs,sensor,out_path):
         plot_Rrs_diff_composite(out_path,AC_Rrs_dict, AQV_Rrs, l8_rgb,          wavelengths = wavelengths[sensor]['output'], atm_corrs = atm_corrs_list,scene_id=scene_id)
         plt.close('all') 
         return True
-    # if 'acolite' in atm_corrs : 
-    #     AC_Rrs = load_Rrs(base_dir, AQV_Rrs_mask, pixel_bounds, wavelengths = wavelengths[sensor]['acolite'],atm_corr='acolite',sensor=sensor)
-    #     plot_Rrs(out_path,     AC_Rrs, AQV_Rrs, l8_rgb, vbounds, wavelengths = wavelengths[sensor]['output'], atm_corr_label = 'acolite')
-    #     plot_Rrs_diff(out_path,AC_Rrs, AQV_Rrs, l8_rgb,          wavelengths = wavelengths[sensor]['output'], atm_corr_label = 'acolite')
+
+def plot_all_Rrs(base_dir, scene_id, sensor, out_path):
+    '''This will plot OLI, MSI Rrs, Rrs diff, etc.'''
+    
+    Path(out_path).mkdir(parents=True, exist_ok=True)
+    #atm_corrs_list = ['acolite','l2gen'] #,'polymer'
+    
+    atm_corrs_list = [] 
+    aqv_flag, ac_flag, l2gen_flag, polymer_flag = False, False, False, False
+    
+    # How many is done?
+    if glob.glob(base_dir +'/*aquaverse.nc')!= []:
+        aqv_flag = True
+
+    if glob.glob(base_dir +'/*acolite.nc') != []:
+        atm_corrs_list.append('acolite')
+        ac_flag = True
         
-    # if 'polymer' in atm_corrs: 
-    #     polymer_Rrs = load_Rrs(base_dir, AQV_Rrs_mask, pixel_bounds, wavelengths = wavelengths[sensor]['polymer'],atm_corr='polymer',sensor=sensor)
-    #     plot_Rrs(out_path,     polymer_Rrs, AQV_Rrs, l8_rgb, vbounds, wavelengths = wavelengths[sensor]['output'], atm_corr_label = 'polymer')
-    #     plot_Rrs_diff(out_path,polymer_Rrs, AQV_Rrs, l8_rgb,          wavelengths = wavelengths[sensor]['output'], atm_corr_label = 'polymer')
+    if glob.glob(base_dir +'/*l2gen.nc') != []:
+        atm_corrs_list.append('l2gen')
+        l2gen_flag = True
+        
+    if glob.glob(base_dir +'/*polymer.nc') != []:
+        atm_corrs_list.append('polymer')
+        polymer_flag = True
+    
+    #print(aqv_flag)
+    #print(atm_corrs_list)
+    zoom_dict = {'OLI':1/3 ,'MSI':1/3}
 
-    # if 'l2gen' in atm_corrs: 
-    #     l2gen_Rrs = load_Rrs(base_dir, AQV_Rrs_mask, pixel_bounds, wavelengths = wavelengths[sensor]['l2gen'],atm_corr='l2gen',sensor=sensor)
-    #     plot_Rrs(out_path,     l2gen_Rrs, AQV_Rrs, l8_rgb, vbounds, wavelengths = wavelengths[sensor]['output'], atm_corr_label = ' l2gen') 
-    #     plot_Rrs_diff(out_path,l2gen_Rrs, AQV_Rrs, l8_rgb,          wavelengths = wavelengths[sensor]['output'], atm_corr_label = 'l2gen')
-
-    # for atm_corr in atm_corrs:
+    if len(glob.glob(base_dir +'/*RRS*nm.TIF')) and all([len(glob.glob(base_dir +f'/*{atm_corr}.nc')) for atm_corr in atm_corrs_list]):
+          
+        #nir_mask = nir_mask_gen(base_dir)
+        land_masked = land_mask(base_dir)
+        pixel_bounds = gen_pixel_bounds(image_shape=np.shape(land_masked))
+        wavelengths = {
+                       'OLI': {'aquaverse':[443,482,561,655],'acolite':[443,483,561,655],'polymer':[440,480,560,655],'l2gen':[443,482,561,655],'output':[443,482,561,655]},
+                       'MSI': {'aquaverse':[443,490,560,665],'acolite':[443,492,560,665],'polymer':[443,490,560,665],'l2gen':[443,492,560,665,],'output':[443,490,560,665]},
+                       }
+        if aqv_flag:
+            AQV_Rrs, AQV_Rrs_mask = load_Rrs_aquaverse(base_dir, land_masked, scene_id, pixel_bounds, wavelengths = wavelengths[sensor]['aquaverse'],zoom_dict=zoom_dict)
+            rgb = gen_RGB_aqv(base_dir)
+        
+        vbounds = set_vbounds()
+        
+        if ac_flag:
+            rgb = gen_RGB(base_dir, pixel_bounds,sensor,zoom_dict=zoom_dict)
+        if ac_flag or l2gen_flag or polymer_flag:
+            AC_Rrs_dict = {atm_corr: load_Rrs(base_dir, AQV_Rrs_mask, pixel_bounds, wavelengths = wavelengths[sensor][atm_corr],atm_corr=atm_corr,sensor=sensor,zoom_dict=zoom_dict) for atm_corr in atm_corrs_list}
+        else:
+            AC_Rrs_dict = {}
+            
+        plot_Rrs_composite(out_path, AC_Rrs_dict, AQV_Rrs, rgb, vbounds, wavelengths = wavelengths[sensor]['output'], atm_corrs = atm_corrs_list, scene_id=scene_id)
+        plot_Rrs_diff_composite(out_path,AC_Rrs_dict, AQV_Rrs, rgb,wavelengths = wavelengths[sensor]['output'], atm_corrs = atm_corrs_list,scene_id=scene_id)
+        plt.close('all')
+        
+        if sensor == "MSI":
+            'Generate another figure with rest of the MSI bands'
+            # MSI - 705, 740, 780nm
+            #print('here')
+            wavelengths = {'MSI': {'aquaverse':[705,740,780],'acolite':[704,740,783],'polymer':[705,740,783],'l2gen':[705,740,783],'output':[705,740,780]},}        
+            wavelengths = {'MSI': {'aquaverse':[705,740],'acolite':[704,740],'polymer':[705,740],'l2gen':[705,740],'output':[705,740]},}
+            if aqv_flag:
+                AQV_Rrs, AQV_Rrs_mask = load_Rrs_aquaverse(base_dir, land_masked, scene_id, pixel_bounds, wavelengths = wavelengths[sensor]['aquaverse'],zoom_dict=zoom_dict)
+            
+            vbounds = set_vbounds()
+            if ac_flag or l2gen_flag or polymer_flag:
+                AC_Rrs_dict = {atm_corr: load_Rrs(base_dir, AQV_Rrs_mask, pixel_bounds, wavelengths = wavelengths[sensor][atm_corr],atm_corr=atm_corr,sensor=sensor,zoom_dict=zoom_dict) for atm_corr in atm_corrs_list}
+            else:
+                AC_Rrs_dict = {}
+                
+            plot_Rrs_composite(out_path, AC_Rrs_dict, AQV_Rrs, rgb, vbounds, wavelengths = wavelengths[sensor]['output'], atm_corrs = atm_corrs_list,scene_id=scene_id)
+            plot_Rrs_diff_composite(out_path,AC_Rrs_dict, AQV_Rrs, rgb,          wavelengths = wavelengths[sensor]['output'], atm_corrs = atm_corrs_list,scene_id=scene_id)
+            plt.close('all')
+        
+        return True
         
 
-# def plot_Rrs(sensor, inp_file, out_path, date, dataset, ac_method, product = 'chl,tss,cdom',overwrite=True, fix_projection_Rrs = False):
-
-#         return True
+def main():
+    
+    pass
+    
+if __name__ == '__main__':
+    main()
+    
+    # msi_dir = '/data/skabir/SCRATCH/Gathered/Scenes/MSI/'
+    
+    # all_ids = glob.glob(msi_dir+'/S2**')
+    # #print(all_ids)
+    # for scene_id_dir in all_ids:
+       
+        # #base_dir = msi_dir + scene_id +'/out/'+ os.listdir(msi_dir +scene_id+'/out')[0]
+        # base_dir = glob.glob(scene_id_dir+'/out'+'/MSI**')[0]
+        # #print(base_dir)
+        # atm_corrs = ['acolite','l2gen', 'aquaverse']#,'polymer'
+        # sensor = 'MSI'
+        # out_path = "/data/skabir/SCRATCH/Gathered/MSI_test_image/MSI/Rrs_maps2"
+        # scene_id = scene_id_dir.split('/')[-1]
+        # print('plotting...' + scene_id)
+        # try:
+            # plot_all_Rrs(base_dir, scene_id, atm_corrs, sensor, out_path)
+        # except:
+            # print("continueing..."+ scene_id)
+            # continue
+    
+    # #%% test S2A plotting
+    # # sensor = 'MSI'
+    # # scene_id = "S2A_MSIL1C_20210119T185711_N0209_R113_T10SEG_20210119T205259"
+    # # base_dir = glob.glob("/data/skabir/SCRATCH/Gathered/Scenes/MSI/"+scene_id+"/out/"+"MSI_**")[0]
+    # # out_path = "/data/skabir/SCRATCH/Gathered/MSI_test_image/MSI/Rrs_maps2"
+    # # atm_corrs = ['acolite','l2gen', 'aquaverse']#,'polymer'
+    # # plot_all_Rrs(base_dir, scene_id, atm_corrs, sensor, out_path)
+    
+    # #%% test S2B plotting
+    sensor = 'MSI'
+    scene_id = "S2B_MSIL1C_20210904T185909_N0301_R013_T10TEM_20210904T211144"
+    base_dir = glob.glob("/data/skabir/av1/skabir/SCRATCH/Gathered/Scenes/MSI/"+scene_id+"/out/"+"MSI_**")[0]
+    print(base_dir)
+    out_path = "/data/skabir/av1/skabir/SCRATCH/Gathered/MSI_test_image/MSI/Rrs_maps2"
+    atm_corrs = ['acolite','l2gen', 'aquaverse']#,'polymer'
+    plot_all_Rrs(base_dir, scene_id, sensor, out_path)
+    

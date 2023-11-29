@@ -3,6 +3,10 @@
 import os 
 os.environ['FORKED_BY_MULTIPROCESSING'] = '1'
 
+# Define NCCS flag to indicate SLURM usage
+import socket
+NCCS = 'pardees' in socket.gethostname()
+
 # Define our celery application
 from celery import Celery 
 from subprocess import getoutput 
@@ -10,12 +14,18 @@ username = getoutput('whoami')
 
 task = 'pipeline.tasks.pipelines.PipelineTask:PipelineTask'
 app  = Celery('pipeline', task_cls=task)
+#app.control.inspect().active()
 
 # Set configuration options
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html
 app.conf.update(**{
-    'broker_url'              : 'pyamqp://pardees:5671',
-    'result_backend'          : 'rpc://pardees:5671',
+    'broker_url'              : 'pyamqp://localhost:5671', #5671 is not default; 5672 is localhost
+    'result_backend'          : 'rpc://localhost:5671',
+    
+    #'broker_url'              : 'pyamqp://skabir:skabir@pardees:5672',
+    #'result_backend'          : 'rpc://skabir:skabir@pardees:5672',
+    #'result_backend'          : f'rpc://{username}:mp{username}@localhost:5671',
+    
     'timezone'                : 'America/New_York',
     'task_serializer'         : 'pickle',
     'result_serializer'       : 'pickle',
@@ -33,7 +43,6 @@ app.conf.update(**{
     'task_queue_default_priority' : 5,
 
     'task_always_eager' : False, # Processes in serial, locally 
-
 })
 # Need to allow larger representations to reconstruct arguments in the
 # Monitor. Otherwise, [kw]args are cutoff with '...' after certain length
@@ -62,13 +71,27 @@ app.conf.task_queues = [
 #cert_root = '/home/bsmith16/workspace/rabbitmq_server-3.10.7/etc/pki/tls'
 #cert_root = '/home/roshea/rabbitMQ/rabbitmq_server-3.10.7/etc/pki/tls'
 #cert_root = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/rabbitMQ/RabbitMQ/rabbitmq_server-3.12.6/etc/pki/tls'
+
+# cert_root = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/rabbitMQ/rabbitmq_server_files/TLS'
+# if os.path.exists(cert_root):
+  # import ssl
+  # app.conf.update(**{
+    # #'broker_url'     :f'pyamqp://{username}:mp{username}@localhost:5671/matchups_{username}', # it works!!
+    # 'broker_url'     :f'pyamqp://{username}_{user_flag}:mp{username}_{user_flag}@pardees:5671/matchups_{username}_{user_flag}', 
+    # 'broker_use_ssl' : {
+      # 'keyfile'    : f'{cert_root}/server-key.pem',
+      # 'certfile'   : f'{cert_root}/server-cert.pem',
+      # 'ca_certs'   : f'{cert_root}/ca-cert.pem',
+      # 'cert_reqs'  : ssl.CERT_REQUIRED,
+    # },
+  # })
+  
 cert_root = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/rabbitMQ/rabbitmq_server_files/TLS'
-
-
 if os.path.exists(cert_root):
   import ssl
   app.conf.update(**{
-    'broker_url'     :f'pyamqp://{username}:mp{username}@pardees:5671/matchups_{username}', 
+    #'broker_url'     :f'pyamqp://{username}:mp{username}@localhost:5671/matchups_{username}', # it works!!
+    'broker_url'     :f'pyamqp://{username}:mp{username}@localhost:5671/matchups_{username}', 
     'broker_use_ssl' : {
       'keyfile'    : f'{cert_root}/server-key.pem',
       'certfile'   : f'{cert_root}/server-cert.pem',
@@ -76,5 +99,3 @@ if os.path.exists(cert_root):
       'cert_reqs'  : ssl.CERT_REQUIRED,
     },
   })
-
-

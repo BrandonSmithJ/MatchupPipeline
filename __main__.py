@@ -4,7 +4,6 @@ from argparse import Namespace
 from pathlib import Path
 import pandas as pd
 import numpy as np
-
 from .tasks import create_extraction_pipeline, CeleryManager
 from .utils import pretty_print, color
 from .utils import Location, DatetimeRange
@@ -12,7 +11,11 @@ from .parameters import get_args
 from .tasks.search  import search
 from subprocess import getoutput
 username = getoutput('whoami')
-
+from multiprocessing import Process
+import time
+import math
+import shutil
+#import app as app2
 
 def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
     """ Load the in situ data and parse as necessary """
@@ -173,67 +176,149 @@ def filter_completed(
     return data.loc[~data['uid'].isin(complete)]
 
 
+def update_app(user_flag, app):
+    cert_root = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/rabbitMQ/rabbitmq_server_files/TLS'
+    if os.path.exists(cert_root):
+      import ssl
+      app.conf.update(**{
+        #'broker_url'     :f'pyamqp://{username}:mp{username}@localhost:5671/matchups_{username}', # it works!!
+        'broker_url'     :f'pyamqp://{username}_{user_flag}:mp{username}_{user_flag}@pardees:5671/matchups_{username}_{user_flag}', 
+        'broker_use_ssl' : {
+          'keyfile'    : f'{cert_root}/server-key.pem',
+          'certfile'   : f'{cert_root}/server-cert.pem',
+          'ca_certs'   : f'{cert_root}/ca-cert.pem',
+          'cert_reqs'  : ssl.CERT_REQUIRED,
+        },
+      })
+    return app
+
 # Debug changes celery to implement tasks in serial instead of parallel, must also set ALWAYS_EAGER to True in init file
+def main2(gc, data, i, debug=True):
+    # global_config = gc = get_args()
+    # print(f'\nRunning pipeline with parameters: {pretty_print(gc.__dict__)}\n')
+    # data = load_insitu_data(gc)
+    # data = filter_completed(gc, data)
+    
+    # assert(len(data))
+
+    # #from datetime import datetime as dt
+    # #data = data.loc[pd.to_datetime(data['datetime']).dt.date >= dt(2009,3,26).date()]
+    
+    # # Shuffle samples to minimize risk of multiple threads trying to operate
+    # # on the same matching scene at once
+    # data = data.sample(frac=1)
+    #print(data, '\n')
+    from pathlib import Path
+    Path(Path(__file__).parent.joinpath('Logs').joinpath(username)).mkdir(parents=True, exist_ok=True)
+    worker_kws = [
+        # Multiple threads for download
+        {   'logname'     : f'{username}/worker1{i}',
+            'queues'      : ['search','download','correct','extract','plot','celery'],
+            #'queues'      : ['search', 'celery'],
+            'concurrency' : 2,
+            'slurm_kwargs': {'partition' : 'ubuntu20'},
+        },
+        # Multiple threads for correction
+        {   'logname'     : f'{username}/worker2{i}',
+            'queues'      : ['correct'],
+            'concurrency' : 2, #
+            'slurm_kwargs': {'partition' : 'ubuntu20'},
+        },
+        # # Multiple threads for extraction
+        # {   'logname'     : f'{username}/worker3{i}',
+            # 'queues'      : ['extract'],
+            # 'concurrency' : 2,
+            # 'slurm_kwargs': {'partition' : 'ubuntu20'},
+        #},
+        # Multiple threads for plotting
+        # {   'logname'     : f'{username}/worker4{i}',
+            # 'queues'      : ['plot'],
+            # 'concurrency' : 2,
+            # 'slurm_kwargs': {'partition' : 'ubuntu20'},
+        # },
+        # Single dedicated thread (i.e. for writing)
+        {   'logname'     : f'{username}/worker3{i}',
+            'queues'      : ['write'],
+            'concurrency' : 2,
+            'slurm_kwargs': {'partition' : 'ubuntu20'},
+        },
+    ]
+    pipeline = create_extraction_pipeline(gc)
+    with CeleryManager(worker_kws, data, gc.ac_methods) as manager:
+        #for i, row in data.iterrows(): 
+        if debug: print(data['scene_id'],gc.scene_id)
+        if gc.scene_id in data['scene_id']: #'T18SUG' '044033' 'T2017252150500'
+            data = data.to_dict()
+            pipeline(data) if debug else pipeline.delay(data)
+                # deploy_job.sh {row} - how? This should call a python script to start processing
+                # row.pkl 
+                # strt slrm jobs - activats env
+                # run main.py - starts celery/rabbitMQ? not able to start them from a slurm job.
+                # main row.pkl
+                
+    # pass this celery processing to each node
+    # deploy_job.sh that will receive each row elements 
+    # and create an instance of "pipeline" object and run in parallel
+
 def main(debug=True):
     global_config = gc = get_args()
     print(f'\nRunning pipeline with parameters: {pretty_print(gc.__dict__)}\n')
-
-    pipeline = create_extraction_pipeline(gc)
-
     data = load_insitu_data(gc)
     data = filter_completed(gc, data)
+    
     assert(len(data))
 
     #from datetime import datetime as dt
     #data = data.loc[pd.to_datetime(data['datetime']).dt.date >= dt(2009,3,26).date()]
     
-
-
     # Shuffle samples to minimize risk of multiple threads trying to operate
     # on the same matching scene at once
     data = data.sample(frac=1)
-    print(data, '\n')
-    from pathlib import Path
-    Path(Path(__file__).parent.joinpath('Logs').joinpath(username)).mkdir(parents=True, exist_ok=True)
-    worker_kws = [
-        # Multiple threads for download
-        {   'logname'     : f'{username}/worker1',
-            'queues'      : ['search','download','correct','extract','plot','celery'],
-            'concurrency' : 1,
-        },
-        # Multiple threads for correction
-        {   'logname'     : f'{username}/worker2',
-            'queues'      : ['correct'],
-            'concurrency' : 8, 
-        },
-        # Multiple threads for extraction
-        {   'logname'     : f'{username}/worker3',
-            'queues'      : ['extract'],
-            'concurrency' : 1,
-        },
-        # Multiple threads for plotting
-        {   'logname'     : f'{username}/worker4',
-            'queues'      : ['plot'],
-            'concurrency' : 2,
-        },
-        # Single dedicated thread (i.e. for writing)
-        {   'logname'     : f'{username}/worker5',
-            'queues'      : ['write'],
-            'concurrency' : 1,
-        },
-    ]
+    #print(type(data))
+    #[main2(gc, row) for row in data.iterrows()]
     
-    with CeleryManager(worker_kws, data, gc.ac_methods) as manager:
-        for i, row in data.iterrows(): 
-            if debug: print(row['scene_id'],global_config.scene_id)
-            if global_config.scene_id in row['scene_id']: #'T18SUG' '044033' 'T2017252150500'
-                row = row.to_dict()
-                pipeline(row) if debug  else pipeline.delay(row)
+    # for i, row in data.iterrows():
+        # print('running rows ...: ', row)
+        # #print(type(row)) pd series
+        # main2(gc, row) # how to call this functions many times simultaneously
+    j = 0
+    for j in range(math.ceil(len(data)/20)):
+        data2 = data.iloc[j:j+20,:]
+        for i in range(math.ceil(len(data2))): # len of the parsed
+            #print(i)
+            p = Process(target=main2, args=(gc, data2.iloc[i], str(i)))
+            p.start()
             
+            #user_flag = i
+            
+            # create API
+            #app = update_app(user_flag, app2)
+            
+            #j +=2
+            time.sleep(60*2)
+            #break
+            #pass
+        
+        # after 40 mins - wait for two hours 20 mins
+        time.sleep(60*60*2+60*20)
+        
+        #remove this directory
+        shutil.rmtree("/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/matchup_deployment_SLURM/SCRATCH/Gathered/Scenes/OLI")
+        #break
+        j += 1
+    
+    
+    #p1 = Process(target=main2, args=(gc, data.iloc[0]))  # note no ()
+    #p2 = Process(target=main2, args=(gc, data.iloc[1]))  # note no ()
+
+    #p1.start()
+    #p2.start()
+
 
 
 if __name__ == '__main__':
     main()
+        
 
     '''
     Todo:
@@ -247,5 +332,15 @@ if __name__ == '__main__':
      - more tests / validate other sensors
      - validate polymer (+polymer cleanup)
     '''
+    
+    # How to set up slurm 
+    # deploy_job can call this main with 1 row first
+    
+    # To set up slurm without celery/rabbitMQ 
+    # Search the API --> all the sceneids- info
+    # deploy jobs with info
+    # download file on the compute node
+    # process - serially might not work due to time limit
+    # Four processors can be submitted in different slurm job    
 
 

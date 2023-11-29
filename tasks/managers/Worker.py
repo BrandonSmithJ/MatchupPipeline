@@ -1,12 +1,11 @@
 from ... import app, utils
+#from ...__main__ import app
 from ..shutdown import shutdown
 from .Process import Process 
 
 from pathlib import Path 
 from typing import Optional 
 import time, sys
-
-
 
 class Worker(Process):
     """ Celery worker process """
@@ -29,9 +28,8 @@ class Worker(Process):
             'concurrency' : concurrency,
         })
         kwargs['logfile'] = self._init_log(logdir, logname, kwargs)
+        #kwargs['logname'] = logname
         super().__init__(**kwargs)
-
-
 
     def _start_process(self):
         """ Start the worker process in the background """

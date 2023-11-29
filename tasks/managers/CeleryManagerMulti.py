@@ -1,4 +1,4 @@
-from ... import app, utils
+from ... import app, utils, NCCS
 from ..shutdown import shutdown
 
 from .Worker  import Worker
@@ -6,6 +6,10 @@ from .Flower  import Flower
 from .Monitor import Monitor
 
 
+# Switch to the SLURM worker if we're running on NCCS
+#if NCCS: 
+from .SlurmWorker import SlurmWorker as Worker
+from .SlurmRabbitMQ import SlurmRabbitMQ as RabbitMQ
 
 class CeleryManagerMulti:
     """ 
@@ -41,7 +45,9 @@ class CeleryManagerMulti:
         ac_methods : list = [],   # AC methods
         **kwargs,                 # Any other kwargs to pass Worker/Flower
     ):
-        utils.purge_queues()
+        #self.rabbit  = [RabbitMQ()]
+
+        #utils.purge_queues()
         merge_kwargs = lambda d: (d.update(kwargs) or d)
         self.celery  = [Worker(**merge_kwargs(kw)) for kw in worker_kws]
         self.flower  = [Flower()]
@@ -58,6 +64,7 @@ class CeleryManagerMulti:
     # Iterate over lines from stdout/stderr of the respective process
     def read_celery(self): return self._read_process('celery')
     def read_flower(self): return self._read_process('flower')
+    #def read_rabbit(self): return self._read_process('rabbit')
 
     # Check if processes have been started
     def running(self): return any(proc.running() for proc in self)
@@ -72,7 +79,11 @@ class CeleryManagerMulti:
 
     def _start_processes(self):
         """ Start the required processes in the background """
-        [process._start_process() for process in self]
+        #print(list(self)[::-1])
+        try: [process._start_process() for process in list(self)]
+        except:
+            print(f'Failed to start processes')
+            self._kill_processes()
         return self
 
 
@@ -95,7 +106,7 @@ class CeleryManagerMulti:
 
     def _iter_processes(self):
         """ Iterate over processes """
-        for name in ['celery', 'flower', 'monitor']:
+        for name in ['celery', 'flower', 'monitor', 'rabbit']:
             yield from getattr(self, name, [])
 
 

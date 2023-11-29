@@ -1,16 +1,13 @@
 from ...utils import pretty_print
-
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue, Empty
 from pathlib import Path 
 from typing import Optional
 import subprocess, time
 
-
-
-
 class Process:
     """ Context manager for background processes """
+    base_command = 'celery -A pipeline'
 
     def __init__(self,
         timeout : Optional[int] = None, # Seconds to wait for graceful exit
@@ -34,8 +31,6 @@ class Process:
     # Iterate over lines from stdout/stderr of the process
     def  __iter__(self): return self._read_process()
 
-
-
     # ================================================================
     # Private functions
 
@@ -51,12 +46,14 @@ class Process:
         path.write_text( pretty_print(kwargs or '') + '\n')
         return path.as_posix()
 
-
+    def _spawn_process(self, command, **process_config):
+        """ Create a process object which executes the given command """
+        return subprocess.Popen(command, **process_config)
 
     def _start_process(self):
         """ Start the required process in the background """
 
-        def execute(action, **kwargs):
+        def execute(action='', **kwargs):
             """ Execute celery action in a separate process """
             process_config = {
                 'stdout' : subprocess.PIPE, 
@@ -64,8 +61,9 @@ class Process:
                 'text'   : True,
             }
             kwargs  = ' '.join( f'--{k}={v}' for k,v in kwargs.items() )
-            command = f'celery -A pipeline {action} {kwargs}'.split()
-            return subprocess.Popen(command, **process_config)
+            command = f'{self.base_command} {action} {kwargs}'.split() # running celery command
+            print(action)
+            return self._spawn_process(command, **process_config)
 
         self.process = self.process or execute(**self.pkwargs)
         return self
@@ -107,7 +105,7 @@ class Process:
             """ Read process from a separate thread to prevent blocking """
             with ThreadPoolExecutor(1) as executor:
                 queue = Queue()
-                executor.submit(Worker._enqueue, process.stdout, queue)
+                executor.submit(Process._enqueue, process.stdout, queue)
 
                 while (process.poll() is None) or not queue.empty():
                     output = sentinel
@@ -126,5 +124,5 @@ class Process:
                     yield output
 
         if self.process is None: return
-        if self.monitor is None: self.monitor = monitor(process)
+        if self.monitor is None: self.monitor = monitor(self.process)
         return iterate_until_empty(self.monitor)
