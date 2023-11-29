@@ -1,11 +1,13 @@
 import pandas as pd 
 import numpy as np
 import re
+import os
+os.chdir(os.getcwd())
 
-from .__main__ import load_insitu_data
-from .utils import pretty_print, bitmask_l2gen
-from .parameters import get_args 
-
+from pipeline.__main__ import load_insitu_data
+from pipeline.utils import pretty_print, bitmask_l2gen
+from pipeline.parameters import get_args 
+from pathlib import Path
 
 
 def safe_number(v, methods=[int, float, str]):
@@ -37,7 +39,8 @@ def parse_feature(global_config, idxs, features, name):
     columns = [features[name], idxs]
     i_names = ['row', 'col', name]
     banded  = f'{name}_bands' in features 
-
+    print(name)
+    #breakpoint()
     # Handle special files
     if name == 'meta':
         feature = pd.DataFrame(features[name][1:], columns=features[name][0])
@@ -72,18 +75,30 @@ def parse_feature(global_config, idxs, features, name):
     # Gather requested pixels, and check number valid per sample
     feature.index.names = i_names
     window  = global_config.extract_window
+    #print('window size')
+    #print(window)
     w_range = list(range(-window, window+1))
     feature = feature[feature.index.get_level_values('row').isin(w_range)]
     feature = feature[feature.index.get_level_values('col').isin(w_range)]
     n_valid = (~feature.isna()).groupby(level=['row', 'col']).any().sum()
 
     # Set sample flag to be the bits for all pixel flags set within the window
+    #print('before')
+    #print(feature.shape)
+    #print(feature.columns)
+    #print(i_names[2:])
     if name in ['l2_flags', 'bitmask']:
         or_flag = lambda f: np.bitwise_or.reduce(f.dropna().to_numpy().astype(int))
         feature = feature.groupby(level=i_names[2:]).agg(or_flag).T
 
     # Take the median over the window
-    else: feature = feature.groupby(level=i_names[2:]).median().T
+    else: #feature = feature.groupby(level=i_names[2:]).median().T
+        #feature = feature.groupby(level=i_names[2:]).iloc[:,[0,1,2,3,4,5,9,10,14,15,19,20,21,22,23,24]].median().T
+        #print('median: ') 
+        feature = feature.groupby(level=i_names[2:]).median().T 
+    # print('after')
+    # print(feature.shape)
+    # print(feature.columns)
 
     # Ensure all features have two levels
     if feature.columns.nlevels == 1:
@@ -99,7 +114,7 @@ def parse_feature(global_config, idxs, features, name):
 
 def create_valid_mask(global_config, data, ac_method):
     """ Create a mask column which looks at valid pixels and l2 flags """
-    assert(ac_method in ['l2gen', 'acolite', 'polymer','aquaverse']), ac_method
+    #assert(ac_method in ['l2gen', 'acolite', 'polymer','aquaverse']), ac_method
     full_mask = np.zeros(len(data)).astype(bool)
 
     key = 'Rrs_valid_pct'
@@ -128,42 +143,82 @@ def create_csv(global_config, insitu, path):
 
         # Skip loc file - same info is contained within window_* files
         if filename.stem == 'loc': continue
+        
+        #if filename.stem == 'loc': continue
 
         with filename.open() as f:
             lines = map(fix_coords, f.readlines())
             lines = map(deserialize, lines)
         data[filename.stem] = list(lines)
-
+    
+    #data_dict = pd.DataFrame.from_dict(data)
+    #data_dict.to_csv(path.with_name(f'{path.name}.csv'), na_rep='nan', index=None)
+    
     # Parse into DataFrames and concatenate
     idxs  = data.pop('window_idxs')
     parse = lambda name: parse_feature(global_config, idxs, data, name)
     data  = pd.concat(map(parse, data), axis=1)
-    data  = create_valid_mask(global_config, data, path.parent.name)
+    data  = create_valid_mask(global_config, data, path.name)
     data  = data.drop_duplicates(('meta', 'uid'))
+    data.to_csv(path.with_name(f'{path.name}_01.csv'), index=None)
+    
     data  = data.set_index(('meta', 'uid'))
     data.index.name = 'uid'
-
+    #print(data.index)
+    #print(data.loc[:,'uid'])
+    #breakpoint()
+    
+    #insitu['uid'] = data.index
+    print(insitu.head())
+    insitu.to_csv(path.with_name(f'{path.name}_1.csv'), index=None)     
+    data.to_csv(path.with_name(f'{path.name}_2.csv'), index=None)
+    
+    insitu.iloc[0,:] = insitu.columns
+    
     data  = insitu.join(data, how='right', lsuffix='insitu_').reset_index()
-    data.to_csv(path.with_name(f'{path.name}.csv'), na_rep='nan', index=None)    
-
-
-
+    #data  = insitu.join(data.set_index('uid'), on='uid',how='right').reset_index()
+    print(data.head())
+    data.to_csv(path.with_name(f'{path.name}_3.csv'), index=None)
+    
+    columns = []
+    for i in range(0, data.shape[1]):
+        if str(data.columns[i][0]) in ['Rrs']:#, 'rhos', 'rhot']:    
+            col = str(data.columns[i][0]) + '(' + str(data.columns[i][1]) + ')'
+        else:
+            if data.columns[i][0] in ["meta"]:
+                col = data.columns[i][1]
+            else:
+                col = data.columns[i][0]
+        columns.append(col)
+    
+    data.columns = columns
+    data = data.dropna()
+    data = data.drop_duplicates('ins_chl')
+    data.to_csv(path.with_name(f'{path.name}.csv'), na_rep='nan', index=None)
+    #data.to_csv(path.with_name(f'{path.name}.csv'), index=None)     
 
 def main():
     global_config = gc = get_args(validate=False)
     print(f'\nCollecting matchups using parameters: {pretty_print(gc.__dict__)}\n')
-
-    data = load_insitu_data(gc)
-    data.columns = pd.MultiIndex.from_product([data.columns, ['']])
-    data = data.set_index('uid')
+    
+    ins_path = Path(global_config.insitu_path)
+    #print(global_config.datasets)
+    #breakpoint()
+    #path = ins_path.joinpath(global_config.datasets[0], 'parsed.csv')
+    #insitu = pd.read_csv(path)
+    
+    #print(insitu.head())
+    insitu = load_insitu_data(gc)
+    insitu.columns = pd.MultiIndex.from_product([insitu.columns, ['']])
+    insitu = insitu.set_index('uid')
 
     for dataset in global_config.datasets:
         for sensor in global_config.sensors:
             for ac in global_config.ac_methods:
-                path = global_config.output_path.joinpath(dataset, sensor,ac,'Matchups')
+                path = global_config.output_path.joinpath(dataset, sensor, ac,'Matchups')
 
                 if path.exists():
-                    create_csv(global_config, data, path)
+                    create_csv(global_config, insitu, path)
 
 
 if __name__ == '__main__':
