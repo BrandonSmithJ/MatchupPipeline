@@ -1,15 +1,16 @@
 from ... import app, utils, NCCS
 from ..shutdown import shutdown
-
+from ...configs.roshea import local_processing
 from .Worker  import Worker
 from .Flower  import Flower
 from .Monitor import Monitor
 
-
 # Switch to the SLURM worker if we're running on NCCS
 #if NCCS: 
-from .SlurmWorker import SlurmWorker as Worker
-from .SlurmRabbitMQ import SlurmRabbitMQ as RabbitMQ
+if not local_processing:
+    from .Monitor_slurm import Monitor
+    from .SlurmWorker import SlurmWorker as Worker
+    from .SlurmRabbitMQ import SlurmRabbitMQ as RabbitMQ
 
 class CeleryManagerMulti:
     """ 
@@ -47,7 +48,7 @@ class CeleryManagerMulti:
     ):
         #self.rabbit  = [RabbitMQ()]
 
-        #utils.purge_queues()
+        if local_processing: utils.purge_queues()
         merge_kwargs = lambda d: (d.update(kwargs) or d)
         self.celery  = [Worker(**merge_kwargs(kw)) for kw in worker_kws]
         self.flower  = [Flower()]
@@ -80,10 +81,13 @@ class CeleryManagerMulti:
     def _start_processes(self):
         """ Start the required processes in the background """
         #print(list(self)[::-1])
-        try: [process._start_process() for process in list(self)]
-        except:
-            print(f'Failed to start processes')
-            self._kill_processes()
+        if local_processing:
+            [process._start_process() for process in self]
+        else:
+            try: [process._start_process() for process in list(self)]
+            except:
+                print(f'Failed to start processes')
+                self._kill_processes()
         return self
 
 
@@ -106,7 +110,7 @@ class CeleryManagerMulti:
 
     def _iter_processes(self):
         """ Iterate over processes """
-        for name in ['celery', 'flower', 'monitor', 'rabbit']:
+        for name in ['celery', 'flower', 'monitor']:
             yield from getattr(self, name, [])
 
 

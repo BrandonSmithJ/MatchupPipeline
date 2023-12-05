@@ -6,6 +6,10 @@ from .Process import Process
 from pathlib import Path 
 from typing import Optional 
 import time, sys
+from ...configs.roshea import local_processing
+if not local_processing:
+    from .Process_slurm import Process
+
 
 class Worker(Process):
     """ Celery worker process """

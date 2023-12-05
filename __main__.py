@@ -194,20 +194,8 @@ def update_app(user_flag, app):
 
 # Debug changes celery to implement tasks in serial instead of parallel, must also set ALWAYS_EAGER to True in init file
 def main2(gc, data, i, debug=True):
-    # global_config = gc = get_args()
-    # print(f'\nRunning pipeline with parameters: {pretty_print(gc.__dict__)}\n')
-    # data = load_insitu_data(gc)
-    # data = filter_completed(gc, data)
-    
-    # assert(len(data))
-
-    # #from datetime import datetime as dt
-    # #data = data.loc[pd.to_datetime(data['datetime']).dt.date >= dt(2009,3,26).date()]
-    
     # # Shuffle samples to minimize risk of multiple threads trying to operate
     # # on the same matching scene at once
-    # data = data.sample(frac=1)
-    #print(data, '\n')
     from pathlib import Path
     Path(Path(__file__).parent.joinpath('Logs').joinpath(username)).mkdir(parents=True, exist_ok=True)
     worker_kws = [
@@ -224,18 +212,6 @@ def main2(gc, data, i, debug=True):
             'concurrency' : 2, #
             'slurm_kwargs': {'partition' : 'ubuntu20'},
         },
-        # # Multiple threads for extraction
-        # {   'logname'     : f'{username}/worker3{i}',
-            # 'queues'      : ['extract'],
-            # 'concurrency' : 2,
-            # 'slurm_kwargs': {'partition' : 'ubuntu20'},
-        #},
-        # Multiple threads for plotting
-        # {   'logname'     : f'{username}/worker4{i}',
-            # 'queues'      : ['plot'],
-            # 'concurrency' : 2,
-            # 'slurm_kwargs': {'partition' : 'ubuntu20'},
-        # },
         # Single dedicated thread (i.e. for writing)
         {   'logname'     : f'{username}/worker3{i}',
             'queues'      : ['write'],
@@ -268,36 +244,16 @@ def main(debug=True):
     
     assert(len(data))
 
-    #from datetime import datetime as dt
-    #data = data.loc[pd.to_datetime(data['datetime']).dt.date >= dt(2009,3,26).date()]
-    
     # Shuffle samples to minimize risk of multiple threads trying to operate
     # on the same matching scene at once
     data = data.sample(frac=1)
-    #print(type(data))
-    #[main2(gc, row) for row in data.iterrows()]
-    
-    # for i, row in data.iterrows():
-        # print('running rows ...: ', row)
-        # #print(type(row)) pd series
-        # main2(gc, row) # how to call this functions many times simultaneously
     j = 0
     for j in range(math.ceil(len(data)/20)):
         data2 = data.iloc[j:j+20,:]
         for i in range(math.ceil(len(data2))): # len of the parsed
-            #print(i)
             p = Process(target=main2, args=(gc, data2.iloc[i], str(i)))
             p.start()
-            
-            #user_flag = i
-            
-            # create API
-            #app = update_app(user_flag, app2)
-            
-            #j +=2
             time.sleep(60*2)
-            #break
-            #pass
         
         # after 40 mins - wait for two hours 20 mins
         time.sleep(60*60*2+60*20)
@@ -306,13 +262,57 @@ def main(debug=True):
         shutil.rmtree("/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/matchup_deployment_SLURM/SCRATCH/Gathered/Scenes/OLI")
         #break
         j += 1
-    
-    
-    #p1 = Process(target=main2, args=(gc, data.iloc[0]))  # note no ()
-    #p2 = Process(target=main2, args=(gc, data.iloc[1]))  # note no ()
 
-    #p1.start()
-    #p2.start()
+def main_local(debug=True):
+    global_config = gc = get_args()
+    print(f'\nRunning pipeline with parameters: {pretty_print(gc.__dict__)}\n')
+
+    pipeline = create_extraction_pipeline(gc)
+
+    data = load_insitu_data(gc)
+    data = filter_completed(gc, data)
+    assert(len(data))
+
+    # Shuffle samples to minimize risk of multiple threads trying to operate
+    # on the same matching scene at once
+    data = data.sample(frac=1)
+    print(data, '\n')
+    from pathlib import Path
+    Path(Path(__file__).parent.joinpath('Logs').joinpath(username)).mkdir(parents=True, exist_ok=True)
+    worker_kws = [
+        # Multiple threads for download
+        {   'logname'     : f'{username}/worker1',
+            'queues'      : ['search','download','correct','extract','plot','celery'],
+            'concurrency' : 1,
+        },
+        # Multiple threads for correction
+        {   'logname'     : f'{username}/worker2',
+            'queues'      : ['correct'],
+            'concurrency' : 8,
+        },
+        # Multiple threads for extraction
+        {   'logname'     : f'{username}/worker3',
+            'queues'      : ['extract'],
+            'concurrency' : 1,
+        },
+        # Multiple threads for plotting
+        {   'logname'     : f'{username}/worker4',
+            'queues'      : ['plot'],
+            'concurrency' : 2,
+        },
+        # Single dedicated thread (i.e. for writing)
+        {   'logname'     : f'{username}/worker5',
+            'queues'      : ['write'],
+            'concurrency' : 1,
+        },
+    ]
+
+    with CeleryManager(worker_kws, data, gc.ac_methods) as manager:
+        for i, row in data.iterrows():
+            if debug: print(row['scene_id'],global_config.scene_id)
+            if global_config.scene_id in row['scene_id']: #'T18SUG' '044033' 'T2017252150500'
+                row = row.to_dict()
+                pipeline(row) if debug  else pipeline.delay(row)
 
 
 
