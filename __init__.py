@@ -3,6 +3,10 @@
 import os 
 os.environ['FORKED_BY_MULTIPROCESSING'] = '1'
 
+#from .parameters import get_args
+
+#global_config = gc = get_args()
+
 # Define NCCS flag to indicate SLURM usage
 import socket
 NCCS = 'pardees' in socket.gethostname()
@@ -85,6 +89,7 @@ app.conf.task_queues = [
       # 'cert_reqs'  : ssl.CERT_REQUIRED,
     # },
   # })
+#test_suffix = '_test' if global_config.test_pipeline_celery else ''
   
 cert_root = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/rabbitMQ/rabbitmq_server_files/TLS'
 if os.path.exists(cert_root):

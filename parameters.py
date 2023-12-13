@@ -43,6 +43,14 @@ parser.add_argument('--overwrite', action='store_true',
     default=config.overwrite,
     help='Redownload and correct scenes already saved\n(default: False)')
 
+parser.add_argument('--local_processing', action='store_true',
+    default=config.local_processing,
+    help='Processes locally if true, otherwise processes on SLURM')
+
+
+parser.add_argument('--test_pipeline_celery', action='store_true',
+    default=config.test_pipeline_celery,
+    help='Runs pipeline on users username_test vhost on celery (so one version can be deployed on username vhost, while another is tested for an individual user, without getting mixed messages).')
 
 #===================================
 #    Data Search Parameters

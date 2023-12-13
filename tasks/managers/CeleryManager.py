@@ -97,7 +97,9 @@ class CeleryManager:
 
             # Wait for celery to come online
             print('Waiting for Celery app to come online...', end='')
-            while app.control.inspect().ping() is None: time.sleep(1)
+            while app.control.inspect().ping() is None: 
+                print("No ping detected",self.running())
+                #time.sleep(1)
             print('done')
 
         except:

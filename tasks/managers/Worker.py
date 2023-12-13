@@ -53,7 +53,9 @@ class Worker(Process):
             if not running():
                 print(f'Waiting for {label[:-3]} to come online...', end='')
                 sys.stdout.flush()
-                while not running(): time.sleep(1)
+                while not running(): 
+                    print(f"Waiting for {label[:-3]} ",app.control.inspect().ping())
+                    time.sleep(1)
                 print('done')
 
         # Start the worker process

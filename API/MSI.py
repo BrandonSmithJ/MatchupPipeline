@@ -17,7 +17,7 @@ class MSI(BaseAPI):
     is put in place, due to issues with too much data being 
     downloaded on Pardees.
     """
-    search_sources   = ['Planet']
+    search_sources   = ['Copernicus'] #Planet
     download_sources = ['Google', 'Copernicus'][0:]
 
 

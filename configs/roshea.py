@@ -5,10 +5,10 @@ import sys
 username = getoutput('whoami') 
 
 #===============***** This is for f001 - av3 - Matchup processing
-proc = "MSI"
+proc = "OLI"
 
 if proc == "OLI":
-	datasets = ['OLI_test_image']
+	datasets = ['OLI_test_image_ctest']
 	sensors  = ['OLI'] # 'MOD','VI'
 
 if proc == "MSI":
@@ -39,8 +39,8 @@ output_path    = scratch_path.joinpath('Gathered')
 #===================================
 #    Processing Parameters
 #===================================
-local_processing=False
-
+local_processing       = True
+test_pipeline_celery   = False
 #===================================
 #    Data Search Parameters
 #===================================  
@@ -50,7 +50,7 @@ search_minute_window   = None
 search_year_range      = None
 timeseries_or_matchups = 'timeseries'
 scene_id               = '' # will only process scenes with this substring if set
-max_processing_scenes  = 20
+max_processing_scenes  = 40
 
 #===================================
 # Atmospheric Correction Parameters
@@ -108,22 +108,25 @@ extra_cmd = {}
     # timeseries_or_matchups = 'matchups'
     
 if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] : 
-    overwrite              = True # what does it overwrite - everything - yes, even pikle file
-    ac_methods             = ['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
+    overwrite              = False # what does it overwrite - everything - yes, even pikle file
+    ac_methods             = ['l2gen'] #'l2gen','acolite','polymer','aquaverse'
     timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
-    remove_scene_folder    = True 
-    remove_L1_tile         = True
+    remove_scene_folder    = False 
+    remove_L1_tile         = False
     fix_projection_Rrs     = False
     plot_products          = False # for which AC processor it works
     plot_Rrs               = False
     extract_window         = 1 #3x3
     apply_bounding_box     = True # what is this - process only a portion of the image
     search_day_window      = 0 # looks like it is searching for one day range
-    max_cloud_cover        = 100 
-    #scene_id               = 'T18SUG' if 'MSI' in sensors[0] else '014034' if 'OLI' in sensors[0] else '' #'019031' '044033' 020031 #T18SUG
+    max_cloud_cover        = 20 
+    #scene_id               = '014034_20210420'#'T18SUG' if 'MSI' in sensors[0] else '014034' if 'OLI' in sensors[0] else '' #'019031' '044033' 020031 #T18SUG
     #scene_id               = tiles[sensors[0]][datasets[0].split('_')[-1]]
 
 #Checks
+if 'ctest' in datasets[0]:
+    test_pipeline_celery=True
+
 if search_day_window is None  and search_year_range is None and search_minute_window is None:
     search_day_window=0
 

@@ -16,7 +16,7 @@ import time
 import math
 import shutil
 #import app as app2
-
+import random
 def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
     """ Load the in situ data and parse as necessary """
     datasets = []
@@ -173,7 +173,8 @@ def filter_completed(
     print(f'Total samples found: {total_count}')
     print(f'   Currently completed: {done_count}')
     print(f'  Remaining to process: {left_count}\n') 
-    return data.loc[~data['uid'].isin(complete)]
+    data['complete_id'] = data['uid']+'-'+data['scene_id']
+    return data.loc[~data['complete_id'].isin(complete)]
 
 
 def update_app(user_flag, app):
@@ -247,21 +248,34 @@ def main(debug=True):
     # Shuffle samples to minimize risk of multiple threads trying to operate
     # on the same matching scene at once
     data = data.sample(frac=1)
-    j = 0
-    for j in range(math.ceil(len(data)/20)):
-        data2 = data.iloc[j:j+20,:]
-        for i in range(math.ceil(len(data2))): # len of the parsed
-            p = Process(target=main2, args=(gc, data2.iloc[i], str(i)))
-            p.start()
+    #j = 0
+    #for j in range(math.ceil(len(data)/20)):
+    #    data2 = data.iloc[j:j+20,:]
+    #    for i in range(math.ceil(len(data2))): # len of the parsed
+    #        p = Process(target=main2, args=(gc, data2.iloc[i], str(i)))
+    #        p.start()
+    #        time.sleep(60*2)
+    
+    #        folders = list(out_path.glob('*'))
+    #    if (len(folders)>global_config.max_processing_scenes):
+    out_path = global_config.output_path.joinpath(global_config.sensors[0])
+    print("Outpath is")
+    print(out_path)
+    list_range = list(range(len(data)))
+    random_list_range = random.shuffle(list_range)
+    print(list_range)
+    #print(random_list_range)
+    for j in list_range:
+        #print(j,data.iloc[j])
+        folders = list(out_path.glob('*'))
+        while (len(folders)>global_config.max_processing_scenes):
             time.sleep(60*2)
-        
-        # after 40 mins - wait for two hours 20 mins
-        time.sleep(60*60*2+60*20)
-        
-        #remove this directory
-        shutil.rmtree("/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/matchup_deployment_SLURM/SCRATCH/Gathered/Scenes/OLI")
-        #break
-        j += 1
+            folders = list(out_path.glob('*'))
+            print("Too many output folders")
+
+        p = Process(target=main2, args=(gc, data.iloc[j], str(j)))
+        p.start()
+
 
 def main_local(debug=True):
     global_config = gc = get_args()
@@ -306,7 +320,7 @@ def main_local(debug=True):
             'concurrency' : 1,
         },
     ]
-
+    #assert(0)
     with CeleryManager(worker_kws, data, gc.ac_methods) as manager:
         for i, row in data.iterrows():
             if debug: print(row['scene_id'],global_config.scene_id)
