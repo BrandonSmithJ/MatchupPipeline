@@ -164,6 +164,6 @@ def download(self,
     #     print("Running Aquaverse download for:", scene_id)
     #     print(time.time() - start)
     #     "-redownload" #if overwrite
-    t 
+    #t 
         #aquaverse_csv_filename
     

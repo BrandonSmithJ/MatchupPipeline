@@ -8,7 +8,7 @@ username = getoutput('whoami')
 proc = "OLI"
 
 if proc == "OLI":
-	datasets = ['OLI_test_image_ctest']
+	datasets = ['OLI_test_image_aquaverse']
 	sensors  = ['OLI'] # 'MOD','VI'
 
 if proc == "MSI":
@@ -109,7 +109,7 @@ extra_cmd = {}
     
 if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] : 
     overwrite              = False # what does it overwrite - everything - yes, even pikle file
-    ac_methods             = ['l2gen'] #'l2gen','acolite','polymer','aquaverse'
+    ac_methods             = ['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
     timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
     remove_scene_folder    = False 
     remove_L1_tile         = False
@@ -119,7 +119,7 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] :
     extract_window         = 1 #3x3
     apply_bounding_box     = True # what is this - process only a portion of the image
     search_day_window      = 0 # looks like it is searching for one day range
-    max_cloud_cover        = 20 
+    max_cloud_cover        = 100 
     #scene_id               = '014034_20210420'#'T18SUG' if 'MSI' in sensors[0] else '014034' if 'OLI' in sensors[0] else '' #'019031' '044033' 020031 #T18SUG
     #scene_id               = tiles[sensors[0]][datasets[0].split('_')[-1]]
 

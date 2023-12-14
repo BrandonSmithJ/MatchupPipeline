@@ -6,7 +6,7 @@ Created on Wed Aug  2 12:31:08 2023
 @author: roshea
 """
 
-import xarray,rasterio,glob
+import xarray,rasterio,glob,pickle
 import numpy as np
 from osgeo import gdal
 from osgeo import osr
@@ -139,7 +139,7 @@ def save_nc(inp_file,out_path,products,slices,overwrite,prefix='AQV'):
 
         
         for product in  slices.keys():
-                varname = f'{prefix}_{product}' if product not in ['lat','lon'] else f'{product}'
+                varname = f'{product}' #f'{prefix}_{product}' if product not in ['lat','lon'] else f'{product}'
                 
                 if varname not in dst.variables.keys():
                         dims = dst[[k for k in dst.variables.keys() if 'Rrs' in k or 'Rw' in k or '__xarray_dataarray_variable__' in k][0]].get_dims()
@@ -170,22 +170,35 @@ def return_lat_lon_Aquaverse(path):
     
     #Get a grid of lat and long values
     getarray_coords = np.vectorize(array_coords(image_transform, xoffset, px_w, rot1, yoffset, rot2, px_h),otypes=[float,float])
-    lat,long = getarray_coords(rows[:,None],cols[None,:])
-    return lat,long
+    lat,lon = getarray_coords(rows[:,None],cols[None,:])
+    return lat,lon
 
 def array_coords(image_transform, xoffset, px_w, rot1, yoffset, rot2, px_h):
     def get_array_coords(r,c):
         posX = px_w * c + rot1 * r + xoffset + px_w / 2
         posY = rot2 * c + px_h * r + yoffset + px_h / 2
-        lat,long,z = image_transform.TransformPoint(posX,posY)
+        lat,lon,z = image_transform.TransformPoint(posX,posY)
         
-        return lat,long
+        return lat,lon
     return get_array_coords
 
 def convert_tif_nc(base_location):
     available_tifs = [name for name in glob.glob(base_location+'*RRS*nm.TIF')]
+    
+    for sub_product in ['rayleigh_corrected','relative_humidity','precipitable_water','SAA','SZA','VAA','VZA']:
+        available_tifs = available_tifs + [name for name in glob.glob(base_location+'*'+sub_product+'*.TIF')]
+
     tif            = available_tifs[0]
-    lat,lon = return_lat_lon_Aquaverse(tif)  
+
+    lat_lon_file = base_location+'lat_lon.pickle'
+    if os.path.exists(lat_lon_file):
+        with open(lat_lon_file, 'rb') as handle:
+            lat,lon = pickle.load(handle)
+    else:
+        lat,lon = return_lat_lon_Aquaverse(tif)  
+        with open(lat_lon_file, 'wb') as handle: 
+            pickle.dump([lat,lon], handle, protocol=pickle.HIGHEST_PROTOCOL)
+    
     lon_min, lat_min, lon_max, lat_max = [min(lon[:,0]), min(lat[0,:]),max(lon[:,0]), max(lat[0,:])]
     # zone_number    = 10
     
@@ -200,24 +213,42 @@ def convert_tif_nc(base_location):
     # lon,lat = np.meshgrid(lon,lat)
     
     products       = np.squeeze(rasterio.open(tif).read()).astype(float)#[np.squeeze(rasterio.open(tif).read()).astype(float) for tif in available_tifs]
-    wavelengths    = [tif.split('_')[-1].split('.')[0].split('nm')[0]] 
-    
+    labels         = []
+    print("Available tifs:")
+    for avail_tif in available_tifs:
+        print("Avail tif")
+        print(avail_tif)
+        current_label = 'blank'
+        if 'nm' in str(avail_tif):
+            if 'RRS' in str(avail_tif):
+                current_label = 'Rrs_' + avail_tif.split('_')[-1].split('.')[0].split('nm')[0]
+            if 'rayleigh_corrected' in str(avail_tif):
+                current_label = 'rayleigh_corrected_' + avail_tif.split('_')[-1].split('.')[0].split('nm')[0]
+        else: 
+            for sub_product in ['relative_humidity','precipitable_water','SAA','SZA','VAA','VZA']:
+                if sub_product in str(avail_tif): current_label = sub_product 
+        print("Current label")
+        print(current_label)
+        labels.append(current_label)
+
+    #wavelengths    = [tif.split('_')[-1].split('.')[0].split('nm')[0]] 
+    wavelengths    = labels +['lat','lon'] 
     products       =  np.expand_dims(np.squeeze(products),-1)
     out_file_tif        = base_location + 'aquaverse.tif'
     out_file_nc         = base_location + 'aquaverse_init.nc'
     out_file_nc_labels  = base_location + 'aquaverse.nc'
     create_geotiff(products, lon_min, lat_min, lon_max, lat_max,filename = out_file_tif,product_names = wavelengths)
-    
-    
+
     products       = np.dstack([np.squeeze(rasterio.open(tif).read()).astype(float) for tif in available_tifs]+[lat,lon])
-    wavelengths    = [tif.split('_')[-1].split('.')[0].split('nm')[0] for tif in available_tifs]+['lat','lon']
+    #wavelengths    = [tif.split('_')[-1].split('.')[0].split('nm')[0] for tif in available_tifs]+['lat','lon']
     
+    #wavelengths    = labels +['lat','lon']
     raster_final = xarray.open_rasterio(out_file_tif)
     raster_final.to_netcdf(out_file_nc)
     raster_final.close()
 
     slices = {wavelength: i for i,wavelength in enumerate(wavelengths)}
-    save_nc(out_file_nc,out_file_nc_labels,products,slices,overwrite=True,prefix='Rrs')
+    save_nc(out_file_nc,out_file_nc_labels,products,slices,overwrite=True,prefix='')
     
     # print(lat_lon)
     return Path(out_file_nc_labels)
@@ -227,3 +258,5 @@ def convert_tif_nc(base_location):
 
 #convert_tif_nc(base_location)
 
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*

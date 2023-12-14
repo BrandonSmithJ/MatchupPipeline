@@ -4,7 +4,7 @@ import numpy as np
 import tempfile, sys
 import shutil
 from typing import Union, Optional
-
+import os
 
 try: 
     from ....utils import Location, assert_contains
@@ -26,23 +26,33 @@ VALID = [
     'OLI', 
 ]
 
-def run_aquaverse_pull_tar(scene_id,output_folder,timeout=600,stream_output_path = '/tis/stream/data/'):
+def run_aquaverse_pull_tar(scene_id,output_folder,timeout=600,stream_output_path = '/tis/stream/data/',overwrite=False,verbose=False):
     from subprocess import Popen, PIPE, check_output, STDOUT
     from pathlib import Path
     import shutil
     for suffix in ['_rrs','_rayleigh_processed','']:
         downloaded_rrs = stream_output_path + scene_id + f'{suffix}.tar.gz'
         output_rrs     = output_folder + '/'+ scene_id + f'{suffix}.tar.gz'
-        shutil.copyfile(downloaded_rrs, output_rrs)
-        
+        if not os.path.exists(output_rrs) or overwrite: 
+            if verbose: print("Copying:",output_rrs)
+            shutil.copyfile(downloaded_rrs, output_rrs)
+        else:
+            if verbose: print("NOT copying:",output_rrs)
+
         # finds and unpacks tar
         import tarfile
         print('Unzipping tar file ...',suffix)
         tar = tarfile.open(output_rrs)
         tf_contents = tar.getnames()
-        tf_matching_scene_id_list = [file for file in tf_contents if scene_id in file]
-        for file in tf_matching_scene_id_list:
-            tar.extract(member=file,path=output_folder)
+        tf_matching_scene_id_list = [file_in for file_in in tf_contents if scene_id in file_in]
+        for file_in in tf_matching_scene_id_list:
+            file_in_name = output_folder +'/' +file_in
+            print("Filename:", file_in_name)
+            if not os.path.exists(file_in_name) or overwrite:
+                if verbose: print("Extracting", file_in_name)
+                tar.extract(member=file_in,path=output_folder)
+            else:
+                if verbose: print("NOT extracting", file_in_name)
         # tar.extractall(output_folder)
         tar.close()
 
