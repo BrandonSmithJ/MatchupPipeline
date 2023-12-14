@@ -185,7 +185,7 @@ def array_coords(image_transform, xoffset, px_w, rot1, yoffset, rot2, px_h):
 def convert_tif_nc(base_location):
     available_tifs = [name for name in glob.glob(base_location+'*RRS*nm.TIF')]
     
-    for sub_product in ['rayleigh_corrected','relative_humidity','precipitable_water','SAA','SZA','VAA','VZA']:
+    for sub_product in ['rayleigh_corrected','relative_humidity','precipitable_water','SAA','SZA','VAA','VZA','Chla','TSS','Zsd']:
         available_tifs = available_tifs + [name for name in glob.glob(base_location+'*'+sub_product+'*.TIF')]
 
     tif            = available_tifs[0]
@@ -225,7 +225,7 @@ def convert_tif_nc(base_location):
             if 'rayleigh_corrected' in str(avail_tif):
                 current_label = 'rayleigh_corrected_' + avail_tif.split('_')[-1].split('.')[0].split('nm')[0]
         else: 
-            for sub_product in ['relative_humidity','precipitable_water','SAA','SZA','VAA','VZA']:
+            for sub_product in ['relative_humidity','precipitable_water','SAA','SZA','VAA','VZA','Chla','TSS','Zsd']:
                 if sub_product in str(avail_tif): current_label = sub_product 
         print("Current label")
         print(current_label)
