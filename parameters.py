@@ -91,6 +91,12 @@ dt_range.add_argument('--scene_id', nargs=2, action='append',
 dt_range.add_argument('--max_processing_scenes', type=int,
   default=config.max_processing_scenes,
     help='Maximum number of folders/scenes allowed, oldest folder deleted first.')
+
+
+dt_range.add_argument('--download_via_aquaverse', type=int,
+  default=config.download_via_aquaverse,
+    help='Pipeline downloads via aquaverse instead of locally.')
+
 #===================================
 # Atmospheric Correction Parameters
 #===================================

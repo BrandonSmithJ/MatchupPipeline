@@ -5,14 +5,14 @@ import sys
 username = getoutput('whoami') 
 
 #===============***** This is for f001 - av3 - Matchup processing
-proc = "OLI"
+proc = "MSI"
 
-if proc == "OLI":
-	datasets = ['OLI_test_image_aquaverse']
+if proc == "MSI":
+	datasets = ['OLI_test_image_Honga_TS_1']
 	sensors  = ['OLI'] # 'MOD','VI'
 
 if proc == "MSI":
-	datasets = ['MSI_test_image']
+	datasets = ['OLI_test_image_Honga_TS_1']
 	sensors  = ['MSI']
 
 #===================================
@@ -51,6 +51,7 @@ search_year_range      = None
 timeseries_or_matchups = 'timeseries'
 scene_id               = '' # will only process scenes with this substring if set
 max_processing_scenes  = 40
+download_via_aquaverse = False
 
 #===================================
 # Atmospheric Correction Parameters
@@ -110,6 +111,7 @@ extra_cmd = {}
 if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] : 
     overwrite              = False # what does it overwrite - everything - yes, even pikle file
     ac_methods             = ['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
+    download_via_aquaverse = True
     timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
     remove_scene_folder    = False 
     remove_L1_tile         = False
@@ -118,7 +120,7 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] :
     plot_Rrs               = False
     extract_window         = 1 #3x3
     apply_bounding_box     = True # what is this - process only a portion of the image
-    search_day_window      = 0 # looks like it is searching for one day range
+    search_day_window      = 100 # looks like it is searching for one day range
     max_cloud_cover        = 100 
     #scene_id               = '014034_20210420'#'T18SUG' if 'MSI' in sensors[0] else '014034' if 'OLI' in sensors[0] else '' #'019031' '044033' 020031 #T18SUG
     #scene_id               = tiles[sensors[0]][datasets[0].split('_')[-1]]
@@ -129,6 +131,8 @@ if 'ctest' in datasets[0]:
 
 if search_day_window is None  and search_year_range is None and search_minute_window is None:
     search_day_window=0
+
+if 'aquaverse' not in ac_methods and download_via_aquaverse == True: assert(0)
 
 if 'aquaverse' in ac_methods and 'OLI' not in sensors and 'MSI' not in sensors: assert(0)
 

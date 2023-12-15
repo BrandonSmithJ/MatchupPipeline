@@ -127,14 +127,18 @@ def download(self,
     kwargs['scene_path'] = Path(scene_output)
     
     sample_config['scene_path'] = kwargs['scene_path']
-    #if 'aquaverse' in global_config.ac_methods and False:
-    #    run_aquaverse_download(scene_id=sample_config['scene_id'],sensor = sample_config['sensor'],AQV_location=global_config.ac_path['aquaverse'],stream_backend_path=global_config.stream_backend_path,stream_env_path=global_config.stream_env_path,output_folder=kwargs['scene_folder'],overwrite = global_config.overwrite)
+    if 'aquaverse' in global_config.ac_methods and global_config.download_via_aquaverse:
+        run_aquaverse_download(scene_id=sample_config['scene_id'],sensor = sample_config['sensor'],AQV_location=global_config.ac_path['aquaverse'],stream_backend_path=global_config.stream_backend_path,stream_env_path=global_config.stream_env_path,output_folder=kwargs['scene_folder'],overwrite = global_config.overwrite)
         #copy tar to local repo
-    #    run_aquaverse_pull_tar(scene_id=sample_config['scene_id'], AQV_location=global_config.ac_path['aquaverse'],output_folder=kwargs['scene_folder'],timeout=600)
+        #run_aquaverse_pull_tar(scene_id=sample_config['scene_id'], AQV_location=global_config.ac_path['aquaverse'],output_folder=kwargs['scene_folder'],timeout=600)
         
-    kwargs.pop('scene_path')    
-    sample_config.pop('scene_path')
-    kwargs['scene_path'] = api.download_scene(**kwargs)
+    #kwargs.pop('scene_path')    
+    #sample_config.pop('scene_path')
+    if not global_config.download_via_aquaverse: 
+        kwargs.pop('scene_path')
+        sample_config.pop('scene_path')
+        kwargs['scene_path'] = api.download_scene(**kwargs)
+
     if 'aquaverse' in global_config.ac_methods:
         #compress output
         

@@ -7,6 +7,32 @@ from pathlib import Path
 from typing import Union 
 
 from sentinelsat import SentinelAPI
+import requests
+
+def get_scenes_from_query(satellite,start,end,min_cloud_cover=0,max_cloud_cover=100,max_records=2000,bbox="-21,23,-24,15"):
+        print(f"Querying Copernicus for {bbox} {start} {end}")
+
+        #bbox     = location.get_footprint(as_string=True),
+        #dt_range = dt_range.ensure_unique().strftime(),
+
+        alternate_url = "https://catalogue.dataspace.copernicus.eu/resto/api/collections/Sentinel2/search.json?"+\
+        f"cloudCover=%5B{min_cloud_cover},{max_cloud_cover}%5D&"+\
+        f"startDate={start}T00:00:00Z&completionDate={end}T23:59:59Z"+\
+        f"&maxRecords={max_records}&"+\
+        f"box={bbox}"
+
+        url = alternate_url
+        print(url)
+        response = requests.get(url)
+        data_list = response.json()['features'] 
+        
+        scene_ids = [d['properties']['title'].replace('.SAFE','') for d in data_list if '.SAFE' in d['properties']['title']]
+        product_ids = [d['id'] for d in data_list if '.SAFE' in d['properties']['title']]
+        dictionary_out = {p:s for p,s in zip(product_ids,scene_ids)}
+        print(dictionary_out)
+
+
+        return dictionary_out
 
 
 
@@ -28,9 +54,9 @@ class Copernicus(BaseSource, SentinelAPI):
 
 
     def __init__(self, *args, **kwargs):
-        username, password = get_credentials(self.site_url)
+        #username, password = get_credentials(self.site_url)
         # self.api = SentinelAPI.__init__(self, username, password)
-        self.api  = SentinelAPI(username, password,show_progressbars =False)
+        #self.api  = SentinelAPI(username, password,show_progressbars =False)
         BaseSource.__init__(self, *args, **kwargs)
 
 
@@ -59,34 +85,17 @@ class Copernicus(BaseSource, SentinelAPI):
         # Avoid unnecessary search; skip dates prior to first data for sensor
         if not self.dates_available(sensor, dt_range): return {}
 
-        config = {
-            'platformname' : self.valid_sensors[sensor],
-            'date'         : dt_range.ensure_unique().strftime(),
-            'area'         : location.get_footprint(as_string=True),
-            'limit'        : limit,
-        }
+        scenes = get_scenes_from_query("MSI",start=dt_range.strftime(fmt="%Y-%m-%d")[0],end=dt_range.strftime(fmt="%Y-%m-%d")[0],min_cloud_cover=0,max_cloud_cover=100,max_records=2000,bbox=','.join([str(i) for i in location.get_bbox(order='enws')]))
+        #config = {
+        #    'platformname' : self.valid_sensors[sensor],
+        #    'date'         : dt_range.ensure_unique().strftime(),
+        #    'area'         : location.get_footprint(as_string=True),
+        #    'limit'        : limit,
+        #}
 
-        # For whatever reason, Copernicus decided not to actually use WKT for
-        # point representations...so we need to fix our area search string
-        # if 'POINT' in config['area']:
-        #     config['area'] = '{lat:.5f}, {lon:.5f}'.format(
-        #         **location.get_point(dict_keys=['lat', 'lon']) )
 
-        # Sensor-specific kwargs
-        config.update({
-            'productlevel' : 'L1',
-            'producttype'  : 'OL_1_EFR___',
-            #'cloudcoverpercentage' : (0, max_cloud_cover), # not supported for OLCI
-        } if sensor == 'OLCI' else {
-            'processinglevel'      : 'Level-1C',
-            'cloudcoverpercentage' : (0, max_cloud_cover),
-        })
-
-        # Manually passed kwargs
-        config.update(kwargs)
-
-        return { scene['title']: scene 
-                 for _, scene in self.api.query(**config).items() }
+        return scenes #{ scene['title']: scene 
+               # for _, scene in self.api.query(**config).items() }
 
 
 
