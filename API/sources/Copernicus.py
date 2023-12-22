@@ -8,7 +8,8 @@ from typing import Union
 
 from sentinelsat import SentinelAPI
 import requests
-
+#https://documentation.dataspace.copernicus.eu/APIs/OpenSearch.html
+#XML description: https://catalogue.dataspace.copernicus.eu/resto/api/collections/Sentinel2/describe.xml
 def get_scenes_from_query(satellite,start,end,min_cloud_cover=0,max_cloud_cover=100,max_records=2000,bbox="-21,23,-24,15"):
         print(f"Querying Copernicus for {bbox} {start} {end}")
 
@@ -19,6 +20,7 @@ def get_scenes_from_query(satellite,start,end,min_cloud_cover=0,max_cloud_cover=
         f"cloudCover=%5B{min_cloud_cover},{max_cloud_cover}%5D&"+\
         f"startDate={start}T00:00:00Z&completionDate={end}T23:59:59Z"+\
         f"&maxRecords={max_records}&"+\
+        f"processingLevel=S2MSI1C&"+\
         f"box={bbox}"
 
         url = alternate_url
@@ -28,7 +30,7 @@ def get_scenes_from_query(satellite,start,end,min_cloud_cover=0,max_cloud_cover=
         
         scene_ids = [d['properties']['title'].replace('.SAFE','') for d in data_list if '.SAFE' in d['properties']['title']]
         product_ids = [d['id'] for d in data_list if '.SAFE' in d['properties']['title']]
-        dictionary_out = {p:s for p,s in zip(product_ids,scene_ids)}
+        dictionary_out = {p:s for p,s in zip(scene_ids,scene_ids)}
         print(dictionary_out)
 
 

@@ -7,12 +7,12 @@ username = getoutput('whoami')
 #===============***** This is for f001 - av3 - Matchup processing
 proc = "MSI"
 
-if proc == "MSI":
-	datasets = ['OLI_test_image_Honga_TS_1']
+if proc == "OLI":
+	datasets = ['OLI_test_image_Oyster_farm']
 	sensors  = ['OLI'] # 'MOD','VI'
 
 if proc == "MSI":
-	datasets = ['OLI_test_image_Honga_TS_1']
+	datasets = ['MSI_test_image_Honga_TS_1']
 	sensors  = ['MSI']
 
 #===================================
@@ -113,15 +113,15 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] :
     ac_methods             = ['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
     download_via_aquaverse = True
     timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
-    remove_scene_folder    = False 
-    remove_L1_tile         = False
+    remove_scene_folder    = True 
+    remove_L1_tile         = True
     fix_projection_Rrs     = False
     plot_products          = False # for which AC processor it works
     plot_Rrs               = False
     extract_window         = 1 #3x3
     apply_bounding_box     = True # what is this - process only a portion of the image
     search_day_window      = 100 # looks like it is searching for one day range
-    max_cloud_cover        = 100 
+    max_cloud_cover        = 20 
     #scene_id               = '014034_20210420'#'T18SUG' if 'MSI' in sensors[0] else '014034' if 'OLI' in sensors[0] else '' #'019031' '044033' 020031 #T18SUG
     #scene_id               = tiles[sensors[0]][datasets[0].split('_')[-1]]
 

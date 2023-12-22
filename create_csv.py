@@ -159,7 +159,7 @@ def create_csv(global_config, insitu, path):
     parse = lambda name: parse_feature(global_config, idxs, data, name)
     data  = pd.concat(map(parse, data), axis=1)
     data  = create_valid_mask(global_config, data, path.name)
-    data  = data.drop_duplicates(('meta', 'uid'))
+    #data  = data.drop_duplicates(('meta','uid'))
     data.to_csv(path.with_name(f'{path.name}_01.csv'), index=None)
     
     data  = data.set_index(('meta', 'uid'))
@@ -175,7 +175,7 @@ def create_csv(global_config, insitu, path):
     
     insitu.iloc[0,:] = insitu.columns
     
-    data  = insitu.join(data, how='right', lsuffix='insitu_').reset_index()
+    #data  = insitu.join(data, how='right', lsuffix='insitu_').reset_index()
     #data  = insitu.join(data.set_index('uid'), on='uid',how='right').reset_index()
     print(data.head())
     data.to_csv(path.with_name(f'{path.name}_3.csv'), index=None)
@@ -193,7 +193,7 @@ def create_csv(global_config, insitu, path):
     
     data.columns = columns
     data = data.dropna()
-    data = data.drop_duplicates('ins_chl')
+    #data = data.drop_duplicates('ins_chl')
     data.to_csv(path.with_name(f'{path.name}.csv'), na_rep='nan', index=None)
     #data.to_csv(path.with_name(f'{path.name}.csv'), index=None)     
 

@@ -47,6 +47,7 @@ def run_aquaverse_download(scene_id,sensor,output_folder,stream_backend_path,str
     Path(scene_output).mkdir(parents=True,exist_ok=True)
     #Checks if the scene is already downloaded
     downloaded_file = '/tis/stream/data/' + scene_id + '.tar.gz'
+    print(downloaded_file)
     if overwrite and os.path.exists(downloaded_file):
         print("Removing:",downloaded_file)
         os.remove(Path(downloaded_file))
@@ -63,7 +64,7 @@ def run_aquaverse_download(scene_id,sensor,output_folder,stream_backend_path,str
         run_subprocess(running_procs,timeout=timeout)
         start = time.time()
         while not os.path.exists(downloaded_file) and time.time()-start < timeout:
-            print("Waiting for output... ", time.time()-start , "seconds")
+            print("Waiting for output... ",downloaded_file, time.time()-start , "seconds")
             time.sleep(30)
 
 def run_aquaverse_pull_tar(scene_id, AQV_location,output_folder,timeout=600):
