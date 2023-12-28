@@ -8,11 +8,11 @@ username = getoutput('whoami')
 proc = "MSI"
 
 if proc == "OLI":
-	datasets = ['OLI_test_image_Oyster_farm']
+	datasets = ['OLI_test_image_Damariscotta_1']
 	sensors  = ['OLI'] # 'MOD','VI'
 
 if proc == "MSI":
-	datasets = ['MSI_test_image_Honga_TS_1']
+	datasets = ['MSI_test_image_chla_tss_matchups'] #['MSI_secchi_matchups']#['MSI_test_image_Honga_TS_1']
 	sensors  = ['MSI']
 
 #===================================
@@ -22,19 +22,19 @@ tiles = {'OLI' : {'IRL' : '016040', 'GB': '024029','CB':'014034'},
         'MSI' : {'CB'  : 'T18SUG', '20201017': ''},}
 
 # AC processors' paths 
-l2gen_path     = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/matchup_deployment_SLURM/atm_corr/ac_processors/SeaDAS/SeaDAS_V2022_3/ocssw'
-acolite_path   = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/matchup_deployment_SLURM/atm_corr/ac_processors/acolite/acolite-20221114.0/acolite' 
-polymer_path   = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/matchup_deployment_SLURM/atm_corr/ac_processors/polymer/polymer-v4.16.1/polymer'
+l2gen_path             = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/matchup_deployment_SLURM/atm_corr/ac_processors/SeaDAS/SeaDAS_V2022_3/ocssw'
+acolite_path           = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/matchup_deployment_SLURM/atm_corr/ac_processors/acolite/acolite-20221114.0/acolite' 
+polymer_path           = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/matchup_deployment_SLURM/atm_corr/ac_processors/polymer/polymer-v4.16.1/polymer'
 
-aquaverse_path = str(Path(__file__).resolve().parent.parent.joinpath('AC').joinpath('L2_processing').joinpath('aquaverse'))
+aquaverse_path         = str(Path(__file__).resolve().parent.parent.joinpath('AC').joinpath('L2_processing').joinpath('aquaverse'))
 
-stream_backend_path = '/tis/m2cross/scratch/f002/wwainwr1/stream/backend'
-stream_env_path     = '/tis/m2cross/scratch/f002/wwainwr1/venv/bin/activate'
+stream_backend_path    = '/tis/m2cross/scratch/f002/wwainwr1/stream/backend'
+stream_env_path        = '/tis/m2cross/scratch/f002/wwainwr1/venv/bin/activate'
 
 #scratch_path   = Path(f'/data/{username}').joinpath('SCRATCH')
-scratch_path   = Path('/tis/m2cross/scratch/f003/roshea/matchup_pipeline_dev_test/roshea/SCRATCH') 
-insitu_path    = scratch_path.joinpath('Insitu') 
-output_path    = scratch_path.joinpath('Gathered')
+scratch_path           = Path('/tis/m2cross/scratch/f003/roshea/matchup_pipeline_dev_test/roshea/SCRATCH') 
+insitu_path            = scratch_path.joinpath('Insitu') 
+output_path            = scratch_path.joinpath('Gathered')
 
 #===================================
 #    Processing Parameters
@@ -56,34 +56,34 @@ download_via_aquaverse = False
 #===================================
 # Atmospheric Correction Parameters
 #===================================
-ac_timeout = 120 # number of minutes an AC processor can run before being terminated
-ac_methods = ['l2gen'] # Atmospheric Correction methods to apply
-apply_bounding_box = True
-
+ac_timeout             = 120 # number of minutes an AC processor can run before being terminated
+ac_methods             = ['l2gen'] # Atmospheric Correction methods to apply
+apply_bounding_box     = True
+aquaverse_prod_level   = 3
 #===================================
 #    Data Extraction Parameters
 #===================================
-extract_window = 1 # pixels to extract around the center pixel (e.g. 1 -> 3x3 window)
+extract_window         = 1 # pixels to extract around the center pixel (e.g. 1 -> 3x3 window)
 
 #===================================
 #    Plotting Parameters
 #===================================
-fix_projection_Rrs= False
-plot_products     = True
-plot_Rrs          = False
+fix_projection_Rrs     = False
+plot_products          = True
+plot_Rrs               = False
 
 #===================================
 #    Data Cleanup Parameters
 #===================================
-remove_L2_tile = False
-overwrite      = False
-remove_scene_folder = False
-remove_L1_tile=False
+remove_L2_tile         = False
+overwrite              = False
+remove_scene_folder    = False
+remove_L1_tile         = False
 
 #===================================
 #    Atmospheric correction arguments
 #===================================
-extra_cmd = {}
+extra_cmd              = {}
 
 #===================================
 #    Location specific overrides
@@ -108,11 +108,11 @@ extra_cmd = {}
                   # 'polymer': {},}
     # timeseries_or_matchups = 'matchups'
     
-if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] : 
+if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] or 'MSI' in sensors[0]: 
     overwrite              = False # what does it overwrite - everything - yes, even pikle file
     ac_methods             = ['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
     download_via_aquaverse = True
-    timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
+    timeseries_or_matchups = 'matchups' #'matchups' # matchups was not working - key error scene id
     remove_scene_folder    = True 
     remove_L1_tile         = True
     fix_projection_Rrs     = False
@@ -120,8 +120,9 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] :
     plot_Rrs               = False
     extract_window         = 1 #3x3
     apply_bounding_box     = True # what is this - process only a portion of the image
-    search_day_window      = 100 # looks like it is searching for one day range
-    max_cloud_cover        = 20 
+    search_day_window      = 0 if timeseries_or_matchups == 'matchups' else 100# looks like it is searching for one day range
+    max_cloud_cover        = 20
+    aquaverse_prod_level   = 1
     #scene_id               = '014034_20210420'#'T18SUG' if 'MSI' in sensors[0] else '014034' if 'OLI' in sensors[0] else '' #'019031' '044033' 020031 #T18SUG
     #scene_id               = tiles[sensors[0]][datasets[0].split('_')[-1]]
 
@@ -132,8 +133,8 @@ if 'ctest' in datasets[0]:
 if search_day_window is None  and search_year_range is None and search_minute_window is None:
     search_day_window=0
 
-if 'aquaverse' not in ac_methods and download_via_aquaverse == True: assert(0)
+#if 'aquaverse' not in ac_methods and download_via_aquaverse == True: assert(0)
 
 if 'aquaverse' in ac_methods and 'OLI' not in sensors and 'MSI' not in sensors: assert(0)
 
-if 'aquaverse' in ac_methods and 'MSI' in sensors: print('MSI Images after Jan 2022 will not successfully process with Aquaverse')
+if 'aquaverse' in ac_methods and 'MSI' in sensors: print('MSI Images before June 15 2016 will not successfully process with Aquaverse')

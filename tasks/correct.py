@@ -28,7 +28,7 @@ def correct(self,
     }
     kwargs.update(global_config.extra_cmd[ac_method][sample_config['sensor']] if ac_method in global_config.extra_cmd.keys() and sample_config['sensor'] in global_config.extra_cmd[ac_method].keys() else {})
     if not global_config.apply_bounding_box: kwargs['location'] = None
-    
+    if ac_method == 'aquaverse': kwargs.update({'prod_level': global_config.aquaverse_prod_level})
     kwargs['correction_path'] = AC_FUNCTIONS[ac_method](**kwargs)
     if ac_method == 'aquaverse': kwargs['correction_path']  = convert_tif_nc(str(out_path)+'/')
     if global_config.remove_L1_tile: 

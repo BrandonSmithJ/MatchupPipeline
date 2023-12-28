@@ -173,16 +173,16 @@ def create_csv(global_config, insitu, path):
     insitu.to_csv(path.with_name(f'{path.name}_1.csv'), index=None)     
     data.to_csv(path.with_name(f'{path.name}_2.csv'), index=None)
     
-    insitu.iloc[0,:] = insitu.columns
+    #insitu.iloc[0,:] = insitu.columns
     
-    #data  = insitu.join(data, how='right', lsuffix='insitu_').reset_index()
+    data  = insitu.join(data, how='right', lsuffix='insitu_').reset_index()
     #data  = insitu.join(data.set_index('uid'), on='uid',how='right').reset_index()
     print(data.head())
     data.to_csv(path.with_name(f'{path.name}_3.csv'), index=None)
     
     columns = []
     for i in range(0, data.shape[1]):
-        if str(data.columns[i][0]) in ['Rrs']:#, 'rhos', 'rhot']:    
+        if str(data.columns[i][0]) in ['Rrs','rayleigh_corrected','VZA','VAA','sena','senz']:#, 'rhos', 'rhot']:    
             col = str(data.columns[i][0]) + '(' + str(data.columns[i][1]) + ')'
         else:
             if data.columns[i][0] in ["meta"]:

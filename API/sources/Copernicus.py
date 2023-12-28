@@ -24,14 +24,14 @@ def get_scenes_from_query(satellite,start,end,min_cloud_cover=0,max_cloud_cover=
         f"box={bbox}"
 
         url = alternate_url
-        print(url)
+        #print(url)
         response = requests.get(url)
         data_list = response.json()['features'] 
         
         scene_ids = [d['properties']['title'].replace('.SAFE','') for d in data_list if '.SAFE' in d['properties']['title']]
         product_ids = [d['id'] for d in data_list if '.SAFE' in d['properties']['title']]
         dictionary_out = {p:s for p,s in zip(scene_ids,scene_ids)}
-        print(dictionary_out)
+        print("Found: ", len(dictionary_out))
 
 
         return dictionary_out
@@ -46,7 +46,8 @@ class Copernicus(BaseSource, SentinelAPI):
     """
     site_url      = 'scihub.copernicus.eu'
     valid_dates   = { # Dates available for the sensors
-        'MSI'  : (dt(2015, 6, 23), dt.now()),
+        #'MSI'  : (dt(2015, 6, 23), dt.now()),
+        'MSI'  : (dt(2016, 6, 16), dt.now()),
         'OLCI' : (dt(2016, 2, 16), dt.now()),
     }
     valid_sensors = {
@@ -87,7 +88,7 @@ class Copernicus(BaseSource, SentinelAPI):
         # Avoid unnecessary search; skip dates prior to first data for sensor
         if not self.dates_available(sensor, dt_range): return {}
 
-        scenes = get_scenes_from_query("MSI",start=dt_range.strftime(fmt="%Y-%m-%d")[0],end=dt_range.strftime(fmt="%Y-%m-%d")[0],min_cloud_cover=0,max_cloud_cover=100,max_records=2000,bbox=','.join([str(i) for i in location.get_bbox(order='enws')]))
+        scenes = get_scenes_from_query("MSI",start=dt_range.strftime(fmt="%Y-%m-%d")[0],end=dt_range.strftime(fmt="%Y-%m-%d")[1],min_cloud_cover=0,max_cloud_cover=100,max_records=2000,bbox=','.join([str(i) for i in location.get_bbox(order='wsen')]))
         #config = {
         #    'platformname' : self.valid_sensors[sensor],
         #    'date'         : dt_range.ensure_unique().strftime(),

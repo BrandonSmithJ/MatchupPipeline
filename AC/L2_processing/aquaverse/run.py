@@ -33,33 +33,34 @@ def run_aquaverse_pull_tar(scene_id,output_folder,timeout=600,stream_output_path
     for suffix in ['_rrs','_rayleigh_processed','']:
         downloaded_rrs = stream_output_path + scene_id + f'{suffix}.tar.gz'
         output_rrs     = output_folder + '/'+ scene_id + f'{suffix}.tar.gz'
-        if not os.path.exists(output_rrs) or overwrite: 
+        if (not os.path.exists(output_rrs) or overwrite) and os.path.exists(downloaded_rrs): 
             if verbose: print("Copying:",output_rrs)
             shutil.copyfile(downloaded_rrs, output_rrs)
         else:
             if verbose: print("NOT copying:",output_rrs)
 
         # finds and unpacks tar
-        import tarfile
-        print('Unzipping tar file ...',suffix)
-        tar = tarfile.open(output_rrs)
-        tf_contents = tar.getnames()
-        tf_matching_scene_id_list = [file_in for file_in in tf_contents if scene_id in file_in]
-        for file_in in tf_matching_scene_id_list:
-            file_in_name = output_folder +'/' +file_in
-            print("Filename:", file_in_name)
-            if not os.path.exists(file_in_name) or overwrite:
-                if verbose: print("Extracting", file_in_name)
-                tar.extract(member=file_in,path=output_folder)
-            else:
-                if verbose: print("NOT extracting", file_in_name)
-        # tar.extractall(output_folder)
-        tar.close()
+        if os.path.exists(output_rrs):
+            import tarfile
+            print('Unzipping tar file ...',suffix)
+            tar = tarfile.open(output_rrs)
+            tf_contents = tar.getnames()
+            tf_matching_scene_id_list = [file_in for file_in in tf_contents if scene_id in file_in]
+            for file_in in tf_matching_scene_id_list:
+                file_in_name = output_folder +'/' +file_in
+                print("Filename:", file_in_name)
+                if not os.path.exists(file_in_name) or overwrite:
+                    if verbose: print("Extracting", file_in_name)
+                    tar.extract(member=file_in,path=output_folder)
+                else:
+                    if verbose: print("NOT extracting", file_in_name)
+            # tar.extractall(output_folder)
+            tar.close()
 
     for suffix in ["_Chla_AQV202310","_TSS_AQV202310","_Zsd_AQV202310"]:
         downloaded_rrs = stream_output_path + scene_id + f'{suffix}.TIF'
         output_rrs     = output_folder + '/'+ scene_id + f'{suffix}.TIF'
-        if not os.path.exists(output_rrs) or overwrite:
+        if (not os.path.exists(output_rrs) or overwrite) and os.path.exists(downloaded_rrs):
             if verbose: print("Copying:",output_rrs)
             shutil.copyfile(downloaded_rrs, output_rrs)
         else:
@@ -216,6 +217,7 @@ def run_aquaverse(
     overwrite : bool               = False, 
     timeout   : float              = 30, 
     location  : Optional[Location] = None, 
+    prod_level: float              = 3, #1: 'rhos', 2: 'Rrs',3: 'downstream_products'],
     **extra_cmd, 
 ) -> Path:
     """Atmospherically correct the given input file using aquaverse.
@@ -294,17 +296,24 @@ def run_aquaverse(
         print("Running Aquaverse Rayleigh ancillary data...")
         run_aquaverse_ancillary(sensor,scene_id, ac_path,timeout=timeout*60)
         print("Running Aquaverse Rayleigh correction...")
-        run_aquaverse_rayleigh(scene_id, ac_path,timeout=timeout*60,overwrite = overwrite)
-        print("Running Aquaverse Rrs correction...")
-        # Run aquaverse correction
-        run_aquaverse_MDN_AC(scene_id, ac_path,timeout=timeout*60,overwrite = overwrite)
-        print("Running Aquaverse downstream product generation...")
-        run_aquaverse_MDN_downstream_products(scene_id, ac_path,timeout=timeout*60,overwrite = overwrite)
+        
+        if prod_level>0: 
+            print("Running Aquaverse Rayleigh correction...")
+            run_aquaverse_rayleigh(scene_id, ac_path,timeout=timeout*60,overwrite = overwrite)
+        
+        if prod_level>1:
+            print("Running Aquaverse Rrs correction...")
+            # Run aquaverse correction
+            run_aquaverse_MDN_AC(scene_id, ac_path,timeout=timeout*60,overwrite = overwrite)
+        
+        if prod_level>2:
+            print("Running Aquaverse downstream product generation...")
+            run_aquaverse_MDN_downstream_products(scene_id, ac_path,timeout=timeout*60,overwrite = overwrite)
         
         run_aquaverse_pull_tar(scene_id, out_file.parent.as_posix(),timeout=int(timeout*60/10),stream_output_path = '/tis/stream/data/')
         
         # Ensure the expected file exists
-        outputs = list(out_file.parent.glob('*RRS*nm.TIF'))
+        outputs = list(out_file.parent.glob('*RRS*nm.TIF')) if prod_level > 1 else list(out_file.parent.glob('*rayleigh_corrected*nm.TIF'))
         if len(outputs) <= 1:
             msg = f'Aquaverse failure. Output directory contents: {outputs}'
             if 'Scenes' in settings['inputfile'] and sensor in settings['inputfile'] and False:

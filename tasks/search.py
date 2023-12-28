@@ -32,6 +32,10 @@ def search(self,
             }
             kwargs.update(sample_config)
             total_kwargs.append(kwargs)
+    else:
+        print('No Scenes found')
+        kwargs={}
+
     return kwargs if global_config.timeseries_or_matchups == 'matchups' else total_kwargs
 
     # If there aren't any scenes found, break out of the pipeline chain
@@ -128,14 +132,17 @@ def download(self,
     kwargs['scene_path'] = Path(scene_output)
     
     sample_config['scene_path'] = kwargs['scene_path']
-    if 'aquaverse' in global_config.ac_methods and global_config.download_via_aquaverse:
+    if  global_config.download_via_aquaverse:
         run_aquaverse_download(scene_id=sample_config['scene_id'],sensor = sample_config['sensor'],AQV_location=global_config.ac_path['aquaverse'],stream_backend_path=global_config.stream_backend_path,stream_env_path=global_config.stream_env_path,output_folder=kwargs['scene_folder'],overwrite = global_config.overwrite)
         #copy tar to local repo
+        tis_output_path = '/tis/stream/data/'+str(kwargs['scene_id']) + '.tar.gz'
+        from ..utils.decompress import decompress
+        decompress(Path(tis_output_path),Path(kwargs['scene_path']),remove=False)
         #run_aquaverse_pull_tar(scene_id=sample_config['scene_id'], AQV_location=global_config.ac_path['aquaverse'],output_folder=kwargs['scene_folder'],timeout=600)
         
     #kwargs.pop('scene_path')    
     #sample_config.pop('scene_path')
-    if not global_config.download_via_aquaverse: 
+    else: 
         kwargs.pop('scene_path')
         sample_config.pop('scene_path')
         kwargs['scene_path'] = api.download_scene(**kwargs)

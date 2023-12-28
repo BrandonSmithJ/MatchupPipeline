@@ -89,7 +89,18 @@ class BaseSource(Picklable, metaclass=BaseSourceMeta):
 
     """
     site_url      = None # Root URL for this source
-    valid_dates   = {}   # Dict mapping sensor: valid start/end datetimes 
+    valid_dates   = {
+                    'MSI'  : (dt(2016, 6, 16), dt.now()), #Original: dt(2015, 6, 23)
+                    'S2A'  : (dt(2016, 6, 16), dt.now()), #Original: dt(2015, 6, 23)
+                    'S2B'  : (dt(2017, 3,  7), dt.now()),
+                    'OLCI' : (dt(2016, 2, 16), dt.now()),
+                    'S3A'  : (dt(2016, 2, 16), dt.now()),
+                    'S3B'  : (dt(2018, 4, 25), dt.now()),
+                    'OLI'  : (dt(2013, 2, 11), dt.now()),
+                    'OLI2' : (dt(2021, 9, 27), dt.now()),
+                    'MOD'  : (dt(1999, 12, 1), dt.now()),
+                    'VI'   : (dt(2011, 10, 28), dt.now()),
+                    }   # Dict mapping sensor: valid start/end datetimes 
     valid_sensors = None # Iterable that contains sensors valid for this Source
 
 
@@ -193,6 +204,7 @@ class BaseSource(Picklable, metaclass=BaseSourceMeta):
     ) -> bool:                        # Returns flag indicating if dt_range is valid
         """ Check if there are any valid dates in the range of interest """
         start, end = self.valid_dates.get(sensor, (dt(1960, 1, 1), dt.now()))
+        #print("Valid dates are",start,end)
         return ( (dt_range.end   > start) and
                  (dt_range.start < end  ) )
 

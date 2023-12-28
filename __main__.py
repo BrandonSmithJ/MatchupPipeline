@@ -49,7 +49,7 @@ def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
 
             dts = pd.to_datetime(data['datetime'])
             data['date']     = dts.dt.date
-            data['datetime'] = pd.Series(dts.dt.to_pydatetime(), dtype=object)
+            data['datetime'] = pd.Series(dts.dt.to_pydatetime(), dtype=object).values
 
             # Need to ensure uid is actually unique
             idxs = pd.Series(np.arange(len(data))).astype(str)
@@ -99,7 +99,7 @@ def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
                     for data_kwarg in data_kwargs:
                         data_kwarg['scene_details'] =  str(data_kwarg['scene_details'])
                         current_dataset.append(pd.DataFrame.from_dict([data_kwarg])) 
-                        if not j%100: print(f"Found {j} Matchups")
+                        if not j%10: print(f"Searched {j} Matchups")
                         j= j + 1
                     
             pd.concat(current_dataset).to_pickle(dataset_path)
@@ -173,7 +173,10 @@ def filter_completed(
     print(f'Total samples found: {total_count}')
     print(f'   Currently completed: {done_count}')
     print(f'  Remaining to process: {left_count}\n') 
-    data['complete_id'] = data['uid']+'-'+data['scene_id']
+    if global_config.timeseries_or_matchups !='matchups':
+        data['complete_id'] = data['uid']+'-'+data['scene_id']
+    else:
+        data['complete_id'] = data['uid']
     return data.loc[~data['complete_id'].isin(complete)]
 
 
@@ -323,10 +326,11 @@ def main_local(debug=True):
     #assert(0)
     with CeleryManager(worker_kws, data, gc.ac_methods) as manager:
         for i, row in data.iterrows():
-            if debug: print(row['scene_id'],global_config.scene_id)
-            if global_config.scene_id in row['scene_id']: #'T18SUG' '044033' 'T2017252150500'
-                row = row.to_dict()
-                pipeline(row) if debug  else pipeline.delay(row)
+            if debug and global_config.timeseries_or_matchups !='matchups': print(row['scene_id'],global_config.scene_id)
+            if 'scene_id' in row.keys():
+                if global_config.scene_id not in row['scene_id']: continue#'T18SUG' '044033' 'T2017252150500'
+            row = row.to_dict()
+            pipeline(row) if debug  else pipeline.delay(row)
 
 
 

@@ -224,6 +224,10 @@ def convert_tif_nc(base_location):
                 current_label = 'Rrs_' + avail_tif.split('_')[-1].split('.')[0].split('nm')[0]
             if 'rayleigh_corrected' in str(avail_tif):
                 current_label = 'rayleigh_corrected_' + avail_tif.split('_')[-1].split('.')[0].split('nm')[0]
+            if 'VZA' in str(avail_tif):
+                current_label = 'VZA_' + avail_tif.split('_')[-1].split('.')[0].split('nm')[0]
+            if 'VAA' in str(avail_tif):
+                current_label = 'VAA_' + avail_tif.split('_')[-1].split('.')[0].split('nm')[0]
         else: 
             for sub_product in ['relative_humidity','precipitable_water','SAA','SZA','VAA','VZA','Chla','TSS','Zsd']:
                 if sub_product in str(avail_tif): current_label = sub_product 
