@@ -47,7 +47,7 @@ class Copernicus(BaseSource, SentinelAPI):
     site_url      = 'scihub.copernicus.eu'
     valid_dates   = { # Dates available for the sensors
         #'MSI'  : (dt(2015, 6, 23), dt.now()),
-        'MSI'  : (dt(2016, 6, 16), dt.now()),
+        'MSI'  : (dt(2018, 1,  1), dt.now()),
         'OLCI' : (dt(2016, 2, 16), dt.now()),
     }
     valid_sensors = {
