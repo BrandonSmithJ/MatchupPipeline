@@ -12,7 +12,9 @@ if proc == "OLI":
 	sensors  = ['OLI'] # 'MOD','VI'
 
 if proc == "MSI":
-	datasets = ['MSI_test_image_chla_tss_matchups'] #['MSI_secchi_matchups']#['MSI_test_image_Honga_TS_1']
+	datasets = ['MSI_test_image_chla_tss_matchups_subset']#['MSI_test_image_Honga_TS_1']
+
+
 	sensors  = ['MSI']
 
 #===================================
@@ -110,9 +112,9 @@ extra_cmd              = {}
     
 if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] or 'MSI' in sensors[0]: 
     overwrite              = False # what does it overwrite - everything - yes, even pikle file
-    ac_methods             = ['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
+    ac_methods             = ['l2gen'] #'l2gen','acolite','polymer','aquaverse'
     download_via_aquaverse = True
-    timeseries_or_matchups = 'matchups' #'matchups' # matchups was not working - key error scene id
+    timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
     remove_scene_folder    = True 
     remove_L1_tile         = True
     fix_projection_Rrs     = False
@@ -120,10 +122,11 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] or 'MSI'
     plot_Rrs               = False
     extract_window         = 1 #3x3
     apply_bounding_box     = True # what is this - process only a portion of the image
-    search_day_window      = 0 if timeseries_or_matchups == 'matchups' else 100# looks like it is searching for one day range
+    search_day_window      = 0#0 if timeseries_or_matchups == 'matchups' else 100# looks like it is searching for one day range
     max_cloud_cover        = 20
     aquaverse_prod_level   = 1
-    #scene_id               = '014034_20210420'#'T18SUG' if 'MSI' in sensors[0] else '014034' if 'OLI' in sensors[0] else '' #'019031' '044033' 020031 #T18SUG
+    local_processing       = False  #deploy to SLURM nodes
+#scene_id               = '014034_20210420'#'T18SUG' if 'MSI' in sensors[0] else '014034' if 'OLI' in sensors[0] else '' #'019031' '044033' 020031 #T18SUG
     #scene_id               = tiles[sensors[0]][datasets[0].split('_')[-1]]
 
 #Checks

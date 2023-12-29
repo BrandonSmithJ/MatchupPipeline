@@ -96,7 +96,7 @@ if os.path.exists(cert_root):
   import ssl
   app.conf.update(**{
     #'broker_url'     :f'pyamqp://{username}:mp{username}@localhost:5671/matchups_{username}', # it works!!
-    'broker_url'     :f'pyamqp://{username}:mp{username}@pardees:5671/matchups_{username}', 
+    'broker_url'     :f'pyamqp://{username}_test:mp{username}_test@pardees:5671/matchups_{username}_test', 
     'broker_use_ssl' : {
       'keyfile'    : f'{cert_root}/server-key.pem',
       'certfile'   : f'{cert_root}/server-cert.pem',

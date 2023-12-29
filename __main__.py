@@ -205,7 +205,7 @@ def main2(gc, data, i, debug=True):
     worker_kws = [
         # Multiple threads for download
         {   'logname'     : f'{username}/worker1{i}',
-            'queues'      : ['search','download','correct','extract','plot','celery'],
+            'queues'      : ['search','download','correct','extract','plot','celery','write'],
             #'queues'      : ['search', 'celery'],
             'concurrency' : 2,
             'slurm_kwargs': {'partition' : 'ubuntu20'},
@@ -226,11 +226,18 @@ def main2(gc, data, i, debug=True):
     pipeline = create_extraction_pipeline(gc)
     with CeleryManager(worker_kws, data, gc.ac_methods) as manager:
         #for i, row in data.iterrows(): 
-        if debug: print(data['scene_id'],gc.scene_id)
-        if gc.scene_id in data['scene_id']: #'T18SUG' '044033' 'T2017252150500'
-            data = data.to_dict()
-            pipeline(data) if debug else pipeline.delay(data)
-                # deploy_job.sh {row} - how? This should call a python script to start processing
+        #if debug: print(data['scene_id'],gc.scene_id)
+        #if gc.scene_id in data['scene_id']: #'T18SUG' '044033' 'T2017252150500'
+        data = data.to_dict()
+        if debug and gc.timeseries_or_matchups !='matchups': print(data['scene_id'],gc.scene_id)
+        #data = data.to_dict()
+        if 'scene_id' in data.keys():
+            if gc.scene_id not in data['scene_id']: return 0#'T18SUG' '044033' 'T2017252150500'
+        #data = data.to_dict()
+        pipeline(data) if debug else pipeline.delay(data)
+        #time.sleep(10)
+
+        # deploy_job.sh {row} - how? This should call a python script to start processing
                 # row.pkl 
                 # strt slrm jobs - activats env
                 # run main.py - starts celery/rabbitMQ? not able to start them from a slurm job.
@@ -278,6 +285,8 @@ def main(debug=True):
 
         p = Process(target=main2, args=(gc, data.iloc[j], str(j)))
         p.start()
+        time.sleep(10)
+        
 
 
 def main_local(debug=True):
