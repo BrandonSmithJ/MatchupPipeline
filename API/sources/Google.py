@@ -39,7 +39,7 @@ class Google(BaseSource):
         if not complete:
             root_path   = Path(__file__).parent.joinpath('gsutil')
             exec_path   = root_path.joinpath('gsutil').as_posix()
-            config_path = Path(f'/home/{username}/.boto') #root_path.joinpath('gsutil_config').as_posix()
+            config_path = root_path.parent.parent.parent.joinpath('credentials').joinpath(username).joinpath('.boto') #Path(f'/home/{username}/.boto') #root_path.joinpath('gsutil_config').as_posix()
             search_path = 'gs://gcp-public-data-{bucket}/{search}'.format(**{
                 'bucket' : self.valid_sensors[sensor],
                 'search' : get_params(sensor, scene_id)['search'],

@@ -41,7 +41,7 @@ def search(self,
     # If there aren't any scenes found, break out of the pipeline chain
     # self.request.chain = None
 
-def run_aquaverse_download(scene_id,sensor,output_folder,stream_backend_path,stream_env_path,AQV_location,location="Bay",timeout=3600,overwrite=False):
+def run_aquaverse_download(scene_id,sensor,output_folder,stream_backend_path,stream_env_path,AQV_location,location="Bay",timeout=1800,overwrite=False):
     import csv, os,time
     from pathlib import Path
     from subprocess import Popen, PIPE, check_output, STDOUT
@@ -65,7 +65,9 @@ def run_aquaverse_download(scene_id,sensor,output_folder,stream_backend_path,str
             
         #activates environment and runs download, waiting for return (timeout)
         running_procs = Popen([AQV_download, str(stream_backend_path), str(stream_env_path), str(aquaverse_csv_filename), '--redownload' ,str(sensor)], stdout=PIPE, stderr=PIPE)
-        run_subprocess(running_procs,timeout=timeout)
+        proc_coms = run_subprocess(running_procs,timeout=timeout)
+        #for proc_com in proc_coms:
+        #    print(proc_com)
         start = time.time()
         while not os.path.exists(downloaded_file) and time.time()-start < timeout:
             print("Waiting for output... ",downloaded_file, time.time()-start , "seconds")

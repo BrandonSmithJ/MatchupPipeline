@@ -97,6 +97,10 @@ dt_range.add_argument('--download_via_aquaverse', type=int,
   default=config.download_via_aquaverse,
     help='Pipeline downloads via aquaverse instead of locally.')
 
+dt_range.add_argument('--filter_unprocessed_imagery', type=int,
+  default=config.filter_unprocessed_imagery,
+    help='Pipeline filters unprocessed aquaverse imagery.')
+
 #===================================
 # Atmospheric Correction Parameters
 #===================================

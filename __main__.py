@@ -172,11 +172,20 @@ def filter_completed(
     left_count  = color(f'{len(data) - len(complete):,}', 'red')
     print(f'Total samples found: {total_count}')
     print(f'   Currently completed: {done_count}')
-    print(f'  Remaining to process: {left_count}\n') 
+    print(f'  Remaining to process: {left_count}\n')
+
     if global_config.timeseries_or_matchups !='matchups':
         data['complete_id'] = data['uid']+'-'+data['scene_id']
     else:
         data['complete_id'] = data['uid']
+    
+    # Processes only files successfully processed by another program
+    if global_config.filter_unprocessed_imagery:
+        meta_files = get_exists('meta.csv', datasets, sensors,['aquaverse'],['Matchups'])
+        meta_uids = read_files(meta_files, index_col=None, header=0, delimiter="|")[0]['uid'].values
+        return data.loc[data['uid'].isin(meta_uids)*~data['complete_id'].isin(complete)]
+    
+
     return data.loc[~data['complete_id'].isin(complete)]
 
 
@@ -211,17 +220,17 @@ def main2(gc, data, i, debug=True):
             'slurm_kwargs': {'partition' : 'ubuntu20'},
         },
         # Multiple threads for correction
-        {   'logname'     : f'{username}/worker2{i}',
-            'queues'      : ['correct'],
-            'concurrency' : 2, #
-            'slurm_kwargs': {'partition' : 'ubuntu20'},
-        },
+        #{   'logname'     : f'{username}/worker2{i}',
+        #    'queues'      : ['correct'],
+        #    'concurrency' : 2, #
+        #    'slurm_kwargs': {'partition' : 'ubuntu20'},
+        #},
         # Single dedicated thread (i.e. for writing)
-        {   'logname'     : f'{username}/worker3{i}',
-            'queues'      : ['write'],
-            'concurrency' : 2,
-            'slurm_kwargs': {'partition' : 'ubuntu20'},
-        },
+        #{   'logname'     : f'{username}/worker3{i}',
+        #    'queues'      : ['write'],
+        #    'concurrency' : 2,
+        #    'slurm_kwargs': {'partition' : 'ubuntu20'},
+        #},
     ]
     pipeline = create_extraction_pipeline(gc)
     with CeleryManager(worker_kws, data, gc.ac_methods) as manager:
@@ -285,7 +294,7 @@ def main(debug=True):
 
         p = Process(target=main2, args=(gc, data.iloc[j], str(j)))
         p.start()
-        time.sleep(10)
+        time.sleep(60*1)
         
 
 
@@ -309,7 +318,7 @@ def main_local(debug=True):
         # Multiple threads for download
         {   'logname'     : f'{username}/worker1',
             'queues'      : ['search','download','correct','extract','plot','celery'],
-            'concurrency' : 1,
+            'concurrency' : 2,
         },
         # Multiple threads for correction
         {   'logname'     : f'{username}/worker2',

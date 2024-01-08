@@ -182,7 +182,7 @@ def create_csv(global_config, insitu, path):
     
     columns = []
     for i in range(0, data.shape[1]):
-        if str(data.columns[i][0]) in ['Rrs','rayleigh_corrected','VZA','VAA','sena','senz']:#, 'rhos', 'rhot']:    
+        if str(data.columns[i][0]) in ['Rrs','rayleigh_corrected','VZA','VAA','sena','senz','rhos','rhot','polcor','aot']:#, 'rhos', 'rhot']:    
             col = str(data.columns[i][0]) + '(' + str(data.columns[i][1]) + ')'
         else:
             if data.columns[i][0] in ["meta"]:
@@ -192,10 +192,28 @@ def create_csv(global_config, insitu, path):
         columns.append(col)
     
     data.columns = columns
-    data = data.dropna()
+    #data = data.dropna()
     #data = data.drop_duplicates('ins_chl')
     data.to_csv(path.with_name(f'{path.name}.csv'), na_rep='nan', index=None)
     #data.to_csv(path.with_name(f'{path.name}.csv'), index=None)     
+
+def combine_matchups(global_config,path,atm_corrs):
+    atm_corr_matchups = {}
+    for atm_corr in atm_corrs:
+
+        atm_corr_path = path.joinpath(atm_corr,'Matchups.csv')
+        
+        #Load matchups CSV for each atm_corr
+        atm_corr_matchups[atm_corr] = pd.read_csv(atm_corr_path)
+
+    aquaverse_keys = [ key for key in atm_corr_matchups['aquaverse'].keys() if 'VZA' in key or 'uid' in key]  
+    
+    atm_corr_matchups['aquaverse'] = atm_corr_matchups['aquaverse'][[ key for key in atm_corr_matchups['aquaverse'].keys() if 'VZA' in key or 'uid' in key or 'VAA' in key] ]
+    merged_csv = atm_corr_matchups['l2gen'].set_index('uid').join(atm_corr_matchups['aquaverse'].set_index('uid'))
+    merged_csv.to_csv(path.joinpath(f'{path.name}').with_name('Merged_Matchups.csv'),na_rep='nan',index=None)
+    #Save combined excel file
+
+    
 
 def main():
     global_config = gc = get_args(validate=False)
@@ -220,6 +238,7 @@ def main():
                 if path.exists():
                     create_csv(global_config, insitu, path)
 
+    combine_matchups(global_config,global_config.output_path.joinpath(dataset, sensor),['l2gen','aquaverse'])
 
 if __name__ == '__main__':
     main()

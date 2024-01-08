@@ -8,13 +8,11 @@ username = getoutput('whoami')
 proc = "MSI"
 
 if proc == "OLI":
-	datasets = ['OLI_test_image_Damariscotta_1']
+	datasets = ['OLI_test_image']
 	sensors  = ['OLI'] # 'MOD','VI'
 
 if proc == "MSI":
-	datasets = ['MSI_test_image_chla_tss_matchups_subset']#['MSI_test_image_Honga_TS_1']
-
-
+	datasets = ['MSI_test_image_chla_tss_matchups'] # ['OLI_test_image_Honga_TS_1'] #['OLI_test_image_Honga_TS_1'] #['MSI_test_image_chla_tss_matchups_subset']#['MSI_test_image_Honga_TS_1']
 	sensors  = ['MSI']
 
 #===================================
@@ -38,6 +36,8 @@ scratch_path           = Path('/tis/m2cross/scratch/f003/roshea/matchup_pipeline
 insitu_path            = scratch_path.joinpath('Insitu') 
 output_path            = scratch_path.joinpath('Gathered')
 
+proj_path='/tis/m2cross/scratch/f004/roshea/Seadas_versions/Seadas_V2022_3/ocssw/opt/share/proj'
+os.environ['PROJ_LIB'] = proj_path
 #===================================
 #    Processing Parameters
 #===================================
@@ -54,7 +54,7 @@ timeseries_or_matchups = 'timeseries'
 scene_id               = '' # will only process scenes with this substring if set
 max_processing_scenes  = 40
 download_via_aquaverse = False
-
+filter_unprocessed_imagery = False
 #===================================
 # Atmospheric Correction Parameters
 #===================================
@@ -112,9 +112,9 @@ extra_cmd              = {}
     
 if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] or 'MSI' in sensors[0]: 
     overwrite              = False # what does it overwrite - everything - yes, even pikle file
-    ac_methods             = ['l2gen'] #'l2gen','acolite','polymer','aquaverse'
+    ac_methods             = ['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
     download_via_aquaverse = True
-    timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
+    timeseries_or_matchups = 'matchups' #'matchups' # matchups was not working - key error scene id
     remove_scene_folder    = True 
     remove_L1_tile         = True
     fix_projection_Rrs     = False
@@ -122,10 +122,20 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] or 'MSI'
     plot_Rrs               = False
     extract_window         = 1 #3x3
     apply_bounding_box     = True # what is this - process only a portion of the image
-    search_day_window      = 0#0 if timeseries_or_matchups == 'matchups' else 100# looks like it is searching for one day range
-    max_cloud_cover        = 20
+    search_day_window      = 0 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
+    max_cloud_cover        = 50
     aquaverse_prod_level   = 1
-    local_processing       = False  #deploy to SLURM nodes
+    local_processing       = True  #deploy to SLURM nodes
+    extra_cmd              = {'l2gen': {'OLI' : {'gain':[1.00,1.00,1.00,1.00,1.00,1.00,1.00],'filter_opt':0},
+                                        'MSI' : {'gain':[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],'filter_opt':0}}}
+    
+    filter_unprocessed_imagery = True
+    #extra_cmd.keys()
+    #extra_cmd['l2gen'].keys()
+                            # 'VI' : {'aer_opt' : '-2','aer_wave_short' : '868','aer_wave_long'  : '2258','l2prod' : [ 'Rrs_nnn', 'rhos_nnn','Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
+                         # 'MERIS' : {'aer_opt' : '-2','aer_wave_short' : '779','aer_wave_long'  :  '865','l2prod' : [ 'Rrs_nnn', 'rhos_nnn','Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
+
+                            # },
 #scene_id               = '014034_20210420'#'T18SUG' if 'MSI' in sensors[0] else '014034' if 'OLI' in sensors[0] else '' #'019031' '044033' 020031 #T18SUG
     #scene_id               = tiles[sensors[0]][datasets[0].split('_')[-1]]
 

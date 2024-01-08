@@ -151,6 +151,8 @@ def save_nc(inp_file,out_path,products,slices,overwrite,prefix='AQV'):
 
 
 def return_lat_lon_Aquaverse(path):
+    print("Geotif path:",path)
+    print("OSR Version Major",osr.GetPROJVersionMajor(),"Minor:",osr.GetPROJVersionMinor())
     gtif = gdal.Open(path)
     image = gtif.ReadAsArray()
     xoffset, px_w, rot1, yoffset, rot2, px_h  = list(gtif.GetGeoTransform())
@@ -167,7 +169,7 @@ def return_lat_lon_Aquaverse(path):
     height = len(image)
     rows = np.arange(0,height)
     cols = np.arange(0,width)
-    
+    print("rows_shape",np.shape(rows),"Cols shape:",np.shape(cols))
     #Get a grid of lat and long values
     getarray_coords = np.vectorize(array_coords(image_transform, xoffset, px_w, rot1, yoffset, rot2, px_h),otypes=[float,float])
     lat,lon = getarray_coords(rows[:,None],cols[None,:])

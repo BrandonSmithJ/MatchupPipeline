@@ -90,13 +90,14 @@ app.conf.task_queues = [
     # },
   # })
 #test_suffix = '_test' if global_config.test_pipeline_celery else ''
-  
+
+test = True
 cert_root = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/rabbitMQ/rabbitmq_server_files/TLS'
 if os.path.exists(cert_root):
   import ssl
   app.conf.update(**{
     #'broker_url'     :f'pyamqp://{username}:mp{username}@localhost:5671/matchups_{username}', # it works!!
-    'broker_url'     :f'pyamqp://{username}_test:mp{username}_test@pardees:5671/matchups_{username}_test', 
+    'broker_url'     :f'pyamqp://{username}_test:mp{username}_test@pardees:5671/matchups_{username}_test' if test else f'pyamqp://{username}:mp{username}@pardees:5671/matchups_{username}', 
     'broker_use_ssl' : {
       'keyfile'    : f'{cert_root}/server-key.pem',
       'certfile'   : f'{cert_root}/server-cert.pem',
