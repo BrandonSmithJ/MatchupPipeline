@@ -132,45 +132,54 @@ def extract_window(
         if 'geophysical_data' in data.groups.keys():
             data = data['geophysical_data']
         datavars = get_variables(data)
-        img_idxs = get_window(lat, lon, *latlons, window=window)
-        w_slices = slice(-window, window+1)
-        raw_idxs = np.mgrid[w_slices, w_slices].reshape((2, -1)).T
+        
+        vars_single_dict = {}
+        vars_double_dict = {}
+        vars_bands_dict  = {}
 
-        # Filter to only valid (in bound) pixels
-        raw_idxs = list( compress(raw_idxs, map(in_bound, img_idxs)) )
-        img_idxs = list( compress(img_idxs, map(in_bound, img_idxs)) )
-        extract  = lambda feature: [feature[tuple(i)] for i in img_idxs] 
-        w_coords = list( map(extract, latlons) )
+        for lat_i,lon_i in zip(list(lat),list(lon)):
+            lat_lon_str = '_'.join([str(lat_i),str(lon_i)])
+            img_idxs = get_window(lat_i, lon_i, *latlons, window=window)
+            w_slices = slice(-window, window+1)
+            raw_idxs = np.mgrid[w_slices, w_slices].reshape((2, -1)).T
 
-        # Location variables are stored both separately and together.
-        # They are stored together for compatibility purposes, and new
-        # code should use the single variable storage version.
-        pt_distance = lambda loc: meters_distance(tuple(loc), (lat, lon))
-        vars_bands  = {}
-        vars_single = {
-            'window_lat'  : w_coords[0],
-            'window_lon'  : w_coords[1],
-            'window_dist' : list(map(pt_distance, zip(*w_coords) )),
-            'window_idxs' : list(map(str, map(tuple, raw_idxs))),
-        }
-        vars_double = { 'loc' : list(zip(*[vars_single[f'window_{k}'] 
-                            for k in ['lat', 'lon', 'dist', 'idxs']])) }
+            # Filter to only valid (in bound) pixels
+            raw_idxs = list( compress(raw_idxs, map(in_bound, img_idxs)) )
+            img_idxs = list( compress(img_idxs, map(in_bound, img_idxs)) )
+            extract  = lambda feature: [feature[tuple(i)] for i in img_idxs] 
+            w_coords = list( map(extract, latlons) )
 
-        # Extract and store all remaining variables 
-        for key, values in datavars.items():
+            # Location variables are stored both separately and together.
+            # They are stored together for compatibility purposes, and new
+            # code should use the single variable storage version.
+            pt_distance = lambda loc: meters_distance(tuple(loc), (lat_i, lon_i))
+            vars_bands  = {}
+            vars_single = {
+                'window_lat'  : w_coords[0],
+                'window_lon'  : w_coords[1],
+                'window_dist' : list(map(pt_distance, zip(*w_coords) )),
+                'window_idxs' : list(map(str, map(tuple, raw_idxs))),
+            }
+            vars_double = { 'loc' : list(zip(*[vars_single[f'window_{k}'] 
+                                for k in ['lat', 'lon', 'dist', 'idxs']])) }
 
-            # Multi-key variable
-            if type(values) is list:
-                names, vars_bands[f'{key}_bands'] = zip(*values)
-                feature_window   = [extract(data[n][:]) for n in names]
-                vars_double[key] = list(zip(*feature_window))
+            # Extract and store all remaining variables 
+            for key, values in datavars.items():
 
-            # Single key variable
-            else:
-                if data[key].shape != shape: 
-                    continue
-                vars_single[key] = extract(data[key][:])
-                if data[key].ndim == 3:
-                    vars_single[key] = list(map(list, vars_single[key]))
+                # Multi-key variable
+                if type(values) is list:
+                    names, vars_bands[f'{key}_bands'] = zip(*values)
+                    feature_window   = [extract(data[n][:]) for n in names]
+                    vars_double[key] = list(zip(*feature_window))
 
-    return vars_bands, vars_single, vars_double
+                # Single key variable
+                else:
+                    if data[key].shape != shape: 
+                        continue
+                    vars_single[key] = extract(data[key][:])
+                    if data[key].ndim == 3:
+                        vars_single[key] = list(map(list, vars_single[key]))
+            vars_single_dict[lat_lon_str] = vars_single
+            vars_double_dict[lat_lon_str] = vars_double
+            vars_bands_dict[lat_lon_str]  = vars_bands 
+    return vars_bands_dict, vars_single_dict, vars_double_dict

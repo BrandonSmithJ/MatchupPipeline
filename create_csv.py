@@ -162,8 +162,11 @@ def create_csv(global_config, insitu, path):
     #data  = data.drop_duplicates(('meta','uid'))
     data.to_csv(path.with_name(f'{path.name}_01.csv'), index=None)
     
-    data  = data.set_index(('meta', 'uid'))
-    data.index.name = 'uid'
+    insitu = insitu.set_index('scene_id')
+    insitu = insitu.add_prefix('insitu_')
+    data   = data.set_index(data['meta']['scene_id'])
+    #data  = data.set_index(('meta', 'uid'))
+    #data.index.name = 'uid'
     #print(data.index)
     #print(data.loc[:,'uid'])
     #breakpoint()
@@ -174,8 +177,10 @@ def create_csv(global_config, insitu, path):
     data.to_csv(path.with_name(f'{path.name}_2.csv'), index=None)
     
     #insitu.iloc[0,:] = insitu.columns
-    
-    data  = insitu.join(data, how='right', lsuffix='insitu_').reset_index()
+    #data   = data.set_index(data['meta']['scene_id'])
+    #insitu = insitu.set_index('scene_id')
+    #insitu = insitu.add_prefix('insitu_')
+    data   = insitu.join(data, how='right', lsuffix='insitu_').reset_index()
     #data  = insitu.join(data.set_index('uid'), on='uid',how='right').reset_index()
     print(data.head())
     data.to_csv(path.with_name(f'{path.name}_3.csv'), index=None)
@@ -193,7 +198,8 @@ def create_csv(global_config, insitu, path):
     
     data.columns = columns
     #data = data.dropna()
-    #data = data.drop_duplicates('ins_chl')
+    if global_config.timeseries_or_matchups == 'matchups': data = data.drop_duplicates('uid')
+    if global_config.timeseries_or_matchups == 'matchups': data = data.drop_duplicates('scene_id')
     data.to_csv(path.with_name(f'{path.name}.csv'), na_rep='nan', index=None)
     #data.to_csv(path.with_name(f'{path.name}.csv'), index=None)     
 
@@ -210,6 +216,8 @@ def combine_matchups(global_config,path,atm_corrs):
     
     atm_corr_matchups['aquaverse'] = atm_corr_matchups['aquaverse'][[ key for key in atm_corr_matchups['aquaverse'].keys() if 'VZA' in key or 'uid' in key or 'VAA' in key] ]
     merged_csv = atm_corr_matchups['l2gen'].set_index('uid').join(atm_corr_matchups['aquaverse'].set_index('uid'))
+    merged_csv['uid'] = merged_csv.index
+    merged_csv.drop_duplicates('uid')
     merged_csv.to_csv(path.joinpath(f'{path.name}').with_name('Merged_Matchups.csv'),na_rep='nan',index=None)
     #Save combined excel file
 
@@ -238,7 +246,7 @@ def main():
                 if path.exists():
                     create_csv(global_config, insitu, path)
 
-    combine_matchups(global_config,global_config.output_path.joinpath(dataset, sensor),['l2gen','aquaverse'])
+    #combine_matchups(global_config,global_config.output_path.joinpath(dataset, sensor),['l2gen','aquaverse'])
 
 if __name__ == '__main__':
     main()

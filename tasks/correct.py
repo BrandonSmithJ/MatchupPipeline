@@ -2,6 +2,8 @@ from ..AC.L2_processing import AC_FUNCTIONS
 from .. import app
 from argparse import Namespace
 from ..utils.convert_tif_nc import convert_tif_nc
+from ..utils import Location
+import numpy as np
 
 @app.task(bind=True, name='correct', queue='correct', priority=2, max_retries=0)
 def correct(self,
@@ -14,8 +16,15 @@ def correct(self,
              if sample_config['scene_path'].exists() else 
                 sample_config['scene_path'].parent)
     out_path = (inp_path if inp_path.is_dir() else 
-                inp_path.parent).joinpath('out', sample_config['uid'])
+                inp_path.parent).joinpath('out', sample_config['uid_str'])
     out_path.mkdir(exist_ok=True, parents=True)
+
+    if type(sample_config['location']) == list:
+        location_max = np.amax([i.get_bbox() for i in sample_config['location']] , axis=0)
+        location_min = np.amin([i.get_bbox() for i in sample_config['location']] , axis=0)
+        bounding_location = Location(n=location_max[0],s=location_min[1],e=location_max[2],w=location_min[3]) 
+        sample_config['location'] = bounding_location
+
 
     kwargs = {
         'sensor'    : sample_config['sensor'],

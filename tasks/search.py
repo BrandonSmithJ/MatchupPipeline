@@ -16,7 +16,7 @@ def search(self,
     out_path = global_config.output_path.joinpath('Scenes', sensor)
 
     api    = API.API[sensor]()
-    scenes = api.search_scenes(sensor, location, dt_range,**{'max_cloud_cover': global_config.max_cloud_cover})
+    scenes = api.search_scenes(sensor, location, dt_range,**{'max_cloud_cover': global_config.max_cloud_cover,'tileID': global_config.scene_id})
     total_kwargs = []
     if len(scenes):
         for scene in list(scenes.keys()):

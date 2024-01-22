@@ -101,7 +101,12 @@ def run_acolite(
 
     # Setup paths
     inp_file = Path(inp_file).absolute()
-    if sensor in ['MSI']: inp_file = Path(inp_file).joinpath(str(inp_file.stem) + '.SAFE')
+    if sensor in ['MSI']: 
+        inp_file = Path(inp_file).joinpath(str(inp_file.stem) + '.SAFE')
+        if not inp_file.exists():
+            inp_file = inp_file.parent
+            inp_file = [i for i in inp_file.glob('*S2*')][0]
+
     out_file = Path(out_dir).absolute().joinpath('acolite.nc')
     
     # Only run if output doesn't yet exist, or we want to overwrite

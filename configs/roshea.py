@@ -8,11 +8,11 @@ username = getoutput('whoami')
 proc = "MSI"
 
 if proc == "OLI":
-	datasets = ['OLI_test_image']
+	datasets = ['OLI_MSI_matchups_CB_SF'] # _Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF']# ['OLI_test_image_Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF'] #OLI_MSI_matchups_Lake_Erie
 	sensors  = ['OLI'] # 'MOD','VI'
 
 if proc == "MSI":
-	datasets = ['MSI_test_image_chla_tss_matchups'] # ['OLI_test_image_Honga_TS_1'] #['OLI_test_image_Honga_TS_1'] #['MSI_test_image_chla_tss_matchups_subset']#['MSI_test_image_Honga_TS_1']
+	datasets = ['OLI_test_image_Oyster_farm'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['OLI_test_image_Honga_TS_1'] #['OLI_test_image_Honga_TS_1'] #['MSI_test_image_chla_tss_matchups_subset']#['MSI_test_image_Honga_TS_1']
 	sensors  = ['MSI']
 
 #===================================
@@ -23,8 +23,8 @@ tiles = {'OLI' : {'IRL' : '016040', 'GB': '024029','CB':'014034'},
 
 # AC processors' paths 
 l2gen_path             = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/matchup_deployment_SLURM/atm_corr/ac_processors/SeaDAS/SeaDAS_V2022_3/ocssw'
-acolite_path           = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/matchup_deployment_SLURM/atm_corr/ac_processors/acolite/acolite-20221114.0/acolite' 
-polymer_path           = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/matchup_deployment_SLURM/atm_corr/ac_processors/polymer/polymer-v4.16.1/polymer'
+acolite_path           = '/tis/m2cross/scratch/f003/roshea/atm_corr/acolite/source_code/acolite-20231023.0/acolite' #'/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/matchup_deployment_SLURM/atm_corr/ac_processors/acolite/acolite-20221114.0/acolite' 
+polymer_path           = '/run/cephfs/m2cross_scratch/f003/roshea/atm_corr/polymer-v4.17beta2/polymer'
 
 aquaverse_path         = str(Path(__file__).resolve().parent.parent.joinpath('AC').joinpath('L2_processing').joinpath('aquaverse'))
 
@@ -46,6 +46,7 @@ test_pipeline_celery   = False
 #===================================
 #    Data Search Parameters
 #===================================  
+
 max_cloud_cover        = 100 #Max cloud cover for downloading/processing. Only works for Sentinel 2 and OLI
 search_day_window      = None
 search_minute_window   = None
@@ -58,7 +59,7 @@ filter_unprocessed_imagery = False
 #===================================
 # Atmospheric Correction Parameters
 #===================================
-ac_timeout             = 120 # number of minutes an AC processor can run before being terminated
+ac_timeout             = 60 # number of minutes an AC processor can run before being terminated
 ac_methods             = ['l2gen'] # Atmospheric Correction methods to apply
 apply_bounding_box     = True
 aquaverse_prod_level   = 3
@@ -110,12 +111,54 @@ extra_cmd              = {}
                   # 'polymer': {},}
     # timeseries_or_matchups = 'matchups'
     
-if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] or 'MSI' in sensors[0]: 
+if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0]: 
     overwrite              = False # what does it overwrite - everything - yes, even pikle file
-    ac_methods             = ['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
+    ac_methods             =['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
     download_via_aquaverse = True
-    timeseries_or_matchups = 'matchups' #'matchups' # matchups was not working - key error scene id
-    remove_scene_folder    = True 
+    timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
+    remove_scene_folder    = True
+    remove_L1_tile         = True
+    fix_projection_Rrs     = False
+    plot_products          = False # for which AC processor it works
+    plot_Rrs               = False
+    extract_window         = 1 #3x3
+    apply_bounding_box     = True # what is this - process only a portion of the image
+    search_day_window      = 3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
+    max_cloud_cover        = 20
+    aquaverse_prod_level   = 3
+    local_processing       = True  #deploy to SLURM nodes
+    #extra_cmd              = {'l2gen': {'OLI' : {'gain':[1.00,1.00,1.00,1.00,1.00,1.00,1.00],'filter_opt':0},
+    #                                    'MSI' : {'gain':[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],'filter_opt':0}}}
+    
+    filter_unprocessed_imagery = False
+    #scene_id = '17SQC'
+    #scene_id = "19TCH"#"LC09_L1TP_012030_20220722_20230406_02_T1"
+    #extra_cmd.keys()
+
+
+if 'OLI_MSI_matchups' in datasets[0]:
+    overwrite              = True # what does it overwrite - everything - yes, even pikle file
+    ac_methods             = ['aquaverse','l2gen','polymer','acolite'] #'l2gen','acolite','polymer','aquaverse'
+    download_via_aquaverse = True
+    timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
+    remove_scene_folder    = False
+    remove_L1_tile         = False
+    fix_projection_Rrs     = False
+    plot_products          = False
+    plot_Rrs               = False
+    extract_window         = 1 #3x3
+    apply_bounding_box     = False # what is this - process only a portion of the image
+    search_day_window      = 0 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
+    max_cloud_cover        = 20
+    aquaverse_prod_level   = 3
+    local_processing       = True  #deploy to SLURM nodes
+
+if  'OLI_test_image_Oyster_farm' in datasets[0] or 'OLI_20210706' in datasets[0]:
+    overwrite              = False # what does it overwrite - everything - yes, even pikle file
+    ac_methods             =['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
+    download_via_aquaverse = True
+    timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
+    remove_scene_folder    = True
     remove_L1_tile         = True
     fix_projection_Rrs     = False
     plot_products          = False # for which AC processor it works
@@ -123,21 +166,18 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] or 'MSI'
     extract_window         = 1 #3x3
     apply_bounding_box     = True # what is this - process only a portion of the image
     search_day_window      = 0 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
-    max_cloud_cover        = 50
-    aquaverse_prod_level   = 1
+    max_cloud_cover        = 20
+    aquaverse_prod_level   = 3
     local_processing       = True  #deploy to SLURM nodes
-    extra_cmd              = {'l2gen': {'OLI' : {'gain':[1.00,1.00,1.00,1.00,1.00,1.00,1.00],'filter_opt':0},
-                                        'MSI' : {'gain':[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],'filter_opt':0}}}
-    
-    filter_unprocessed_imagery = True
-    #extra_cmd.keys()
-    #extra_cmd['l2gen'].keys()
-                            # 'VI' : {'aer_opt' : '-2','aer_wave_short' : '868','aer_wave_long'  : '2258','l2prod' : [ 'Rrs_nnn', 'rhos_nnn','Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
-                         # 'MERIS' : {'aer_opt' : '-2','aer_wave_short' : '779','aer_wave_long'  :  '865','l2prod' : [ 'Rrs_nnn', 'rhos_nnn','Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
+    #extra_cmd              = {'l2gen': {'OLI' : {'gain':[1.00,1.00,1.00,1.00,1.00,1.00,1.00],'filter_opt':0},
+    #                                    'MSI' : {'gain':[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],'filter_opt':0}}}
 
-                            # },
-#scene_id               = '014034_20210420'#'T18SUG' if 'MSI' in sensors[0] else '014034' if 'OLI' in sensors[0] else '' #'019031' '044033' 020031 #T18SUG
-    #scene_id               = tiles[sensors[0]][datasets[0].split('_')[-1]]
+    filter_unprocessed_imagery = False
+    #scene_id = '17SQC'
+    scene_id = "19TCH"#"LC09_L1TP_012030_20220722_20230406_02_T1"
+    #extra_cmd.keys()
+
+
 
 #Checks
 if 'ctest' in datasets[0]:

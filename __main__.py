@@ -105,13 +105,40 @@ def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
             pd.concat(current_dataset).to_pickle(dataset_path)
             datasets.append(current_dataset)
             datasets = [dataframe for sub_dataset in datasets for dataframe in sub_dataset]
-            return pd.concat(datasets)
+            #return pd.concat(datasets)
  
         if global_config.timeseries_or_matchups == 'matchups':
              datasets.append(data)
              
+    if dataset_path.exists() and global_config.timeseries_or_matchups == 'timeseries':
+        datasets = []
+        current_dataset=pd.read_pickle(dataset_path)
+        current_dataset = [rows.to_frame().swapaxes("index","columns") for index, rows in current_dataset.iterrows()]
+        datasets.append(current_dataset)
+ 
+    def set_func(inp):
+        unique_values = set(inp)
+        if len(unique_values) == 1:
+            unique_values = list(unique_values)[0]
+        else:
+            assert(0)
+        return unique_values
+
+    datasets_grouped = {}
+    for key in [ i for i in pd.concat(datasets[0]).keys().to_list() if i != 'scene_id']: 
+        datasets_grouped[key]      = pd.concat(datasets[0]).groupby('scene_id')[key].apply(list).reset_index(name=key)
+        if key in ['uid','sensor',  'scene_details', 'scene_folder', 'overwrite', 'datetime', 'Provider', 'date', 'dataset']:
+            datasets_grouped[key][key] = datasets_grouped[key][key].map(set_func)
+   
+    datasets_grouped_out = datasets_grouped['sensor'].set_index('scene_id')
+    
+    for key in [i for i in datasets_grouped.keys() if i !='sensor']: 
+        datasets_grouped_out       = datasets_grouped_out.join(datasets_grouped[key].set_index('scene_id'))
+   
+    datasets_grouped_out['scene_id'] = datasets_grouped_out.index
+    
     if global_config.timeseries_or_matchups == 'matchups': return pd.concat(datasets)
-    if global_config.timeseries_or_matchups == 'timeseries' and dataset_path.exists() and not global_config.overwrite: return pd.concat(datasets[0])
+    if global_config.timeseries_or_matchups == 'timeseries' and dataset_path.exists(): return datasets_grouped_out #pd.concat(datasets[0])
 
 
 def filter_completed(
@@ -174,15 +201,21 @@ def filter_completed(
     print(f'   Currently completed: {done_count}')
     print(f'  Remaining to process: {left_count}\n')
 
+
+    def uid_str(inp):
+        return '-'.join([i if j == 0 else i.split('_')[-1] for j,i in enumerate(sorted(inp)) ])
+
+    data['uid_str'] = data['uid'].map(uid_str) if type( data['uid'][0]) is list else data['uid']
     if global_config.timeseries_or_matchups !='matchups':
-        data['complete_id'] = data['uid']+'-'+data['scene_id']
+        data['complete_id'] = data['uid_str']+'-'+data['scene_id']
     else:
-        data['complete_id'] = data['uid']
+        data['complete_id'] = data['uid_str']
     
     # Processes only files successfully processed by another program
     if global_config.filter_unprocessed_imagery:
         meta_files = get_exists('meta.csv', datasets, sensors,['aquaverse'],['Matchups'])
         meta_uids = read_files(meta_files, index_col=None, header=0, delimiter="|")[0]['uid'].values
+        complete = [completed.split('-')[0] for completed in complete]
         return data.loc[data['uid'].isin(meta_uids)*~data['complete_id'].isin(complete)]
     
 
@@ -220,17 +253,17 @@ def main2(gc, data, i, debug=True):
             'slurm_kwargs': {'partition' : 'ubuntu20'},
         },
         # Multiple threads for correction
-        #{   'logname'     : f'{username}/worker2{i}',
-        #    'queues'      : ['correct'],
-        #    'concurrency' : 2, #
-        #    'slurm_kwargs': {'partition' : 'ubuntu20'},
-        #},
+        {   'logname'     : f'{username}/worker2{i}',
+            'queues'      : ['correct'],
+            'concurrency' : 2, #
+            'slurm_kwargs': {'partition' : 'ubuntu20'},
+        },
         # Single dedicated thread (i.e. for writing)
-        #{   'logname'     : f'{username}/worker3{i}',
-        #    'queues'      : ['write'],
-        #    'concurrency' : 2,
-        #    'slurm_kwargs': {'partition' : 'ubuntu20'},
-        #},
+        {   'logname'     : f'{username}/worker3{i}',
+            'queues'      : ['write'],
+            'concurrency' : 2,
+            'slurm_kwargs': {'partition' : 'ubuntu20'},
+        },
     ]
     pipeline = create_extraction_pipeline(gc)
     with CeleryManager(worker_kws, data, gc.ac_methods) as manager:

@@ -10,7 +10,8 @@ from sentinelsat import SentinelAPI
 import requests
 #https://documentation.dataspace.copernicus.eu/APIs/OpenSearch.html
 #XML description: https://catalogue.dataspace.copernicus.eu/resto/api/collections/Sentinel2/describe.xml
-def get_scenes_from_query(satellite,start,end,min_cloud_cover=0,max_cloud_cover=100,max_records=2000,bbox="-21,23,-24,15"):
+def get_scenes_from_query(satellite,start,end,min_cloud_cover=0,max_cloud_cover=100,max_records=2000,bbox="-21,23,-24,15",tileID=""):
+        if int(start[0:4])<2018: start = '2018-01-01'
         print(f"Querying Copernicus for {bbox} {start} {end}")
 
         #bbox     = location.get_footprint(as_string=True),
@@ -22,6 +23,8 @@ def get_scenes_from_query(satellite,start,end,min_cloud_cover=0,max_cloud_cover=
         f"&maxRecords={max_records}&"+\
         f"processingLevel=S2MSI1C&"+\
         f"box={bbox}"
+
+        if tileID != "": alternate_url = alternate_url + f"&tileId={tileID}"
 
         url = alternate_url
         #print(url)
@@ -75,6 +78,7 @@ class Copernicus(BaseSource, SentinelAPI):
         dt_range        : DatetimeRange,  # Object representing start & end datetime to search between
         limit           : int = 2000,       # Max number of results returned
         max_cloud_cover : int = 100,      # Max cloud cover in percent (1-100)
+        tileID          : str = None,
         **kwargs,                         # Any other keyword arguments
     ) -> dict:                            # Return a dictionary of found scenes: {scene_id: scene_detail_dict}
         """ 
@@ -88,7 +92,7 @@ class Copernicus(BaseSource, SentinelAPI):
         # Avoid unnecessary search; skip dates prior to first data for sensor
         if not self.dates_available(sensor, dt_range): return {}
 
-        scenes = get_scenes_from_query("MSI",start=dt_range.strftime(fmt="%Y-%m-%d")[0],end=dt_range.strftime(fmt="%Y-%m-%d")[1],min_cloud_cover=0,max_cloud_cover=100,max_records=2000,bbox=','.join([str(i) for i in location.get_bbox(order='wsen')]))
+        scenes = get_scenes_from_query("MSI",start=dt_range.strftime(fmt="%Y-%m-%d")[0],end=dt_range.strftime(fmt="%Y-%m-%d")[1],min_cloud_cover=0,max_cloud_cover=100,max_records=2000,bbox=','.join([str(i) for i in location.get_bbox(order='wsen')]),tileID=tileID)
         #config = {
         #    'platformname' : self.valid_sensors[sensor],
         #    'date'         : dt_range.ensure_unique().strftime(),

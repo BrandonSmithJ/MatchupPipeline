@@ -58,9 +58,16 @@ def write(self,
         with out_path.joinpath('meta.csv').open('a+') as f:
             f.write(f'{serialize(metadata_keys)}\n')
 
+    for lat_i,lon_i,uid_i in zip(sample_config['lat'],sample_config['lon'],sample_config['uid']):
+        lat_lon = '_'.join([str(lat_i),str(lon_i)])
+        to_write[lat_lon] = {}
+        to_write[lat_lon]['meta'] = serialize([uid_i,sample_config['datetime'],lat_i,lon_i,sample_config['scene_id']])
+
+
     for feature_dict in sample_config['extracted']:
-        for feature, values in feature_dict.items():
-            to_write[feature] = serialize(values)
+        for lat_lon in feature_dict.keys():
+            for feature, values in feature_dict[lat_lon].items():
+                to_write[lat_lon][feature] = serialize(values)
 
                 # with zarr.open(store=store, mode=mode) as group:
                 # 	group[feature].append(np.array(values))
@@ -68,9 +75,15 @@ def write(self,
                 # 	data.append(np.array(values))
 
 
-    for feature, values in to_write.items():
-        with out_path.joinpath(f'{feature}.csv').open('a+') as f:
-            f.write(f'{values}\n')
+    for ll_feature, ll_values  in to_write.items():
+        if ll_feature == 'meta':
+            continue
+            #with out_path.joinpath(f'{ll_feature}.csv').open('a+') as f:
+            #    f.write(f'{ll_values}\n')
+        else:
+            for feature, values in to_write[ll_feature].items(): 
+                with out_path.joinpath(f'{feature}.csv').open('a+') as f:
+                    f.write(f'{values}\n')
 
     try: 
         if global_config.remove_L2_tile: sample_config['correction_path'].unlink()
