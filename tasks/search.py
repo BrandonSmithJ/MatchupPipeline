@@ -163,7 +163,11 @@ def download(self,
             if 'OLI' == sample_config['sensor']:
                 compress(tis_output_path, kwargs['scene_path'],directory_or_contents='contents')
             if 'MSI' == sample_config['sensor']:
-                compress(tis_output_path,kwargs['scene_path'].joinpath(kwargs['scene_id']+'.SAFE'),directory_or_contents='directory')
+                compress_path = kwargs['scene_path'].joinpath(kwargs['scene_id']+'.SAFE')
+                if not compress_path.exists():
+                    compress_path = compress_path.parent
+                    compress_path = [i for i in compress_path.glob('*S2*')][0]
+                compress(tis_output_path,compress_path,directory_or_contents='directory')
             #update database
             from ..utils.insert_satellite_data import insert_satellite_data
             insert_satellite_data(sample_config['scene_id'])

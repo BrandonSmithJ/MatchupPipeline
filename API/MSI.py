@@ -18,6 +18,6 @@ class MSI(BaseAPI):
     downloaded on Pardees.
     """
     search_sources   = ['Copernicus'] #Planet
-    download_sources = ['Google']
+    download_sources = ['Google','Copernicus']
 
 

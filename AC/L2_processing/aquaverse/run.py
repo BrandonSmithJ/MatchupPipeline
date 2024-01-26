@@ -5,6 +5,11 @@ import tempfile, sys
 import shutil
 from typing import Union, Optional
 import os
+import subprocess
+from subprocess import Popen, PIPE, check_output, STDOUT
+from pathlib import Path
+import os
+import psycopg2
 
 try: 
     from ....utils import Location, assert_contains
@@ -103,12 +108,54 @@ def run_aquaverse_ancillary(sensor,scene_id, AQV_location,timeout=600,stream_bac
     # month = scene_id.split('_')[2].split('T')[0][4:6]
     AQV_pull_tar = str(AQV_location)+'/ancillary_AQV'
     len_available_ancillary_files = check_ancillary_present(date_out_start)
-    #if len_available_ancillary_files > 2:
-    print(AQV_pull_tar,date_out_start,date_out_end)
-    running_procs = Popen([AQV_pull_tar, str(stream_backend_path), str(stream_env_path), str(date_out_start), str(date_out_end) ], stdout=PIPE, stderr=PIPE)
-    run_subprocess(running_procs,timeout=timeout)   
+    if len_available_ancillary_files < 2:
+        print(AQV_pull_tar,date_out_start,date_out_end)
+        running_procs = Popen([AQV_pull_tar, str(stream_backend_path), str(stream_env_path), str(date_out_start), str(date_out_end) ], stdout=PIPE, stderr=PIPE)
+        run_subprocess(running_procs,timeout=timeout)   
 
+def check_job_id(out,timeout,output_path,job_id_list,AQV_error_path,stream_backend):
+    import time
+    start           = time.time()
+    file_not_found  = True
+    job_id          = str(out[0]).split('job ')[1].split('\\n')[0]
+    job_id_list.append(job_id)
+    time_difference = time.time() - start
+    while time_difference < timeout and file_not_found:
+        if os.path.exists(output_path):
+            file_not_found = False
+            print(output_path, "found after",time_difference)
+            return
+        else:
+            slurm_cmd      = f"sacct -u roshea -j {job_id} -p -b --format state"
+            proc           = subprocess.Popen(slurm_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,shell=True)
+            output, error  = proc.communicate()
+            status         = str(output).split('\\n')[1].split('|')[0]
 
+            print(output_path, "NOT found after",time_difference)
+            print("Status is:",status)
+            if status in ['FAILED','TIMEOUT']:
+                slurm_cmd      = f"{stream_backend}/get_logs.sh {job_id}"
+                proc           = subprocess.Popen(slurm_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,shell=True)
+                output, error  = proc.communicate()
+
+                accounting = "=======Accounting======="
+                error_code_str = ""
+
+                error_code_list = []
+                for num, line in enumerate(str(output).split('\\n'),1):
+                    error_code_list.append(line)
+                    if accounting in line:
+                        error_code_str = error_code_list[num-2]
+                        print("Error code is:", error_code_str)
+
+                print("Process failed to complete with status:", status, 'and job ids:',job_id_list)
+                with open(AQV_error_path+"/AQV_errors.txt","a") as f:
+                    f.write(','.join(job_id_list) + ', ' + status + ', ' + output_path.split('/')[-1] + ', ' + error_code_str  +'\n')
+                assert(0) #file_not_found = False
+
+            time.sleep(30)
+        time_difference = time.time() - start
+    print("Failed to find output")
     
 
 def run_aquaverse_rayleigh(scene_id, AQV_location,timeout=3600,stream_backend_path='/tis/m2cross/scratch/f002/wwainwr1/stream/backend', stream_env_path='/tis/m2cross/scratch/f002/wwainwr1/venv/bin/activate', stream_output_path = '/tis/stream/data/',overwrite=False):
@@ -122,25 +169,10 @@ def run_aquaverse_rayleigh(scene_id, AQV_location,timeout=3600,stream_backend_pa
         os.remove(Path(rayleigh_output_path))
     
     if not os.path.exists(rayleigh_output_path) or overwrite:
-        running_procs = Popen([AQV_pull_tar, str(stream_backend_path), str(stream_env_path), str(scene_id) ], stdout=PIPE, stderr=PIPE)
-        run_subprocess(running_procs,timeout=timeout)
-    #Check for file and hold until complete
-    import time
-    start = time.time()
-    file_not_found=True
-    time_difference = time.time() - start 
-    while time_difference < timeout and file_not_found:
-        if os.path.exists(rayleigh_output_path):
-            file_not_found = False
-            print(rayleigh_output_path, "found after",time_difference)
-            return
-        else:
-            print(rayleigh_output_path, "NOT found after",time_difference)
-            time.sleep(30)
-        time_difference = time.time() - start 
-    print("Failed to find output")
-            
-        
+        running_procs  = Popen([AQV_pull_tar, str(stream_backend_path), str(stream_env_path), str(scene_id) ], stdout=PIPE, stderr=PIPE)
+        process_output = run_subprocess(running_procs,timeout=timeout)
+    
+        check_job_id(process_output,timeout,rayleigh_output_path)
     
 def run_aquaverse_MDN_AC(scene_id, AQV_location,timeout=3600,stream_backend_path='/tis/m2cross/scratch/f002/wwainwr1/stream/backend', stream_env_path='/tis/m2cross/scratch/f002/wwainwr1/venv/bin/activate', stream_output_path = '/tis/stream/data/',overwrite=False):
     from subprocess import Popen, PIPE, check_output, STDOUT
@@ -154,25 +186,10 @@ def run_aquaverse_MDN_AC(scene_id, AQV_location,timeout=3600,stream_backend_path
         os.remove(Path(rrs_output_path))
         
     if not os.path.exists(rrs_output_path) or overwrite:
-        running_procs = Popen([AQV_pull_tar, str(stream_backend_path), str(stream_env_path), str(scene_id) ], stdout=PIPE, stderr=PIPE)
-        run_subprocess(running_procs,timeout=timeout)
-    #Waits for MDN-AC corrected data to become available
-    #Check for file and hold until complete
-    import time
-    start = time.time()
-    file_not_found=True
-    time_difference = time.time() - start 
-    while time_difference < timeout and file_not_found:
-        if os.path.exists(rrs_output_path):
-            file_not_found = False
-            print(rrs_output_path, "found after", time_difference)
-            return
-        else:
-            
-            print(rrs_output_path, "NOT found after", time_difference)
-            time.sleep(30)
-        time_difference = time.time() - start 
-    print("Failed to find output")
+        running_procs  = Popen([AQV_pull_tar, str(stream_backend_path), str(stream_env_path), str(scene_id) ], stdout=PIPE, stderr=PIPE)
+        process_output = run_subprocess(running_procs,timeout=timeout)
+    
+        check_job_id(process_output,timeout,rrs_output_path)
             
 def run_aquaverse_MDN_downstream_products(scene_id, AQV_location,timeout=3600,stream_backend_path='/tis/m2cross/scratch/f002/wwainwr1/stream/backend', stream_env_path='/tis/m2cross/scratch/f002/wwainwr1/venv/bin/activate', stream_output_path = '/tis/stream/data/',overwrite=False):
     from subprocess import Popen, PIPE, check_output, STDOUT
@@ -186,25 +203,36 @@ def run_aquaverse_MDN_downstream_products(scene_id, AQV_location,timeout=3600,st
         os.remove(Path(rrs_output_path))
 
     if not os.path.exists(rrs_output_path) or overwrite:
-        running_procs = Popen([AQV_product_generation, str(stream_backend_path), str(stream_env_path), str(scene_id) ], stdout=PIPE, stderr=PIPE)
-        run_subprocess(running_procs,timeout=timeout)
-    #Waits for MDN-AC corrected data to become available
-    #Check for file and hold until complete
-    import time
-    start = time.time()
-    file_not_found=True
-    time_difference = time.time() - start
-    while time_difference < timeout and file_not_found:
-        if os.path.exists(rrs_output_path):
-            file_not_found = False
-            print(rrs_output_path, "found after", time_difference)
-            return
-        else:
+        running_procs  = Popen([AQV_product_generation, str(stream_backend_path), str(stream_env_path), str(scene_id) ], stdout=PIPE, stderr=PIPE)
+        process_output = run_subprocess(running_procs,timeout=timeout)
+    
+        check_job_id(process_output,timeout,rrs_output_path)
 
-            print(rrs_output_path, "NOT found after", time_difference)
-            time.sleep(30)
-        time_difference = time.time() - start
-    print("Failed to find output")
+def run_aquaverse_switch(scene_id, AQV_location,timeout=3600,stream_backend_path='/tis/m2cross/scratch/f002/wwainwr1/stream/backend', stream_env_path='/tis/m2cross/scratch/f002/wwainwr1/venv/bin/activate', stream_output_path = '/tis/stream/data/',overwrite=False,product_selector="rayleigh",job_id_list=[],AQV_error_path='/tis/m2cross/scratch/f003/roshea/matchup_pipeline_dev_test/pipeline/Logs/'):
+    
+    if product_selector == "rayleigh":
+        product_generation = str(AQV_location)  + '/rayleigh_correct_AQV'
+        output_path        = stream_output_path + f'{scene_id}_rayleigh_processed.tar.gz'
+
+    if product_selector == "Rrs":
+        product_generation = str(AQV_location)  + '/MDN_AC_AQV'
+        output_path        = stream_output_path + f'{scene_id}_rrs.tar.gz'
+        
+    if product_selector == "downstream": 
+        product_generation = str(AQV_location)  + '/downstream_product_generation_AQV'
+        output_path        = stream_output_path + f'{scene_id}_Chla_AQV202310.TIF'
+
+    print("Running ", product_selector, product_generation, output_path) 
+
+    if overwrite and os.path.exists(output_path):
+        print("Removing:",output_path)
+        os.remove(Path(output_path))
+
+    if not os.path.exists(output_path) or overwrite:
+        running_procs  = Popen([product_generation, str(stream_backend_path), str(stream_env_path), str(scene_id) ], stdout=PIPE, stderr=PIPE)
+        process_output = run_subprocess(running_procs,timeout=timeout)
+
+        check_job_id(process_output,timeout,output_path,job_id_list,AQV_error_path,stream_backend_path)
 
 
 
@@ -271,7 +299,12 @@ def run_aquaverse(
 
     # Setup paths
     inp_file = Path(inp_file).absolute()
-    if sensor in ['MSI']: inp_file = Path(inp_file).joinpath(str(inp_file.stem) + '.SAFE')
+    if sensor in ['MSI']: 
+        inp_file = Path(inp_file).joinpath(str(inp_file.stem) + '.SAFE')
+        if not inp_file.exists():
+            inp_file = inp_file.parent
+            inp_file = [i for i in inp_file.glob('*S2*')][0]
+
     out_file = Path(out_dir).absolute().joinpath('aquaverse.TIF')
     outputs = list(out_file.parent.glob('*RRS*nm.TIF'))
     # Only run if output doesn't yet exist, or we want to overwrite
@@ -296,20 +329,23 @@ def run_aquaverse(
         print("Running Aquaverse Rayleigh ancillary data...")
         run_aquaverse_ancillary(sensor,scene_id, ac_path,timeout=timeout*60)
         print("Running Aquaverse Rayleigh correction...")
-        
+        job_id_list = []
+
         if prod_level>0: 
             print("Running Aquaverse Rayleigh correction...")
-            run_aquaverse_rayleigh(scene_id, ac_path,timeout=timeout*60,overwrite = overwrite)
-        
+            #run_aquaverse_rayleigh(scene_id, ac_path,timeout=timeout*60,overwrite = overwrite, job_id_list=job_id_list)
+            run_aquaverse_switch(scene_id, ac_path,timeout=timeout*60,overwrite = overwrite, job_id_list=job_id_list,product_selector='rayleigh')
         if prod_level>1:
             print("Running Aquaverse Rrs correction...")
             # Run aquaverse correction
-            run_aquaverse_MDN_AC(scene_id, ac_path,timeout=timeout*60,overwrite = overwrite)
-        
+            #run_aquaverse_MDN_AC(scene_id, ac_path,timeout=timeout*60,overwrite = overwrite, job_id_list=job_id_list)
+            run_aquaverse_switch(scene_id, ac_path,timeout=timeout*60,overwrite = overwrite, job_id_list=job_id_list,product_selector='Rrs')
         if prod_level>2:
             print("Running Aquaverse downstream product generation...")
-            run_aquaverse_MDN_downstream_products(scene_id, ac_path,timeout=timeout*60,overwrite = overwrite)
-        
+            #run_aquaverse_MDN_downstream_products(scene_id, ac_path,timeout=timeout*60,overwrite = overwrite, job_id_list = job_id_list)
+            run_aquaverse_switch(scene_id, ac_path,timeout=timeout*60,overwrite = overwrite, job_id_list=job_id_list,product_selector='downstream')
+
+
         run_aquaverse_pull_tar(scene_id, out_file.parent.as_posix(),timeout=int(timeout*60/10),stream_output_path = '/tis/stream/data/')
         
         # Ensure the expected file exists

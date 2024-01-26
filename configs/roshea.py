@@ -12,7 +12,7 @@ if proc == "OLI":
 	sensors  = ['OLI'] # 'MOD','VI'
 
 if proc == "MSI":
-	datasets = ['OLI_test_image_Oyster_farm'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['OLI_test_image_Honga_TS_1'] #['OLI_test_image_Honga_TS_1'] #['MSI_test_image_chla_tss_matchups_subset']#['MSI_test_image_Honga_TS_1']
+	datasets = ['MSI_20210706'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['OLI_test_image_Honga_TS_1'] #['OLI_test_image_Honga_TS_1'] #['MSI_test_image_chla_tss_matchups_subset']#['MSI_test_image_Honga_TS_1']
 	sensors  = ['MSI']
 
 #===================================
@@ -112,9 +112,9 @@ extra_cmd              = {}
     # timeseries_or_matchups = 'matchups'
     
 if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0]: 
-    overwrite              = False # what does it overwrite - everything - yes, even pikle file
+    overwrite              = False# what does it overwrite - everything - yes, even pikle file
     ac_methods             =['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
-    download_via_aquaverse = True
+    download_via_aquaverse = False
     timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
     remove_scene_folder    = True
     remove_L1_tile         = True
@@ -124,7 +124,7 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0]:
     extract_window         = 1 #3x3
     apply_bounding_box     = True # what is this - process only a portion of the image
     search_day_window      = 3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
-    max_cloud_cover        = 20
+    max_cloud_cover        = 15
     aquaverse_prod_level   = 3
     local_processing       = True  #deploy to SLURM nodes
     #extra_cmd              = {'l2gen': {'OLI' : {'gain':[1.00,1.00,1.00,1.00,1.00,1.00,1.00],'filter_opt':0},
@@ -153,10 +153,10 @@ if 'OLI_MSI_matchups' in datasets[0]:
     aquaverse_prod_level   = 3
     local_processing       = True  #deploy to SLURM nodes
 
-if  'OLI_test_image_Oyster_farm' in datasets[0] or 'OLI_20210706' in datasets[0]:
-    overwrite              = False # what does it overwrite - everything - yes, even pikle file
+if  'OLI_test_image_Oyster_farm' in datasets[0] or 'MSI_20210706' in datasets[0]:
+    overwrite              = True # what does it overwrite - everything - yes, even pikle file
     ac_methods             =['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
-    download_via_aquaverse = True
+    download_via_aquaverse = False
     timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
     remove_scene_folder    = True
     remove_L1_tile         = True
@@ -166,7 +166,7 @@ if  'OLI_test_image_Oyster_farm' in datasets[0] or 'OLI_20210706' in datasets[0]
     extract_window         = 1 #3x3
     apply_bounding_box     = True # what is this - process only a portion of the image
     search_day_window      = 0 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
-    max_cloud_cover        = 20
+    max_cloud_cover        = 100
     aquaverse_prod_level   = 3
     local_processing       = True  #deploy to SLURM nodes
     #extra_cmd              = {'l2gen': {'OLI' : {'gain':[1.00,1.00,1.00,1.00,1.00,1.00,1.00],'filter_opt':0},
