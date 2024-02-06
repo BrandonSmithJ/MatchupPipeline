@@ -127,7 +127,7 @@ def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
     datasets_grouped = {}
     for key in [ i for i in pd.concat(datasets[0]).keys().to_list() if i != 'scene_id']: 
         datasets_grouped[key]      = pd.concat(datasets[0]).groupby('scene_id')[key].apply(list).reset_index(name=key)
-        if key in ['uid','sensor',  'scene_details', 'scene_folder', 'overwrite', 'datetime', 'Provider', 'date', 'dataset']:
+        if key in ['sensor',  'scene_details', 'scene_folder', 'overwrite', 'datetime', 'Provider', 'date', 'dataset']:
             datasets_grouped[key][key] = datasets_grouped[key][key].map(set_func)
    
     datasets_grouped_out = datasets_grouped['sensor'].set_index('scene_id')
@@ -170,7 +170,7 @@ def filter_completed(
 
         metapaths = get_exists('meta.csv', datasets, sensors, ac_methods,['Matchups'])
         metanames = map(get_name, metapaths)
-        written   = [df['uid']+'-' +df['scene_id'] for df in read_files(metapaths, **{
+        written   = [df['scene_id'] for df in read_files(metapaths, **{
             'index_col' : None,
             'header'    : 0,
             'delimiter' : '\|\|',
@@ -207,7 +207,7 @@ def filter_completed(
 
     data['uid_str'] = data['uid'].map(uid_str) if type( data['uid'][0]) is list else data['uid']
     if global_config.timeseries_or_matchups !='matchups':
-        data['complete_id'] = data['uid_str']+'-'+data['scene_id']
+        data['complete_id'] = data['scene_id'] #data['uid_str']+'-'+data['scene_id']
     else:
         data['complete_id'] = data['uid_str']
     

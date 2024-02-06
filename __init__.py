@@ -46,7 +46,7 @@ app.conf.update(**{
     'task_queue_max_priority' : 10,
     'task_queue_default_priority' : 5,
 
-    'task_always_eager' : True, # Processes in serial, locally 
+    'task_always_eager' : False, # Processes in serial, locally 
 })
 # Need to allow larger representations to reconstruct arguments in the
 # Monitor. Otherwise, [kw]args are cutoff with '...' after certain length
@@ -91,7 +91,7 @@ app.conf.task_queues = [
   # })
 #test_suffix = '_test' if global_config.test_pipeline_celery else ''
 
-test = False
+test = True
 cert_root = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/rabbitMQ/rabbitmq_server_files/TLS'
 if os.path.exists(cert_root):
   import ssl

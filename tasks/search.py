@@ -111,22 +111,30 @@ def download(self,
     }
     out_path = sample_config['scene_folder']
     from pathlib import Path
+    import time
+    import numpy as np
+    import shutil
     # Quick hack to minimize risk of running out of space
     try:
         folders = list(out_path.glob('*'))
         if (len(folders)>global_config.max_processing_scenes):
-            import time
-            pause_duration = 3600
-            print('Length of folders is:', len(folders),' which is > the limit of:',global_config.max_processing_scenes,'. pausing for: ',pause_duration,' seconds for AC to catch up before deleting oldest files.')
-            time.sleep(pause_duration)
+            print('Length of folders is:', len(folders),' which is > the limit of:',global_config.max_processing_scenes)
+        
+        while (len(folders)>global_config.max_processing_scenes):
+            time_limit = 3
+            folder_time_list = [(f,(time.time() - f.stat().st_ctime)/3600) for f in folders]
+            for folder_time in folder_time_list:
+                if folder_time[1]>time_limit:
+                    if 'SCRATCH/Gathered/Scenes' in str(folder_time[0]): shutil.rmtree(folder_time[0])
+                    print(f"Removed folder older than {time_limit} hours",folder_time[0])
+
+            folders = list(out_path.glob('*'))
+            if len(folders)>global_config.max_processing_scenes:
+                oldest = min(folders, key=lambda f: f.stat().st_ctime)
+                if 'SCRATCH/Gathered/Scenes' in str(oldest): shutil.rmtree(oldest)
+                print("Removed folder",oldest)
             folders = list(out_path.glob('*'))
 
-        while (len(folders)>global_config.max_processing_scenes):
-            import numpy as np
-            import shutil
-            oldest = min(folders, key=lambda f: f.stat().st_ctime)#i = np.random.randint(0, len(folders))
-            shutil.rmtree(oldest) #folders[i].as_posix())
-            folders = list(out_path.glob('*'))
     except Exception as e: print(e)#self.logger.error(f'Error removing folders: {e}')
     
     api    = API.API[sample_config['sensor']]()
