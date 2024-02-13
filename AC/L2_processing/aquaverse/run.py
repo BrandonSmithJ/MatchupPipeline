@@ -11,6 +11,8 @@ from pathlib import Path
 import os
 import psycopg2
 
+AQV_version = "202402"
+
 try: 
     from ....utils import Location, assert_contains
     from ....utils.run_subprocess import run_subprocess
@@ -62,7 +64,7 @@ def run_aquaverse_pull_tar(scene_id,output_folder,timeout=600,stream_output_path
             # tar.extractall(output_folder)
             tar.close()
 
-    for suffix in ["_Chla_AQV202310","_TSS_AQV202310","_Zsd_AQV202310"]:
+    for suffix in [f"_Chla_AQV{AQV_version}",f"_TSS_AQV{AQV_version}",f"_Zsd_AQV{AQV_version}"]:
         downloaded_rrs = stream_output_path + scene_id + f'{suffix}.TIF'
         output_rrs     = output_folder + '/'+ scene_id + f'{suffix}.TIF'
         if (not os.path.exists(output_rrs) or overwrite) and os.path.exists(downloaded_rrs):
@@ -197,7 +199,7 @@ def run_aquaverse_MDN_downstream_products(scene_id, AQV_location,timeout=3600,st
     import os
     #Waits for Rayleigh corrected data to become available
     AQV_product_generation = str(AQV_location)+'/downstream_product_generation_AQV'
-    rrs_output_path = stream_output_path + f'{scene_id}_Chla_AQV202310.TIF'
+    rrs_output_path = stream_output_path + f'{scene_id}_Chla_AQV{AQV_version}.TIF'
     if overwrite and os.path.exists(rrs_output_path):
         print("Removing:",rrs_output_path)
         os.remove(Path(rrs_output_path))
@@ -220,7 +222,7 @@ def run_aquaverse_switch(scene_id, AQV_location,timeout=3600,stream_backend_path
         
     if product_selector == "downstream": 
         product_generation = str(AQV_location)  + '/downstream_product_generation_AQV'
-        output_path        = stream_output_path + f'{scene_id}_Chla_AQV202310.TIF'
+        output_path        = stream_output_path + f'{scene_id}_Chla_AQV{AQV_version}.TIF'
 
     print("Running ", product_selector, product_generation, output_path) 
 

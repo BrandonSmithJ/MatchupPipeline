@@ -317,7 +317,7 @@ def main(debug=True):
     random_list_range = random.shuffle(list_range)
     print(list_range)
     processes = []
-    max_jobs  = 3
+    max_jobs  = 36
     finished_processing = 0
     #print(random_list_range)
     for i,j in enumerate(list_range):
@@ -333,8 +333,8 @@ def main(debug=True):
         processes.append(p)
         #p.join()
 
-        time.sleep(30*1)
-        if i >= 2*max_jobs-1:
+        time.sleep(60*1)
+        if i >= 2*max_jobs-1 and (i%max_jobs)==0:
             [proc.join() for proc in processes[finished_processing*max_jobs:(finished_processing+1)*max_jobs]]
             finished_processing = finished_processing+1
     [ process.join() for process in processes if process.is_alive()]

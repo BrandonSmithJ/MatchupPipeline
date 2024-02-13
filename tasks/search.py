@@ -4,6 +4,7 @@ from celery.contrib import rdb
 from ..utils.run_subprocess import run_subprocess
 from subprocess import getoutput
 from pathlib import Path
+from ..utils.decompress import decompress
 
 @app.task(bind=True, name='search', queue='search', priority=0)#, rate_limit='1/m')
 def search(self,
@@ -95,7 +96,14 @@ def run_aquaverse_pull_tar(scene_id, AQV_location,output_folder,timeout=600):
     tar.close()
     Path(scene_id_path).joinpath('.complete').touch()
     
-    
+def copy_from_stream(kwargs,remove=False):
+        tis_output_path = '/tis/stream/data/'+str(kwargs['scene_id']) + '.tar.gz'
+        if Path(tis_output_path).exists(): 
+            decompress(Path(tis_output_path),Path(kwargs['scene_path']),remove=remove)
+            return True
+        else:
+            return False
+
 @app.task(bind=True, name='download', queue='download',priority=0)
 def download(self,
     sample_config : dict,      # Config for this sample
@@ -150,19 +158,22 @@ def download(self,
     if  global_config.download_via_aquaverse:
         run_aquaverse_download(scene_id=sample_config['scene_id'],sensor = sample_config['sensor'],AQV_location=global_config.ac_path['aquaverse'],stream_backend_path=global_config.stream_backend_path,stream_env_path=global_config.stream_env_path,output_folder=kwargs['scene_folder'],overwrite = global_config.overwrite)
         #copy tar to local repo
-        tis_output_path = '/tis/stream/data/'+str(kwargs['scene_id']) + '.tar.gz'
-        from ..utils.decompress import decompress
-        decompress(Path(tis_output_path),Path(kwargs['scene_path']),remove=False)
+        downloaded_from_stream = copy_from_stream(kwargs)
+        #tis_output_path = '/tis/stream/data/'+str(kwargs['scene_id']) + '.tar.gz'
+       # from ..utils.decompress import decompress
+        #decompress(Path(tis_output_path),Path(kwargs['scene_path']),remove=False)
         #run_aquaverse_pull_tar(scene_id=sample_config['scene_id'], AQV_location=global_config.ac_path['aquaverse'],output_folder=kwargs['scene_folder'],timeout=600)
         
     #kwargs.pop('scene_path')    
     #sample_config.pop('scene_path')
     else: 
-        kwargs.pop('scene_path')
-        sample_config.pop('scene_path')
-        kwargs['scene_path'] = api.download_scene(**kwargs)
+        downloaded_from_stream = copy_from_stream(kwargs)
+        if not downloaded_from_stream:
+            kwargs.pop('scene_path')
+            sample_config.pop('scene_path')
+            kwargs['scene_path'] = api.download_scene(**kwargs)
 
-    if 'aquaverse' in global_config.ac_methods:
+    if ('aquaverse' in global_config.ac_methods or True) and not downloaded_from_stream:
         #compress output
         
         #push to stream
