@@ -51,10 +51,10 @@ class Worker(Process):
 
         def wait_for_online(label, running):
             if not running():
-                print(f'Waiting for {label[:-3]} to come online...', end='')
+                #print(f'Waiting for {label[:-3]} to come online...', end='')
                 sys.stdout.flush()
                 while not running(): 
-                    print(f"Waiting for {label[:-3]} ",app.control.inspect().ping())
+                    #print(f"Waiting for {label[:-3]} ",app.control.inspect().ping())
                     time.sleep(1)
                 print('done')
 

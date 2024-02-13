@@ -249,21 +249,21 @@ def main2(gc, data, i, debug=True):
         {   'logname'     : f'{username}/worker1{i}',
             'queues'      : ['search','download','correct','extract','plot','celery','write'],
             #'queues'      : ['search', 'celery'],
-            'concurrency' : 2,
-            'slurm_kwargs': {'partition' : 'ubuntu20'},
+            'concurrency' : 4,
+            'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0001-0048]'},
         },
         # Multiple threads for correction
-        {   'logname'     : f'{username}/worker2{i}',
-            'queues'      : ['correct'],
-            'concurrency' : 2, #
-            'slurm_kwargs': {'partition' : 'ubuntu20'},
-        },
+        #{   'logname'     : f'{username}/worker2{i}',
+        #    'queues'      : ['correct'],
+        #    'concurrency' : 4, #
+        #    'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0005-0055]'},
+        #},
         # Single dedicated thread (i.e. for writing)
-        {   'logname'     : f'{username}/worker3{i}',
-            'queues'      : ['write'],
-            'concurrency' : 2,
-            'slurm_kwargs': {'partition' : 'ubuntu20'},
-        },
+        #{   'logname'     : f'{username}/worker3{i}',
+        #    'queues'      : ['write'],
+        #    'concurrency' : 1,
+        #    'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0005-0055]'},
+        #},
     ]
     pipeline = create_extraction_pipeline(gc)
     with CeleryManager(worker_kws, data, gc.ac_methods) as manager:
@@ -316,20 +316,29 @@ def main(debug=True):
     list_range = list(range(len(data)))
     random_list_range = random.shuffle(list_range)
     print(list_range)
+    processes = []
+    max_jobs  = 3
+    finished_processing = 0
     #print(random_list_range)
-    for j in list_range:
+    for i,j in enumerate(list_range):
         #print(j,data.iloc[j])
         folders = list(out_path.glob('*'))
-        while (len(folders)>global_config.max_processing_scenes):
-            time.sleep(60*2)
-            folders = list(out_path.glob('*'))
-            print("Too many output folders")
+        #while (len(folders)>global_config.max_processing_scenes):
+        #    time.sleep(60*2)
+        #    folders = list(out_path.glob('*'))
+        #    print("Too many output folders")
 
         p = Process(target=main2, args=(gc, data.iloc[j], str(j)))
         p.start()
-        time.sleep(60*1)
-        
+        processes.append(p)
+        #p.join()
 
+        time.sleep(30*1)
+        if i >= 2*max_jobs-1:
+            [proc.join() for proc in processes[finished_processing*max_jobs:(finished_processing+1)*max_jobs]]
+            finished_processing = finished_processing+1
+    [ process.join() for process in processes if process.is_alive()]
+    
 
 def main_local(debug=True):
     global_config = gc = get_args()

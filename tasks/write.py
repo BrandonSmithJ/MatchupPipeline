@@ -29,9 +29,9 @@ def write(self,
     # ac_method = 
     # sensor    = 
     to_write = {}
-
-    # out_path.mkdir(exist_ok=True, parents=True)
-    out_path = sample_config['out_path'].joinpath('Matchups')
+    
+    out_path = global_config.output_path_local.joinpath(sample_config['dataset']).joinpath(sample_config['sensor']).joinpath(sample_config['ac_method']).joinpath('Matchups')
+    print("Out path",out_path)
     out_path.mkdir(exist_ok=True, parents=True)
     # sfile = out_path.joinpath('store.zarr')
     # mode  = 'a' if sfile.exists() else 'w'

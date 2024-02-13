@@ -8,7 +8,7 @@ username = getoutput('whoami')
 proc = "MSI"
 
 if proc == "OLI":
-	datasets = ['OLI_test_image_Wachusett_reservoir_timeseries'] # _Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF']# ['OLI_test_image_Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF'] #OLI_MSI_matchups_Lake_Erie
+	datasets = ['OLI_test_image_Damariscotta_1'] # _Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF']# ['OLI_test_image_Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF'] #OLI_MSI_matchups_Lake_Erie
 	sensors  = ['OLI'] # 'MOD','VI'
 
 if proc == "MSI":
@@ -32,9 +32,10 @@ stream_backend_path    = '/tis/m2cross/scratch/f002/wwainwr1/stream/backend'
 stream_env_path        = '/tis/m2cross/scratch/f002/wwainwr1/venv/bin/activate'
 
 #scratch_path   = Path(f'/data/{username}').joinpath('SCRATCH')
-scratch_path           = Path('/tis/m2cross/scratch/f003/roshea/matchup_pipeline_dev_test/roshea/SCRATCH') 
+scratch_path           = Path(f'/tis/m2cross/scratch/f003/roshea/matchup_pipeline_dev_test/{username}/SCRATCH') 
 insitu_path            = scratch_path.joinpath('Insitu') 
 output_path            = scratch_path.joinpath('Gathered')
+output_path_local      = scratch_path.joinpath('Gathered')
 
 proj_path='/tis/m2cross/scratch/f004/roshea/Seadas_versions/Seadas_V2022_3/ocssw/opt/share/proj'
 os.environ['PROJ_LIB'] = proj_path

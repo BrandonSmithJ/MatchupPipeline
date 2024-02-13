@@ -96,11 +96,11 @@ class CeleryManager:
                 CeleryManager.flower = execute(**self.flower_kws)
 
             # Wait for celery to come online
-            print('Waiting for Celery app to come online...', end='')
+            #print('Waiting for Celery app to come online...', end='')
             while app.control.inspect().ping() is None: 
                 print("No ping detected",self.running())
                 #time.sleep(1)
-            print('done')
+            #print('done')
 
         except:
             print(f'Exception starting Celery and Flower processes')

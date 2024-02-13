@@ -42,6 +42,7 @@ def get_scenes_from_query(satellite,start,end,min_cloud_cover=0,max_cloud_cover=
             f"startDate={start}T00:00:00Z&completionDate={end}T23:59:59Z"+\
             f"&maxRecords={max_records}&"+\
             f"processingLevel=S2MSI1C&"+\
+            f"processorVersion=05.00&"+\
             f"box={bbox}"
 
             if tileID != "": alternate_url = alternate_url + f"&tileId={tileID}"

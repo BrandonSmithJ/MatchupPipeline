@@ -2,7 +2,8 @@ from .. import API, app
 from argparse import Namespace
 from celery.contrib import rdb
 from ..utils.run_subprocess import run_subprocess
-
+from subprocess import getoutput
+from pathlib import Path
 
 @app.task(bind=True, name='search', queue='search', priority=0)#, rate_limit='1/m')
 def search(self,
@@ -13,6 +14,7 @@ def search(self,
     """ Search matching scene for a given sample """
     location = sample_config['location'] # Location object
     dt_range = sample_config['dt_range'] # DatetimeRange object
+    
     out_path = global_config.output_path.joinpath('Scenes', sensor)
 
     api    = API.API[sensor]()
@@ -43,7 +45,6 @@ def search(self,
 
 def run_aquaverse_download(scene_id,sensor,output_folder,stream_backend_path,stream_env_path,AQV_location,location="Bay",timeout=1800,overwrite=False):
     import csv, os,time
-    from pathlib import Path
     from subprocess import Popen, PIPE, check_output, STDOUT
     #assert(0)
     AQV_download = AQV_location+'/download_AQV'
@@ -75,7 +76,6 @@ def run_aquaverse_download(scene_id,sensor,output_folder,stream_backend_path,str
 
 def run_aquaverse_pull_tar(scene_id, AQV_location,output_folder,timeout=600):
     from subprocess import Popen, PIPE, check_output, STDOUT
-    from pathlib import Path
     AQV_pull_tar = AQV_location+'/pull_tar_AQV'
     scene_output = str(output_folder)+'/'+scene_id +'/'
     running_procs = Popen([AQV_pull_tar, str(scene_id), str(scene_output) ], stdout=PIPE, stderr=PIPE)
@@ -110,7 +110,12 @@ def download(self,
         'overwrite'     : global_config.overwrite,
     }
     out_path = sample_config['scene_folder']
-    from pathlib import Path
+    if getoutput('hostname') != 'pardees':
+        out_path = Path(getoutput('echo $SCRATCH')).joinpath('SCRATCH','Gathered','Scenes', sample_config['sensor'])
+        sample_config['scene_folder'] = out_path
+        kwargs['scene_folder']        = out_path
+        out_path.mkdir(exist_ok=True, parents=True)
+
     import time
     import numpy as np
     import shutil
@@ -182,6 +187,19 @@ def download(self,
 
 
     kwargs.update(sample_config)
+
+    outpath  = global_config.output_path_local
+    scene_id = kwargs['scene_id'] 
+    sensor   = kwargs['sensor']
+    dataset  = kwargs['dataset']
+
+    def write_complete_file(outpath,scene_id,sensor,dataset,successful_search=True):
+        outpath = Path(outpath).joinpath(dataset, sensor)
+        outpath.mkdir(exist_ok=True, parents=True)
+        with outpath.joinpath('completed.csv').open('a+') as f:
+            f.write(f'{scene_id}, {successful_search}\n')
+    write_complete_file(outpath,scene_id,sensor,dataset)
+
     return kwargs
 
 

@@ -99,7 +99,7 @@ def start_monitor(total_samples, total_ac, show_plot=plt is not None):
         if name == 'shutdown':
             return 
 
-        if name == 'download': # and state == 'SUCCESS':
+        if name == 'download' and state == 'SUCCESS' and False:
             dataset = extract_key('dataset', task.args)
             uid     = extract_key('uid',     task.args)
             sensor  = extract_key('sensor',     task.args)

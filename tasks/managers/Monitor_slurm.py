@@ -99,11 +99,13 @@ def start_monitor(total_samples, total_ac, show_plot=plt is not None):
         if name == 'shutdown':
             return 
 
-        if name == 'search' and state == 'SUCCESS':
+        if name == 'download' and state == 'SUCCESS' and False:
             dataset = extract_key('dataset', task.args)
             uid     = extract_key('uid',     task.args)
-            sensor  = task.args.split(" '")[-1][:-2] 
-            outpath = task.kwargs.split('output_path=')[-1]
+            #sensor  = 'MSI' #task.args.split(" '")[-1][:-2]
+            sensor  = extract_key('sensor',     task.args)
+            scene_id  = extract_key('scene_id',     task.args)
+            outpath = task.kwargs.split('output_path_local=')[-1]
             outpath = outpath.split("('")[-1].split("')")[0]
 
             successful_search = str(task.result) != 'None'
@@ -111,7 +113,7 @@ def start_monitor(total_samples, total_ac, show_plot=plt is not None):
                 outpath = Path(outpath).joinpath(dataset, sensor)
                 outpath.mkdir(exist_ok=True, parents=True)
                 with outpath.joinpath('completed.csv').open('a+') as f:
-                    f.write(f'{uid}, {successful_search}\n')
+                    f.write(f'{scene_id}, {successful_search}\n')
 
         else: successful_search = True 
 

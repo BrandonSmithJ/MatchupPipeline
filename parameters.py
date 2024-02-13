@@ -37,6 +37,10 @@ parser.add_argument('-i', '--insitu_path', type=str,
 
 parser.add_argument('-o', '--output_path', type=str, 
     default=config.output_path, 
+    help='Path where products will be run\n(default: %(default)s)\n\n')
+
+parser.add_argument('--output_path_local', type=str,
+    default=config.output_path,
     help='Path where outputs will be saved\n(default: %(default)s)\n\n')
 
 parser.add_argument('--overwrite', action='store_true', 
