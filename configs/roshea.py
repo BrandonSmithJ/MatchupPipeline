@@ -5,14 +5,14 @@ import sys
 username = getoutput('whoami') 
 
 #===============***** This is for f001 - av3 - Matchup processing
-proc = "MSI"
+proc = "OLI"
 
 if proc == "OLI":
-	datasets = ['OLI_test_image_Damariscotta_1'] # _Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF']# ['OLI_test_image_Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF'] #OLI_MSI_matchups_Lake_Erie
+	datasets = ['OLI_test_image_Honga_TS_1'] # _Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF']# ['OLI_test_image_Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF'] #OLI_MSI_matchups_Lake_Erie
 	sensors  = ['OLI'] # 'MOD','VI'
 
 if proc == "MSI":
-	datasets = ['MSI_test_image'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
+	datasets = ['OLI_test_image_Honga_TS_1'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
 	sensors  = ['MSI']
 
 #===================================
@@ -54,7 +54,7 @@ search_minute_window   = None
 search_year_range      = None
 timeseries_or_matchups = 'timeseries'
 scene_id               = '' # will only process scenes with this substring if set
-max_processing_scenes  = 20
+max_processing_scenes  = 100
 download_via_aquaverse = False
 filter_unprocessed_imagery = False
 #===================================
@@ -125,9 +125,9 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0]:
     extract_window         = 1 #3x3
     apply_bounding_box     = True # what is this - process only a portion of the image
     search_day_window      = 3000 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
-    max_cloud_cover        = 50#5
+    max_cloud_cover        = 15#5
     aquaverse_prod_level   = 3
-    local_processing       = False  #deploy to SLURM nodes
+    local_processing       = True  #deploy to SLURM nodes
     #extra_cmd              = {'l2gen': {'OLI' : {'gain':[1.00,1.00,1.00,1.00,1.00,1.00,1.00],'filter_opt':0},
     #                                    'MSI' : {'gain':[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],'filter_opt':0}}}
     

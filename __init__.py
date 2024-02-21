@@ -91,7 +91,7 @@ app.conf.task_queues = [
   # })
 #test_suffix = '_test' if global_config.test_pipeline_celery else ''
 
-test = False
+test = True
 cert_root = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/rabbitMQ/rabbitmq_server_files/TLS'
 if os.path.exists(cert_root):
   import ssl

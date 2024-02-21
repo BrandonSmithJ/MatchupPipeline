@@ -250,7 +250,7 @@ def main2(gc, data, i, debug=True):
             'queues'      : ['search','download','correct','extract','plot','celery','write'],
             #'queues'      : ['search', 'celery'],
             'concurrency' : 4,
-            'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0001-0048]'},
+            'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0001-0043],slrm[0047-0055]'},
         },
         # Multiple threads for correction
         #{   'logname'     : f'{username}/worker2{i}',
@@ -317,7 +317,7 @@ def main(debug=True):
     random_list_range = random.shuffle(list_range)
     print(list_range)
     processes = []
-    max_jobs  = 36
+    max_jobs  = 180
     finished_processing = 0
     #print(random_list_range)
     for i,j in enumerate(list_range):
@@ -335,7 +335,7 @@ def main(debug=True):
 
         time.sleep(60*1)
         if i >= 2*max_jobs-1 and (i%max_jobs)==0:
-            [proc.join() for proc in processes[finished_processing*max_jobs:(finished_processing+1)*max_jobs]]
+            [proc.join() for proc in processes[finished_processing*max_jobs:((finished_processing+1)*max_jobs-1)]]
             finished_processing = finished_processing+1
     [ process.join() for process in processes if process.is_alive()]
     
@@ -359,18 +359,18 @@ def main_local(debug=True):
     worker_kws = [
         # Multiple threads for download
         {   'logname'     : f'{username}/worker1',
-            'queues'      : ['search','download','correct','extract','plot','celery'],
+            'queues'      : ['search','download','celery'],
             'concurrency' : 2,
         },
         # Multiple threads for correction
         {   'logname'     : f'{username}/worker2',
             'queues'      : ['correct'],
-            'concurrency' : 8,
+            'concurrency' : 80,
         },
         # Multiple threads for extraction
         {   'logname'     : f'{username}/worker3',
             'queues'      : ['extract'],
-            'concurrency' : 1,
+            'concurrency' : 2,
         },
         # Multiple threads for plotting
         {   'logname'     : f'{username}/worker4',
