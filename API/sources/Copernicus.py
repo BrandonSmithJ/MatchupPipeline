@@ -26,7 +26,7 @@ def split_date_time(start,end, difference=365):
 #https://documentation.dataspace.copernicus.eu/APIs/OpenSearch.html
 #XML description: https://catalogue.dataspace.copernicus.eu/resto/api/collections/Sentinel2/describe.xml
 def get_scenes_from_query(satellite,start,end,min_cloud_cover=0,max_cloud_cover=100,max_records=2000,bbox="-21,23,-24,15",tileID=""):
-        if int(start[0:4])<2018: start = '2018-01-01'
+        if int(start[0:4])<2016: start = '2016-01-01'
         
         list_of_datetimes = list(split_date_time(start,end))
         print(f"Querying Copernicus for {bbox} {start} {end}")

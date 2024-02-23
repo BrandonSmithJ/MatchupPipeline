@@ -24,10 +24,10 @@ def search(self,
     search_variable_name = sensor + '_' + str(location)+ '_' + str(dt_range)+ '_' + str(global_config.max_cloud_cover) + '_' + global_config.scene_id
     search_scenes_pickle = global_config.insitu_path.joinpath(global_config.datasets[0]).joinpath(f'{search_variable_name}.pkl')
     if search_scenes_pickle.exists():
-        with open(str(search_scenes_pickle),'rb') as scenes_pkl: scenes = eval(pickle.load(scenes_pkl))
+        with open(str(search_scenes_pickle),'rb') as scenes_pkl: scenes = pickle.load(scenes_pkl)
     else:
         scenes = api.search_scenes(sensor, location, dt_range,**{'max_cloud_cover': global_config.max_cloud_cover,'tileID': global_config.scene_id})
-        with open(search_scenes_pickle,'wb') as scenes_pkl: pickle.dump(str(scenes),scenes_pkl)
+        with open(search_scenes_pickle,'wb') as scenes_pkl: pickle.dump(scenes,scenes_pkl,pickle.HIGHEST_PROTOCOL)
 
 
 
