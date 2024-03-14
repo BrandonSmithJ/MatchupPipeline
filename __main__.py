@@ -17,6 +17,7 @@ import math
 import shutil
 #import app as app2
 import random
+import socket
 def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
     """ Load the in situ data and parse as necessary """
     datasets = []
@@ -167,6 +168,7 @@ def filter_completed(
 
         matched  = uids.loc[ found] 
         no_match = uids.loc[~found] 
+        matched_OG = matched
 
         metapaths = get_exists('meta.csv', datasets, sensors, ac_methods,['Matchups'])
         metanames = map(get_name, metapaths)
@@ -219,7 +221,7 @@ def filter_completed(
         return data.loc[data['uid'].isin(meta_uids)*~data['complete_id'].isin(complete)]
     
 
-    return data.loc[~data['complete_id'].isin(complete)]
+    return data.loc[~data['complete_id'].isin(complete)] if 'CONUS' not in global_config.datasets[0] else data.loc[~data['complete_id'].isin(matched_OG)]
 
 
 def update_app(user_flag, app):
@@ -244,10 +246,14 @@ def main2(gc, data, i, debug=True):
     # # on the same matching scene at once
     from pathlib import Path
     Path(Path(__file__).parent.joinpath('Logs').joinpath(username)).mkdir(parents=True, exist_ok=True)
+    import uuid, random, string
+    #unique_uuid = str(uuid.uuid4())[0:8]
+    #unique_uuid = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+    unique_uuid = f'{random.randint(0,10)}{random.randint(0,10)}{random.randint(0,10)}{random.randint(0,10)}{random.randint(0,10)}{random.randint(0,10)}{random.randint(0,10)}{random.randint(0,10)}'
     worker_kws = [
         # Multiple threads for download
         {   'logname'     : f'{username}/worker1{i}',
-            'queues'      : ['search','download','correct','extract','plot','celery','write'],
+            'queues'      : ['search','download','correct','extract','plot','celery','write',unique_uuid],
             #'queues'      : ['search', 'celery'],
             'concurrency' : 4,
             'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0001-0043],slrm[0047-0055]'},
@@ -265,6 +271,8 @@ def main2(gc, data, i, debug=True):
         #    'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0005-0055]'},
         #},
     ]
+    print("UUID is:",unique_uuid)
+    gc.queue = unique_uuid
     pipeline = create_extraction_pipeline(gc)
     with CeleryManager(worker_kws, data, gc.ac_methods) as manager:
         #for i, row in data.iterrows(): 
@@ -276,7 +284,9 @@ def main2(gc, data, i, debug=True):
         if 'scene_id' in data.keys():
             if gc.scene_id not in data['scene_id']: return 0#'T18SUG' '044033' 'T2017252150500'
         #data = data.to_dict()
-        pipeline(data) if debug else pipeline.delay(data)
+        pipeline.delay(data)
+        #pipeline.apply_async(data)
+        #pipeline(data) #if debug else pipeline.apply_async(data,queue='task2') #pipeline.delay(data)
         #time.sleep(10)
 
         # deploy_job.sh {row} - how? This should call a python script to start processing
@@ -360,17 +370,17 @@ def main_local(debug=True):
         # Multiple threads for download
         {   'logname'     : f'{username}/worker1',
             'queues'      : ['search','download','celery'],
-            'concurrency' : 2,
+            'concurrency' : 110,
         },
         # Multiple threads for correction
         {   'logname'     : f'{username}/worker2',
             'queues'      : ['correct'],
-            'concurrency' : 18,
+            'concurrency' : 4,
         },
         # Multiple threads for extraction
         {   'logname'     : f'{username}/worker3',
             'queues'      : ['extract'],
-            'concurrency' : 2,
+            'concurrency' : 1,
         },
         # Multiple threads for plotting
         {   'logname'     : f'{username}/worker4',

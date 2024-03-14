@@ -44,7 +44,7 @@ class Google(BaseSource):
                 'bucket' : self.valid_sensors[sensor],
                 'search' : get_params(sensor, scene_id)['search'],
             })
-
+            print(search_path)
             cmd = [exec_path, '-m']
             env = {'BOTO_PATH': config_path}
 

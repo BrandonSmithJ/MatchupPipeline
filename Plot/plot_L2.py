@@ -114,9 +114,9 @@ def extract_data(image, avail_bands, req_bands, allow_neg=False, key='Rrs',apply
 
     if key == 'rhos':
         key = 'rhos' if any('rhos' in word for  word in image.variables.keys()) else 'Rrs' 
-        
+        key = 'rayleigh_corrected' if  any('rayleigh_corrected' in word for  word in image.variables.keys()) else 'Rrs'    
     def extract(requested):
-        bands = [closest_wavelength(band, avail_bands,tol=40 if key == 'rhos' else 5) for band in requested]
+        bands = [closest_wavelength(band, avail_bands,tol=50 if key == ['rhos','rayleigh_corrected'] else 50) for band in requested]
         # avail_bands = list(image['sensor_band_parameters'].variables['wavelength'][:])
         # bands = [closest_wavelength(band, avail_bands) for band in requested]
         div   = np.pi if key == 'Rw' else 1
@@ -197,8 +197,8 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
 
     
     bands = list(image['sensor_band_parameters'].variables['wavelength'][:]) if not bands else bands
-
-    Rrs   = extract_data(image, bands, req_bands,allow_neg=False,apply_min_threshold = True)
+    if 'aquaverse' not in str(inp_file):
+        Rrs   = extract_data(image, bands, req_bands,allow_neg=False,apply_min_threshold = True)
     if sensor in ['PACE']: Rrs = Rrs[::-1, :, :]
     #if sensor in ['VI'] or (Aqua_or_Terra =='A' and 'MOD' in sensor): Rrs = Rrs[::-1, ::-1, :] 
 
@@ -220,7 +220,17 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
         Rrs, extent, (im_lon, im_lat)  = fix_projection(Rrs,im_lon,im_lat,reproject=False,nearestNeighborInterp=False, sparse_resample=True)        
 
     try:
-        products, slices = image_estimates(Rrs, **kwargs)
+        if 'aquaverse' in str(inp_file):
+            import netCDF4
+            nc     = netCDF4.Dataset(inp_file)
+            zsd    = nc['Zsd'][:][...,np.newaxis]
+            tss    = nc['TSS'][:][...,np.newaxis]
+            chl    = nc['Chla'][:][...,np.newaxis]
+            slices = {'zsd' : slice(0,1),'tss':slice(1,2),'chl':slice(2,3)}
+            products = np.concatenate((zsd,tss,chl),axis=2)
+        else:
+            products, slices = image_estimates(Rrs, **kwargs)
+
     except:
         print('----------------------------------')
         print('Failed to produce products for ', png_filename)
@@ -234,6 +244,7 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
         'tss' : (1,  100),
         'pc'  : (0.1,  100),
         'cdom': (0.1, 3),
+        'zsd' : (0.1,  10),
     }
     for i, (key, idx) in enumerate(slices.items()):
         plot_product(np.atleast_1d(axes)[i], key, products[..., idx], rgb, *bounds[key])

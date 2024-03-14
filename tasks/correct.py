@@ -5,13 +5,15 @@ from ..utils.convert_tif_nc import convert_tif_nc
 from ..utils import Location
 import numpy as np
 
-@app.task(bind=True, name='correct', queue='correct', priority=2, max_retries=0)
+@app.task(bind=True, name='correct',queue='correct', priority=2, max_retries=0)
 def correct(self,
     sample_config : dict,      # Config for this sample
     ac_method     : str,       # AC method to use for correction
     global_config : Namespace, # Config for the pipeline
 ) -> dict:                     # Returns new sample config state
     """ Atmospherically correct the given scene """
+    print('Celery task ID is:',self.request.delivery_info['routing_key'],self.request.delivery_info)
+    print("...end")
     inp_path = (sample_config['scene_path']
              if sample_config['scene_path'].exists() else 
                 sample_config['scene_path'].parent)

@@ -5,14 +5,14 @@ import sys
 username = getoutput('whoami') 
 
 #===============***** This is for f001 - av3 - Matchup processing
-proc = "OLI"
+proc = "MSI"
 
 if proc == "OLI":
-	datasets = ['OLI_test_image_Boston_timeseries'] # _Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF']# ['OLI_test_image_Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF'] #OLI_MSI_matchups_Lake_Erie
+	datasets = ['OLI_test_image_Erie_stations'] # _Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF']# ['OLI_test_image_Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF'] #OLI_MSI_matchups_Lake_Erie
 	sensors  = ['OLI'] # 'MOD','VI'
 
 if proc == "MSI":
-	datasets = ['OLI_test_image_Boston_timeseries'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
+	datasets = ['MSI_test_image'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
 	sensors  = ['MSI']
 
 #===================================
@@ -54,7 +54,7 @@ search_minute_window   = None
 search_year_range      = None
 timeseries_or_matchups = 'timeseries'
 scene_id               = '' # will only process scenes with this substring if set
-max_processing_scenes  = 100
+max_processing_scenes  = 150
 download_via_aquaverse = False
 filter_unprocessed_imagery = False
 #===================================
@@ -111,8 +111,7 @@ extra_cmd              = {}
                   # 'acolite': {},
                   # 'polymer': {},}
     # timeseries_or_matchups = 'matchups'
-    
-if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0]: 
+if 'CONUS' in datasets[0]:
     overwrite              = False# what does it overwrite - everything - yes, even pikle file
     ac_methods             =['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
     download_via_aquaverse = False
@@ -124,10 +123,28 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0]:
     plot_Rrs               = False
     extract_window         = 1 #3x3
     apply_bounding_box     = True # what is this - process only a portion of the image
-    search_day_window      = 3000 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
-    max_cloud_cover        = 15#5
-    aquaverse_prod_level   = 3
+    search_day_window      = 200 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
+    max_cloud_cover        = 20 #5
+    aquaverse_prod_level   = 0
     local_processing       = True  #deploy to SLURM nodes
+    filter_unprocessed_imagery = False
+
+if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0]: 
+    overwrite              = False# what does it overwrite - everything - yes, even pikle file
+    ac_methods             =['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
+    download_via_aquaverse = False
+    timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
+    remove_scene_folder    = True
+    remove_L1_tile         = True
+    fix_projection_Rrs     = False
+    plot_products          = True # for which AC processor it works
+    plot_Rrs               = False
+    extract_window         = 1 #3x3
+    apply_bounding_box     = True # what is this - process only a portion of the image
+    search_day_window      = 3000 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
+    max_cloud_cover        = 50#5
+    aquaverse_prod_level   = 3
+    local_processing       = False  #deploy to SLURM nodes
     #extra_cmd              = {'l2gen': {'OLI' : {'gain':[1.00,1.00,1.00,1.00,1.00,1.00,1.00],'filter_opt':0},
     #                                    'MSI' : {'gain':[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],'filter_opt':0}}}
     
@@ -136,6 +153,12 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0]:
     #scene_id = "19TCH"#"LC09_L1TP_012030_20220722_20230406_02_T1"
     #extra_cmd.keys()
 
+
+if 'Urias' in datasets[0]:
+    remove_scene_folder    = False
+    remove_L1_tile         = False
+    search_day_window      = 10
+    plot_products          = True
 
 if 'OLI_MSI_matchups' in datasets[0]:
     overwrite              = True # what does it overwrite - everything - yes, even pikle file
@@ -191,4 +214,4 @@ if search_day_window is None  and search_year_range is None and search_minute_wi
 
 if 'aquaverse' in ac_methods and 'OLI' not in sensors and 'MSI' not in sensors: assert(0)
 
-if 'aquaverse' in ac_methods and 'MSI' in sensors: print('MSI Images before June 15 2016 will not successfully process with Aquaverse')
+if 'aquaverse' in ac_methods and 'MSI' in sensors: print('MSI Images before ~June 15 2017 will not successfully process with Aquaverse')
