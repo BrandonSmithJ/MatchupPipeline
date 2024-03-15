@@ -28,7 +28,7 @@ def extraction(global_config):
             for sensor in global_config.sensors]) )
     if global_config.timeseries_or_matchups == 'timeseries':
         # Execute all steps in parallel over sensors
-        if True:
+        if hasattr(global_config, 'queue'):
             return (group([
                       download.s(**k).set(queue=global_config.queue)              # 1. Download the specified tile
 

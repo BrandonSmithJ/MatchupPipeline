@@ -256,7 +256,7 @@ def main2(gc, data, i, debug=True):
             'queues'      : ['search','download','correct','extract','plot','celery','write',unique_uuid],
             #'queues'      : ['search', 'celery'],
             'concurrency' : 4,
-            'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0001-0043],slrm[0047-0055]'},
+            'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0001-0044],slrm[0047-0055]'},
         },
         # Multiple threads for correction
         #{   'logname'     : f'{username}/worker2{i}',
@@ -343,7 +343,7 @@ def main(debug=True):
         processes.append(p)
         #p.join()
 
-        time.sleep(60*1)
+        time.sleep(30*1)
         if i >= 2*max_jobs-1 and (i%max_jobs)==0:
             [proc.join() for proc in processes[finished_processing*max_jobs:((finished_processing+1)*max_jobs-1)]]
             finished_processing = finished_processing+1
