@@ -117,6 +117,9 @@ def shutdown(self,queue=None,worker_name=None):
 
     self.logger.info(f'Finished all tasks; shutting down Celery app.')
     app.control.broadcast('shutdown', destination=[worker_name])
+    
+    #import time
+    #time.sleep(20)
     #subprocess.check_output(['scancel', os.getenv('SLURM_JOB_ID')])
 
     #app.control.shutdown()
