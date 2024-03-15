@@ -12,7 +12,7 @@ if proc == "OLI":
 	sensors  = ['OLI'] # 'MOD','VI'
 
 if proc == "MSI":
-	datasets = ['MSI_test_image'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
+	datasets = ['CONUS_2023_single_tile'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
 	sensors  = ['MSI']
 
 #===================================
@@ -126,7 +126,7 @@ if 'CONUS' in datasets[0]:
     search_day_window      = 200 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
     max_cloud_cover        = 20 #5
     aquaverse_prod_level   = 0
-    local_processing       = True  #deploy to SLURM nodes
+    local_processing       = False  #deploy to SLURM nodes
     filter_unprocessed_imagery = False
 
 if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0]: 

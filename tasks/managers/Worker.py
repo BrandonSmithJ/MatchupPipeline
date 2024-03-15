@@ -83,9 +83,17 @@ class Worker(Process):
     def _stop_process(self):
         """ Stop background process """
         if self.process is None: return 
+        #from inspect import getframeinfo, stack
+        #for stack_interval in stack():
 
+        #    caller = getframeinfo(stack_interval[0])
+        #    print("%s:%d - %s" % (caller.filename, caller.lineno, message)) # python3 syntax print
+
+        #assert(0)
         # Send shutdown signal if this process is still active
-        if self.process.poll() is None: shutdown.delay()
+        if self.process.poll() is None:
+            shutdown.apply_async(kwargs={'queue':self.pkwargs.get('queues', None),'worker_name' :self.pkwargs.get('hostname', None)},queue=self.pkwargs.get('queues', None).split(',')[-1])
+            #shutdown.delay(queue=self.pkwargs.get('queues', None),worker_name=self.pkwargs.get('hostname', None),hostname=socket_hostname) #self.queues[-1],worker_name app.control.broadcast('shutdown', destination=[self.pkwargs['logname']])
 
         # Attempt to gracefully stop Celery worker
         try:

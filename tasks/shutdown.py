@@ -1,11 +1,11 @@
 from .. import app, utils
 
 from collections import defaultdict as dd 
+import subprocess,os
 
-
-def get_active_tasks2(self):
+def get_active_tasks2(self,worker):
     """ Seems to not always get all tasks """
-    inspector = app.control.inspect()
+    inspector = app.control.inspect(destination=[worker])
     is_active = lambda t: ((t['name'] != 'shutdown') and 
                            (t['id']   != self.request.id))
 
@@ -14,11 +14,12 @@ def get_active_tasks2(self):
         sg = getattr(inspector, stage)()
         if sg is not None:
             for queue, tasks in sg.items():
+                print(stage,queue,tasks)
                 active = list(filter(is_active, tasks))
                 if len(active): return len(active) 
 
 
-def get_active_tasks(self):
+def get_active_tasks(self,queues):
 
     # tasks = dd(list)
     with app.connection() as connection:
@@ -28,13 +29,15 @@ def get_active_tasks(self):
             # a = inspector.active_queues()
             # print(a)
             # for worker, queues in a.items():
-            for queue in ['celery', 'download','correct','extract','plot','write']: #'dedicated', 
+            for queue in queues: #['celery', 'download','correct','extract','plot','write']: #'dedicated', 
             #for queue in ['celery', 'search','correct','extract','write']:
 
                 name, jobs, consumers = channel.queue_declare(**{
                     'queue'   : queue,#['name'], 
                     'passive' : True,
                 })
+                
+                print(name,jobs,consumers)
                 if jobs > 0:
                     return jobs
                 # active = []
@@ -55,7 +58,7 @@ def get_active_tasks(self):
 import time
 
 @app.task(bind=True, name='shutdown', priority=9)
-def shutdown(self):
+def shutdown(self,queue=None,worker_name=None):
     """
     Shutdown the celery app once all task queues are empty.
     This task checks if there are other tasks in any queues,
@@ -64,7 +67,17 @@ def shutdown(self):
     Once all queues are found empty, it dispatches a message
     to stop the monitor, and a shutdown command to the app.
     """
-    active = get_active_tasks(self) or get_active_tasks2(self)
+    print("In shutdown...")
+    print('Celery task ID is:',self.request.delivery_info['routing_key'],self.request.delivery_info)
+    queue_OG = queue
+    worker_OG = worker_name
+    queue = queue.split(',')[-1]
+    import socket
+    socket_hostname = socket.gethostname()
+    worker_name = worker_name.split('@')[0] + '@' + socket_hostname#hostname
+    print("Queue:", queue, "Worker name", worker_name)
+
+    active = get_active_tasks(self,[queue])  or get_active_tasks2(self,worker_name)
     # active = get_active_tasks(self)
     if active is not None:
         # count   = len(active)
@@ -72,7 +85,7 @@ def shutdown(self):
         message = f'Waiting for {active} tasks'
         self.logger.info(message)
         self.logger.debug(f'Tasks: {active}')
-        shutdown.apply_async(countdown=10)
+        shutdown.apply_async(kwargs={'queue':queue_OG,'worker_name' :worker_OG},countdown=10,queue=queue)
         return
 
 
@@ -100,7 +113,10 @@ def shutdown(self):
         dispatcher.send('stop-monitor')
 
     # Purge any remaining tasks in the queue
-    utils.purge_queues()
+    utils.purge_queues(queues=[queue])
 
-    self.logger.info(f'Finished all tasks; shutting down Celery app.') 
-    app.control.shutdown()
+    self.logger.info(f'Finished all tasks; shutting down Celery app.')
+    app.control.broadcast('shutdown', destination=[worker_name])
+    #subprocess.check_output(['scancel', os.getenv('SLURM_JOB_ID')])
+
+    #app.control.shutdown()

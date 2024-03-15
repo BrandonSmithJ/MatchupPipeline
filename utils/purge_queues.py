@@ -10,4 +10,4 @@ def purge_queues(
         for queue in queues:
             try:    conn.default_channel.queue_purge(queue)
             except: pass
-    app.control.purge()
+    #app.control.purge()
