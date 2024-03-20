@@ -256,7 +256,7 @@ def main2(gc, data, i, debug=True):
             'queues'      : ['search','download','correct','extract','plot','celery','write',unique_uuid],
             #'queues'      : ['search', 'celery'],
             'concurrency' : 4,
-            'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0001-0046],slrm[0048-0055]'},
+            'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0001-0044],slrm[0048-0055]'},
         },
         # Multiple threads for correction
         #{   'logname'     : f'{username}/worker2{i}',
@@ -329,6 +329,13 @@ def main(debug=True):
     processes = []
     max_jobs  = 180
     finished_processing = 0
+
+    #update number of max files prior to SLURM deployment
+    import resource
+    resource.prlimit(0,resource.RLIMIT_NOFILE,(30000,523288))
+    print("Set resource limit is:")
+    resource.getrlimit(resource.RLIMIT_NOFILE)
+
     #print(random_list_range)
     for i,j in enumerate(list_range):
         #print(j,data.iloc[j])
@@ -370,7 +377,7 @@ def main_local(debug=True):
         # Multiple threads for download
         {   'logname'     : f'{username}/worker1',
             'queues'      : ['search','download','celery'],
-            'concurrency' : 110,
+            'concurrency' : 2,
         },
         # Multiple threads for correction
         {   'logname'     : f'{username}/worker2',

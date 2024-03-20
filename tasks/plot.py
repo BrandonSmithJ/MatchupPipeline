@@ -35,6 +35,8 @@ def plot(self,
         'date'     : parse_date(sample_config['inp_file']),
         'ac_method': sample_config['ac_method'],
         'fix_projection_Rrs': global_config.fix_projection_Rrs,
+        'save_nc_bool':global_config.save_nc,
+        'save_tif_bool':global_config.save_tif,
      	}
     if global_config.plot_products: plot_products(**kwargs)
     if global_config.plot_Rrs:     

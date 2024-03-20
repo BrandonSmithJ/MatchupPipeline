@@ -12,7 +12,7 @@ if proc == "OLI":
 	sensors  = ['OLI'] # 'MOD','VI'
 
 if proc == "MSI":
-	datasets = ['CONUS_2023_single_tile'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
+	datasets = ['OLI_test_image_CB_ET42_EE31'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
 	sensors  = ['MSI']
 
 #===================================
@@ -75,7 +75,8 @@ extract_window         = 1 # pixels to extract around the center pixel (e.g. 1 -
 fix_projection_Rrs     = False
 plot_products          = True
 plot_Rrs               = False
-
+save_nc                = False
+save_tif               = False
 #===================================
 #    Data Cleanup Parameters
 #===================================
@@ -142,7 +143,7 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0]:
     extract_window         = 1 #3x3
     apply_bounding_box     = True # what is this - process only a portion of the image
     search_day_window      = 3000 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
-    max_cloud_cover        = 50#5
+    max_cloud_cover        = 20#5
     aquaverse_prod_level   = 3
     local_processing       = False  #deploy to SLURM nodes
     #extra_cmd              = {'l2gen': {'OLI' : {'gain':[1.00,1.00,1.00,1.00,1.00,1.00,1.00],'filter_opt':0},

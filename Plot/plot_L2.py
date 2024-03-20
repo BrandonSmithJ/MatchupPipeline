@@ -158,7 +158,7 @@ def plot_product(ax, title, product, rgb, vmin, vmax):
     img  = ax.imshow(np.squeeze(product), norm=norm, cmap='turbo',interpolation='nearest')
     plt.colorbar(img, ax=ax,fraction=0.046, pad=0.04)
 
-def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product = 'chl,tss,cdom',overwrite=True, fix_projection_Rrs = False):
+def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product = 'chl,tss,cdom',overwrite=True, fix_projection_Rrs = False,save_nc_bool=False,save_tif_bool=False):
     if sensor in ['OLCI']: product = 'chl,tss,cdom,pc'
     #Identifies the subsensor from input path
     sensor = identify_subsensor(inp_file,sensor)
@@ -259,11 +259,11 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     print(f'Generated',png_filename,geotiff_filename,jpg_filename,'in {time.time()-time_start:.1f} seconds')
     print(np.shape(products),len(products))
     if not fix_projection_Rrs: 
-        save_nc(inp_file,nc_filename,products,slices,overwrite)
+        if save_nc_bool: save_nc(inp_file,nc_filename,products,slices,overwrite)
         products, extent, (im_lon, im_lat)  = fix_projection(products,im_lon,im_lat,reproject=False,nearestNeighborInterp=False, sparse_resample=True)        
-    if True:
+    if save_tif_bool:
         create_geotiff(products=rgb_enhance(rgb),im_lat=im_lat,im_lon=im_lon,filename=geotiff_filename.split('.tif')[0]+'_RGB.tif')
-    create_geotiff(products=products,im_lat=im_lat,im_lon=im_lon,filename=geotiff_filename)
+        create_geotiff(products=products,im_lat=im_lat,im_lon=im_lon,filename=geotiff_filename)
 
     return True
     
