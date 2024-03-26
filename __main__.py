@@ -351,10 +351,11 @@ def main(debug=True):
         #p.join()
 
         time.sleep(20*1)
+        [proc.join(timeout=1) for proc in processes if proc.is_alive()]
         if i >= 2*max_jobs-1 and (i%max_jobs)==0:
-            [proc.join() for proc in processes[finished_processing*max_jobs:((finished_processing+1)*max_jobs-1)]]
+            [proc.join(timeout=5) for proc in processes[finished_processing*max_jobs:((finished_processing+1)*max_jobs-1)]]
             finished_processing = finished_processing+1
-    [ process.join() for process in processes if process.is_alive()]
+    [ process.join(timeout=5) for process in processes if process.is_alive()]
     
 
 def main_local(debug=True):

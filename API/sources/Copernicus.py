@@ -11,7 +11,7 @@ import os, zipfile
 from sentinelsat import SentinelAPI
 import requests
 import numpy as np
-
+import time
 def split_date_time(start,end, difference=365):
     start_dt   = dt.strptime(start,'%Y-%m-%d').date()
     end_dt     = dt.strptime(end,'%Y-%m-%d').date()
@@ -50,9 +50,16 @@ def get_scenes_from_query(satellite,start,end,min_cloud_cover=0,max_cloud_cover=
 
             url = alternate_url
             #print(url)
-            response = requests.get(url)
-            data_list = response.json()['features'] 
-        
+            #response = requests.get(url)
+            data_list=None
+            while data_list is None:
+                try:
+                    response = requests.get(url)
+                    data_list = response.json()['features'] 
+                except:
+                    time.sleep(2)
+                    pass
+
             scene_ids = [d['properties']['title'].replace('.SAFE','') for d in data_list if '.SAFE' in d['properties']['title']]
             product_ids = [d['id'] for d in data_list if '.SAFE' in d['properties']['title']]
             dictionary_out = {p:s for p,s in zip(scene_ids,product_ids)}

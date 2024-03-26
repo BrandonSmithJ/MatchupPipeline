@@ -81,6 +81,10 @@ def parse_feature(global_config, idxs, features, name):
     feature = feature[feature.index.get_level_values('row').isin(w_range)]
     feature = feature[feature.index.get_level_values('col').isin(w_range)]
     n_valid = (~feature.isna()).groupby(level=['row', 'col']).any().sum()
+    print(name)
+    if name in ['Chla','TSS','Zsd']:
+        feature_max=(feature).groupby(level=['row', 'col']).max().max()
+        feature_min=(feature).groupby(level=['row', 'col']).min().min()
 
     # Set sample flag to be the bits for all pixel flags set within the window
     #print('before')
@@ -108,6 +112,9 @@ def parse_feature(global_config, idxs, features, name):
     # Store the number of valid window pixels
     if '_bands' not in name:
         feature[f'{name}_valid_pct'] = n_valid / len(w_range) ** 2
+        if name in ['Chla','TSS','Zsd']:
+            feature[f'{name}_max']       = feature_max
+            feature[f'{name}_min']       = feature_min
     return feature 
 
 
