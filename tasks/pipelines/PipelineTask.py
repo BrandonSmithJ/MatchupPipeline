@@ -40,20 +40,24 @@ class PipelineTask(Task):
         """ This is run by the worker when the task fails """
         #Write failure to specific log file
         from pathlib import Path
-        if 'scene_id' in args[0].keys():
-            out_string = task_id + '\n' + args[0]['scene_id'] + '\n' + str(einfo) + '\n' + "-------------------------------------------------\n"
-        else:
-            out_string = task_id + '\n' + '\n' + str(einfo) + '\n' + "-------------------------------------------------\n"
+        out_string = task_id + '\n' + '\n' + str(einfo) + '\n' + "-------------------------------------------------\n"
+        scene_path = 'no scene path defined' 
+        if args:
+            if 'scene_id' in args[0].keys():
+                out_string = task_id + '\n' + args[0]['scene_id'] + '\n' + str(einfo) + '\n' + "-------------------------------------------------\n"
+            scene_path = args[0]['scene_path'] if 'scene_path' in args[0].keys() else 'no scene path defined'
+        #else:
+        #    out_string = task_id + '\n' + '\n' + str(einfo) + '\n' + "-------------------------------------------------\n"
         with open( str(Path(__file__).resolve().parent.parent.parent.joinpath('Logs').joinpath('errors.txt')),"a") as error_file:
             error_file.write(out_string)
         
         #Write finished state 
-        scene_path = args[0]['scene_path'] if 'scene_path' in args[0].keys() else 'no scene path defined' #args[0]['scene_path'] 
+        #scene_path = args[0]['scene_path'] if 'scene_path' in args[0].keys() else 'no scene path defined' #args[0]['scene_path'] 
         #print(kwargs)
         ac_method  = kwargs['ac_method'] if 'ac_method' in kwargs.keys() else 'download'
-        ac_methods = kwargs['global_config'].ac_methods
+        ac_methods = kwargs['global_config'].ac_methods if 'global_config' in kwargs.keys() else 'download'
         
-        write_complete(scene_path,ac_method,ac_methods,out_string,kwargs['global_config'].remove_scene_folder)
+        write_complete(scene_path,ac_method,ac_methods,out_string,kwargs['global_config'].remove_scene_folder if 'global_config' in kwargs.keys() else True)
         super().on_failure(exc, task_id, args, kwargs, einfo)
 
 

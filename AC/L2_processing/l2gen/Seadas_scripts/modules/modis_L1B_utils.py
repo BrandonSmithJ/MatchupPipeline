@@ -6,7 +6,7 @@ import shutil
 from modules.ParamUtils import ParamProcessing
 import modules.ProcUtils as ProcUtils
 import get_obpg_file_type
-import get_output_name_utils
+#import get_output_name_utils
 
 
 class ModisL1B:
@@ -79,7 +79,7 @@ class ModisL1B:
                                                                    sensor,
                                                                    stime,
                                                                    etime)])
-            self.geofile = mlp.get_output_name_utils.get_output_name(data_files_list, 'geo', None)
+            #self.geofile = mlp.get_output_name_utils.get_output_name(data_files_list, 'geo', None)
 
             if not os.path.exists(self.geofile):
                 self.geofile = os.path.join(os.path.dirname(self.filename), self.geofile)

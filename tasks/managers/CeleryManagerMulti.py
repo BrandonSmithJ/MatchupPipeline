@@ -94,12 +94,14 @@ class CeleryManagerMulti:
 
     def _stop_processes(self):
         """ Stop all background processes """
+        shutdown.delay()
+
         for i, process in enumerate(self):
             try:     process.close()
             except:  print(f'Encountered error, killing process {i}')
             finally: process._kill_process()
 
-
+        
 
     def _kill_processes(self):
         """ Force kill all background processes """

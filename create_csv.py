@@ -54,7 +54,7 @@ def parse_feature(global_config, idxs, features, name):
 
         feature = pd.DataFrame({i: 
             {(x, y, name, band) : value
-                for (x, y), values in zip(coords, samples)
+                for (x, y), values in zip(list(coords), list(samples))
                 for band, value in zip(bands, values)
             } for i, (samples, coords, bands) in enumerate(zip(*columns))   
         })
@@ -63,7 +63,7 @@ def parse_feature(global_config, idxs, features, name):
     else:
         feature = pd.DataFrame({i: 
             {(x, y, name) : value
-                for (x, y), value in zip(coords, samples)
+                for (x, y), value in zip(list(coords), list(samples))
             } for i, (samples, coords) in enumerate(zip(*columns))   
         })
 
@@ -164,6 +164,12 @@ def create_csv(global_config, insitu, path):
     # Parse into DataFrames and concatenate
     idxs  = data.pop('window_idxs')
     parse = lambda name: parse_feature(global_config, idxs, data, name)
+    for key in data.keys():
+        for i,j in enumerate(data[key]):
+            if type(j)==int:
+                data[key][i] = [-32768,-32768,-32768]
+
+
     data  = pd.concat(map(parse, data), axis=1)
     data  = create_valid_mask(global_config, data, path.name)
     #data  = data.drop_duplicates(('meta','uid'))

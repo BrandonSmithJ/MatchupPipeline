@@ -71,10 +71,12 @@ def shutdown(self,queue=None,worker_name=None):
     print('Celery task ID is:',self.request.delivery_info['routing_key'],self.request.delivery_info)
     queue_OG = queue
     worker_OG = worker_name
-    queue = queue.split(',')[-1]
+    if queue is not None:
+        queue = queue.split(',')[-1]
     import socket
     socket_hostname = socket.gethostname()
-    worker_name = worker_name.split('@')[0] + '@' + socket_hostname#hostname
+    if queue is not None:
+        worker_name = worker_name.split('@')[0] + '@' + socket_hostname#hostname
     print("Queue:", queue, "Worker name", worker_name)
 
     active = get_active_tasks(self,[queue])  or get_active_tasks2(self,worker_name)
@@ -120,6 +122,6 @@ def shutdown(self,queue=None,worker_name=None):
     
     #import time
     #time.sleep(20)
-    #subprocess.check_output(['scancel', os.getenv('SLURM_JOB_ID')])
+    if os.getenv('SLURM_JOB_ID') != None: subprocess.check_output(['scancel', os.getenv('SLURM_JOB_ID')])
 
     #app.control.shutdown()

@@ -184,7 +184,7 @@ def download(self,
             sample_config.pop('scene_path')
             kwargs['scene_path'] = api.download_scene(**kwargs)
 
-    if ('aquaverse' in global_config.ac_methods or True) and not downloaded_from_stream:
+    if ('aquaverse' in global_config.ac_methods or sample_config['sensor'] in ['MSI','OLI']) and not downloaded_from_stream:
         #compress output
         
         #push to stream

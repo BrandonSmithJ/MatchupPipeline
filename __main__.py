@@ -256,7 +256,7 @@ def main2(gc, data, i, debug=True):
             'queues'      : ['search','download','correct','extract','plot','celery','write',unique_uuid],
             #'queues'      : ['search', 'celery'],
             'concurrency' : 4,
-            'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0001-0044],slrm[0048-0055]'},
+            'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0001-0045],slrm[0049-0055]'},
         },
         # Multiple threads for correction
         #{   'logname'     : f'{username}/worker2{i}',
@@ -332,9 +332,12 @@ def main(debug=True):
 
     #update number of max files prior to SLURM deployment
     import resource
-    resource.prlimit(0,resource.RLIMIT_NOFILE,(30000,523288))
-    print("Set resource limit is:")
-    resource.getrlimit(resource.RLIMIT_NOFILE)
+    try:
+        resource.prlimit(0,resource.RLIMIT_NOFILE,(30000,523288))
+        print("Set resource limit is:")
+        resource.getrlimit(resource.RLIMIT_NOFILE)
+    except:
+        print("failed to set resource limit")
 
     #print(random_list_range)
     for i,j in enumerate(list_range):
@@ -351,11 +354,11 @@ def main(debug=True):
         #p.join()
 
         time.sleep(20*1)
-        [proc.join(timeout=1) for proc in processes if proc.is_alive()]
-        if i >= 2*max_jobs-1 and (i%max_jobs)==0:
-            [proc.join(timeout=5) for proc in processes[finished_processing*max_jobs:((finished_processing+1)*max_jobs-1)]]
-            finished_processing = finished_processing+1
-    [ process.join(timeout=5) for process in processes if process.is_alive()]
+        [proc.join(timeout=0) for proc in processes if proc.is_alive()]
+        #if i >= 2*max_jobs-1 and (i%max_jobs)==0:
+        #    [proc.join(timeout=0) for proc in processes[finished_processing*max_jobs:((finished_processing+1)*max_jobs-1)]]
+        #    finished_processing = finished_processing+1
+    [ process.join(timeout=0) for process in processes if process.is_alive()]
     
 
 def main_local(debug=True):
@@ -383,7 +386,7 @@ def main_local(debug=True):
         # Multiple threads for correction
         {   'logname'     : f'{username}/worker2',
             'queues'      : ['correct'],
-            'concurrency' : 4,
+            'concurrency' : 2,
         },
         # Multiple threads for extraction
         {   'logname'     : f'{username}/worker3',

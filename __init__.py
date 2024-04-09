@@ -20,11 +20,14 @@ task = 'pipeline.tasks.pipelines.PipelineTask:PipelineTask'
 app  = Celery('pipeline', task_cls=task)
 #app.control.inspect().active()
 
+rmq_hostname = 'slrm0055'
+
+
 # Set configuration options
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html
 app.conf.update(**{
-    'broker_url'              : 'pyamqp://pardees:5671', #5671 is not default; 5672 is localhost
-    'result_backend'          : 'rpc://pardees:5671',
+    'broker_url'              : f'pyamqp://{rmq_hostname}:5671', #5671 is not default; 5672 is localhost
+    'result_backend'          : f'rpc://{rmq_hostname}:5671',
     
     #'broker_url'              : 'pyamqp://skabir:skabir@pardees:5672',
     #'result_backend'          : 'rpc://skabir:skabir@pardees:5672',
@@ -91,13 +94,13 @@ app.conf.task_queues = [
   # })
 #test_suffix = '_test' if global_config.test_pipeline_celery else ''
 
-test = False
+test = True
 cert_root = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/rabbitMQ/rabbitmq_server_files/TLS'
 if os.path.exists(cert_root):
   import ssl
   app.conf.update(**{
     #'broker_url'     :f'pyamqp://{username}:mp{username}@localhost:5671/matchups_{username}', # it works!!
-    'broker_url'     :f'pyamqp://{username}_test:mp{username}_test@pardees:5671/matchups_{username}_test' if test else f'pyamqp://{username}:mp{username}@pardees:5671/matchups_{username}', 
+    'broker_url'     :f'pyamqp://{username}_test:mp{username}_test@{rmq_hostname}:5671/matchups_{username}_test' if test else f'pyamqp://{username}:mp{username}@{rmq_hostname}:5671/matchups_{username}', 
     'broker_use_ssl' : {
       'keyfile'    : f'{cert_root}/server-key.pem',
       'certfile'   : f'{cert_root}/server-cert.pem',

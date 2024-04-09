@@ -111,6 +111,10 @@ def run_l2gen(
 
     """
     assert_contains(FILENAME, sensor, 'l2gen sensor')
+    netrc_path = os.environ['HOME']+'/.netrc'
+    if not os.path.exists(netrc_path):
+        shutil.copyfile('/tis/m2cross/scratch/f003/roshea/matchup_pipeline_dev_test/pipeline/credentials/.netrc',netrc_path)    
+
 
     # Setup paths
     out_file      = Path(out_dir).absolute().joinpath('l2gen_tmp.nc')
