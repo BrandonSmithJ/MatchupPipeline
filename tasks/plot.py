@@ -2,7 +2,7 @@ from ..Plot.plot_L2  import plot_products
 from ..Plot.plot_Rrs import plot_all_Rrs as plot_Rrs
 from .. import app
 from argparse import Namespace
-
+from pathlib import Path
 @app.task(bind=True, name='plot', queue='plot',priority=5)
 def plot(self,
  	sample_config : dict,      # Config for this sample
@@ -38,7 +38,9 @@ def plot(self,
         'save_nc_bool':global_config.save_nc,
         'save_tif_bool':global_config.save_tif,
      	}
-    if global_config.plot_products: plot_products(**kwargs)
+    if global_config.plot_products: 
+        correction_path = plot_products(**kwargs)
+        if correction_path: sample_config['correction_path'] = Path(correction_path)
     if global_config.plot_Rrs:     
         # OLI
         #sensor = 

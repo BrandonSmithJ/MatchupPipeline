@@ -55,7 +55,7 @@ def parse_feature(global_config, idxs, features, name):
         feature = pd.DataFrame({i: 
             {(x, y, name, band) : value
                 for (x, y), values in zip(list(coords), list(samples))
-                for band, value in zip(bands, values)
+                for band, value in zip(list(bands), list(values))
             } for i, (samples, coords, bands) in enumerate(zip(*columns))   
         })
 
@@ -66,9 +66,10 @@ def parse_feature(global_config, idxs, features, name):
                 for (x, y), value in zip(list(coords), list(samples))
             } for i, (samples, coords) in enumerate(zip(*columns))   
         })
-
+    
     # Remove unrealistic feature values
     if name in ['Rrs', 'rhos', 'rhot']:
+        feature = feature.apply(pd.to_numeric, errors='coerce')
         feature[feature >= 10] = np.nan
         feature[feature <= -1] = np.nan
 
@@ -166,8 +167,10 @@ def create_csv(global_config, insitu, path):
     parse = lambda name: parse_feature(global_config, idxs, data, name)
     for key in data.keys():
         for i,j in enumerate(data[key]):
-            if type(j)==int:
-                data[key][i] = [-32768,-32768,-32768]
+            if type(j)==int or type(j)==float:
+                data[key][i] = [len(data[key][i-1][0])* [-32768]] #if i>0 else [-32768, -32768, -32768, -32768, -32768, -32768, -32768, -32768, -32768, -32768, -32768, -32768, -32768]
+
+                #data[key][i] = [-32768,-32768,-32768]
 
 
     data  = pd.concat(map(parse, data), axis=1)

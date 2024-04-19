@@ -69,8 +69,9 @@ def shutdown(self,queue=None,worker_name=None):
     """
     print("In shutdown...")
     print('Celery task ID is:',self.request.delivery_info['routing_key'],self.request.delivery_info)
-    queue_OG = queue
+    queue_OG  = queue
     worker_OG = worker_name
+    #active    = None
     if queue is not None:
         queue = queue.split(',')[-1]
     import socket
@@ -78,8 +79,12 @@ def shutdown(self,queue=None,worker_name=None):
     if queue is not None:
         worker_name = worker_name.split('@')[0] + '@' + socket_hostname#hostname
     print("Queue:", queue, "Worker name", worker_name)
-
-    active = get_active_tasks(self,[queue])  or get_active_tasks2(self,worker_name)
+    
+    if queue is not None:
+        active = get_active_tasks(self,[queue])  or get_active_tasks2(self,worker_name)
+    #else:
+    #    active=None
+    
     # active = get_active_tasks(self)
     if active is not None:
         # count   = len(active)

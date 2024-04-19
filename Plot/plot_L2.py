@@ -29,7 +29,8 @@ import time
 import os
 from PIL import Image
 
-
+from celery.utils.log import get_task_logger
+logger = get_task_logger('pipeline')
 
 def save_nc(inp_file,out_path,products,slices,overwrite,prefix='AQV'):
     ''' Saves products onto the L2 tile'''
@@ -51,8 +52,12 @@ def save_nc(inp_file,out_path,products,slices,overwrite,prefix='AQV'):
                         dims = dst[[k for k in dst.variables.keys() if 'Rrs' in k or 'Rw' in k][0]].get_dims()
                         dst.createVariable(varname, np.float32, [d.name for d in dims], fill_value=-999)
                 dst[varname][:] = np.squeeze(products[:,:,slices[product]].astype(np.float32))
-
-
+    
+    message = f"In save_nc: Copying {new_fn} to: {filename}"
+    logger.warn(message)
+    print(message) 
+    copy_status = os.system(f'cp {new_fn} {filename}')
+    logger.warn(f"Copy returned: {copy_status}")
 
 
 def convert_png_to_jpg(inp_file,output_file):
@@ -186,7 +191,7 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
 
     if os.path.exists(png_filename) and not overwrite:
         print(png_filename,f'exists, moving to next location')
-        return
+        return nc_filename if os.path.exists(nc_filename) else False
     time_start = time.time()
 
     # Load data, using rhos as the visible background
@@ -205,7 +210,10 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     rgb   = extract_data(image, bands, rgb_bands,key='rhos')
  
     if sensor in ['PACE']: rgb = rgb[::-1, :, :] 
-    #if sensor in ['VI'] or (Aqua_or_Terra =='A' and 'MOD' in sensor): rgb = rgb[::-1, ::-1, :] 
+    #if sensor in ['VI'] or (Aqua_or_Terra =='A' and 'MOD' in sensor): rgb = rgb[::-1, ::-1, :]
+    if 'aquaverse' not in str(inp_file):
+        products = np.full((np.shape(Rrs)[0],np.shape(Rrs)[1],3), -999)
+        slices   = {'chl':0,'tss':1,'cdom':2}
     if fix_projection_Rrs:
         try:
             products, slices = image_estimates(Rrs, **kwargs)
@@ -213,7 +221,7 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
             print('----------------------------------')
             print('Failed to produce products for ', png_filename)
             print('----------------------------------')
-            return False
+            return nc_filename if os.path.exists(nc_filename) else False
     
         rgb, extent, (_, _)  = fix_projection(rgb,im_lon,im_lat,reproject=False,nearestNeighborInterp=False, sparse_resample=True)
 
@@ -235,7 +243,9 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
         print('----------------------------------')
         print('Failed to produce products for ', png_filename)
         print('----------------------------------')
-        return False
+        if not fix_projection_Rrs:
+            if save_nc_bool: save_nc(inp_file,nc_filename,products,slices,overwrite)
+        return nc_filename if os.path.exists(nc_filename) else False
 
     # Create plot for each product, bounding the colorbar per product
     f, axes = plt.subplots(1, len(slices), figsize=(4*len(slices), 8))
@@ -265,5 +275,5 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
         create_geotiff(products=rgb_enhance(rgb),im_lat=im_lat,im_lon=im_lon,filename=geotiff_filename.split('.tif')[0]+'_RGB.tif')
         create_geotiff(products=products,im_lat=im_lat,im_lon=im_lon,filename=geotiff_filename)
 
-    return True
+    return nc_filename if os.path.exists(nc_filename) else False
     

@@ -7,6 +7,8 @@ import numpy as np
 
 from .utils import get_latlon 
 
+from celery.utils.log import get_task_logger
+logger = get_task_logger('pipeline')
 
 meters_distance = lambda *args: distance.distance(*args).km * 1000
 
@@ -132,7 +134,8 @@ def extract_window(
         if 'geophysical_data' in data.groups.keys():
             data = data['geophysical_data']
         datavars = get_variables(data)
-        
+        logger.warn("Extract variables are:")
+        logger.warn(datavars)
         vars_single_dict = {}
         vars_double_dict = {}
         vars_bands_dict  = {}

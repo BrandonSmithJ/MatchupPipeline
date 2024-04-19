@@ -5,18 +5,18 @@ import sys
 username = getoutput('whoami') 
 
 #===============***** This is for f001 - av3 - Matchup processing
-proc = "MOD"
+proc = "MSI"
 
 if proc == "OLI":
 	datasets = ['OLI_test_image_Erie_stations'] # _Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF']# ['OLI_test_image_Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF'] #OLI_MSI_matchups_Lake_Erie
 	sensors  = ['OLI'] # 'MOD','VI'
 
 if proc == "MSI":
-	datasets = ['CONUS_2023'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
+	datasets = ['OLI_test_image_Wachusett_reservoir_timeseries']#['OLI_test_image_Quabbin_reservoir_timeseries'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
 	sensors  = ['MSI']
 
 if proc == "MOD":
-        datasets = ['GSL_1999_2022'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
+        datasets = ['OLI_test_image_Erie_stations'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
         sensors  = ['MOD']
 
 if proc == "VI":
@@ -142,7 +142,7 @@ if 'CONUS' in datasets[0]:
 
 if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0]: 
     overwrite              = False# what does it overwrite - everything - yes, even pikle file
-    ac_methods             =['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
+    ac_methods             = ['aquaverse'] #['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
     download_via_aquaverse = False
     timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
     remove_scene_folder    = True
@@ -152,13 +152,14 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0]:
     plot_Rrs               = False
     extract_window         = 1 #3x3
     apply_bounding_box     = True # what is this - process only a portion of the image
-    search_day_window      = 4000 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
+    search_day_window      = 3000 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
     max_cloud_cover        = 50#5
     aquaverse_prod_level   = 3
-    local_processing       = True  #deploy to SLURM nodes
+    local_processing       = False  #deploy to SLURM nodes
     #extra_cmd              = {'l2gen': {'OLI' : {'gain':[1.00,1.00,1.00,1.00,1.00,1.00,1.00],'filter_opt':0},
     #                                    'MSI' : {'gain':[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],'filter_opt':0}}}
-    
+    save_nc                = False if 'aquaverse' in ac_methods else True
+    save_tif               = False if 'aquaverse' in ac_methods else True
     filter_unprocessed_imagery = False
     #scene_id = '17SQC'
     #scene_id = "19TCH"#"LC09_L1TP_012030_20220722_20230406_02_T1"
@@ -179,7 +180,7 @@ if   'MODIS' in datasets[0] or 'VIIRS' in datasets[0] or 'GSL' in datasets[0]:
     search_day_window      = 9000 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
     max_cloud_cover        = 20#5
     aquaverse_prod_level   = 0
-    local_processing       = False  #deploy to SLURM nodes
+    local_processing       = True  #deploy to SLURM nodes
     save_nc                = True
     save_tif               = True
     #scene_id               = "2021099184000"
@@ -204,7 +205,7 @@ if 'OLI_MSI_matchups' in datasets[0]:
     plot_Rrs               = False
     extract_window         = 1 #3x3
     apply_bounding_box     = False # what is this - process only a portion of the image
-    search_day_window      = 0 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
+    search_day_window      = 9000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
     max_cloud_cover        = 10
     aquaverse_prod_level   = 3
     local_processing       = True  #deploy to SLURM nodes

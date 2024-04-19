@@ -122,6 +122,7 @@ def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
         if len(unique_values) == 1:
             unique_values = list(unique_values)[0]
         else:
+            print(inp,unique_values)
             assert(0)
         return unique_values
 
@@ -256,7 +257,7 @@ def main2(gc, data, i, debug=True):
             'queues'      : ['search','download','correct','extract','plot','celery','write',unique_uuid],
             #'queues'      : ['search', 'celery'],
             'concurrency' : 4,
-            'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0001-0045],slrm[0049-0055]'},
+            'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0001-0041],slrm[0046-0055]'},
         },
         # Multiple threads for correction
         #{   'logname'     : f'{username}/worker2{i}',
