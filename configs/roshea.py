@@ -5,7 +5,7 @@ import sys
 username = getoutput('whoami') 
 
 #===============***** This is for f001 - av3 - Matchup processing
-proc = "MSI"
+proc = "MOD"
 
 if proc == "OLI":
 	datasets = ['OLI_test_image_Erie_stations'] # _Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF']# ['OLI_test_image_Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF'] #OLI_MSI_matchups_Lake_Erie
@@ -16,7 +16,7 @@ if proc == "MSI":
 	sensors  = ['MSI']
 
 if proc == "MOD":
-        datasets = ['OLI_test_image_Wachusett_reservoir_timeseries'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
+        datasets = ['MODIS_VIIRS_test_image'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
         sensors  = ['MOD']
 
 if proc == "VI":

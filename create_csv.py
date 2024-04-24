@@ -240,8 +240,10 @@ def combine_matchups(global_config,path,atm_corrs):
 
     
 
-def main():
-    global_config = gc = get_args(validate=False)
+def main(gc=None):
+    if gc is None:
+        gc = get_args(validate=False)
+    global_config = gc #= get_args(validate=False)
     print(f'\nCollecting matchups using parameters: {pretty_print(gc.__dict__)}\n')
     
     ins_path = Path(global_config.insitu_path)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/tis/m2cross/scratch/f003/roshea/venv_plotting/plotting_env/bin/python
 # -*- coding: utf-8 -*-
 """
 Created on Mon Aug 30 09:56:09 2021
@@ -33,6 +33,7 @@ if os.name == 'nt':
 else:  
     mpl.rc('font', family='DejaVu Sans')
 
+import sys
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -132,12 +133,13 @@ product_rename_dictionary = {'Chla'  : 'chla',
                              'CDOM'  : 'cdom',}
 # os.mkdir(save_path)
 #load data from the matchups files into a very standardized format
-def load_gathered_data(gathered_path,folder_names=[],products=[],overwrite=True):
+def load_gathered_data(gathered_path,folder_names=[],products=[],overwrite=True,datasets=[]):
     #identify all folders in gathered path
     sensors        = ["MOD","MSI","OLI"] #,"OLI","MSI"]
     atm_corrs      = ["aquaverse","l2gen"]
-    datasets       = ["GSL_1999_2022","OLI_test_image_MS_AC","OLI_test_image_CB_subset","OLI_test_image_CB_ET42_EE31","OLI_test_image_Boston_timeseries","OLI_test_image_Erie_stations","OLI_test_image_Damariscotta_1",'OLI_test_image_Damariscotta_2',"OLI_test_image_Oyster_farm","OLI_test_image_Honga_TS_1","OLI_test_image_Honga_TS_2","OLI_test_image_Wachusett_reservoir_timeseries","OLI_test_image_Quabbin_reservoir_timeseries"] #,"OLI_test_image_Honga_TS_1","OLI_test_image_Honga_TS_2"
-    datasets = ['OLI_test_image_Wachusett_reservoir_timeseries']#,"OLI_test_image_Wachusett_reservoir_timeseries"] #["OLI_test_image_MS_AC"]#["OLI_test_image_Honga_TS_1"]
+    if not len(datasets):
+        datasets       = ["GSL_1999_2022","OLI_test_image_MS_AC","OLI_test_image_CB_subset","OLI_test_image_CB_ET42_EE31","OLI_test_image_Boston_timeseries","OLI_test_image_Erie_stations","OLI_test_image_Damariscotta_1",'OLI_test_image_Damariscotta_2',"OLI_test_image_Oyster_farm","OLI_test_image_Honga_TS_1","OLI_test_image_Honga_TS_2","OLI_test_image_Wachusett_reservoir_timeseries","OLI_test_image_Quabbin_reservoir_timeseries"] #,"OLI_test_image_Honga_TS_1","OLI_test_image_Honga_TS_2"
+    #datasets = ['OLI_test_image_Wachusett_reservoir_timeseries']#,"OLI_test_image_Wachusett_reservoir_timeseries"] #["OLI_test_image_MS_AC"]#["OLI_test_image_Honga_TS_1"]
     ######
     #datasets = ["OLI_test_image_Erie_stations"]
     gathered_data     = {}
@@ -508,22 +510,32 @@ def plot_products(gathered_data,insitu_data,save_location,products=['chla','tss'
             plt.savefig(str(save_location) + f'/{dataset}_{sensor}_{atm_corr}_{uid_name}_timeseries.png',dpi=400)
             plt.close()        
 
-        
     #iterate through datasets
     # for dataset in gathered_data.keys()
-    
-    
-    
     return
 
-#load data from insitu with a specific naming convention, 
-gathered_data = load_gathered_data(gathered_path)
-with open('/tis/m2cross/scratch/f003/roshea/For_Arun/gathered_data.pickle', 'wb') as handle:
-    pickle.dump(gathered_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+def main(datasets=[]):
+    #load data from insitu with a specific naming convention, 
+    gathered_data = load_gathered_data(gathered_path,datasets=datasets)
+    #with open('/tis/m2cross/scratch/f003/roshea/For_Arun/gathered_data.pickle', 'wb') as handle:
+    #    pickle.dump(gathered_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    for dataset in datasets:
+        if dataset not in insitu_data_dictionary.keys():
+            insitu_data_dictionary[dataset] = ["",0]
 
-insitu_data   = load_insitu_data(insitu_path,insitu_data_dictionary)
-with open('/tis/m2cross/scratch/f003/roshea/For_Arun/insitu_data.pickle', 'wb') as handle:
-    pickle.dump(insitu_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    insitu_data   = load_insitu_data(insitu_path,insitu_data_dictionary)
+    #with open('/tis/m2cross/scratch/f003/roshea/For_Arun/insitu_data.pickle', 'wb') as handle:
+    #    pickle.dump(insitu_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+    plot_products(gathered_data,insitu_data,save_path,plot_matchups=0)
 
-plot_products(gathered_data,insitu_data,save_path,plot_matchups=0)
+if __name__ == "__main__":
+    n = len(sys.argv)
+    print("N arguments:",n)
+    if n >1:
+        print(sys.argv[1])
+        print("Datasets:",eval(sys.argv[1]))
+
+        main(datasets=eval(sys.argv[1]))
+    else:
+        main()

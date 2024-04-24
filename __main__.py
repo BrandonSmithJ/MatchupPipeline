@@ -15,9 +15,9 @@ from multiprocessing import Process
 import time
 import math
 import shutil
-#import app as app2
 import random
 import socket
+
 def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
     """ Load the in situ data and parse as necessary """
     datasets = []
@@ -248,58 +248,27 @@ def main2(gc, data, i, debug=True):
     from pathlib import Path
     Path(Path(__file__).parent.joinpath('Logs').joinpath(username)).mkdir(parents=True, exist_ok=True)
     import uuid, random, string
-    #unique_uuid = str(uuid.uuid4())[0:8]
     scene_id_local=data['scene_id']
-    #unique_uuid = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
     unique_uuid = f'{random.randint(0,10)}{random.randint(0,10)}{random.randint(0,10)}{random.randint(0,10)}{random.randint(0,10)}{random.randint(0,10)}{random.randint(0,10)}{random.randint(0,10)}'
     worker_kws = [
-        # Multiple threads for download
         {   'logname'     : f'{username}/{scene_id_local}_{i}', #worker1{i}',
             'queues'      : ['search','download','correct','extract','plot','celery','write',unique_uuid],
             #'queues'      : ['search', 'celery'],
             'concurrency' : 4,
             'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0001-0041],slrm[0046-0055]'},
         },
-        # Multiple threads for correction
-        #{   'logname'     : f'{username}/worker2{i}',
-        #    'queues'      : ['correct'],
-        #    'concurrency' : 4, #
-        #    'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0005-0055]'},
-        #},
-        # Single dedicated thread (i.e. for writing)
-        #{   'logname'     : f'{username}/worker3{i}',
-        #    'queues'      : ['write'],
-        #    'concurrency' : 1,
-        #    'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0005-0055]'},
-        #},
     ]
     print("UUID is:",unique_uuid)
     gc.queue = unique_uuid
     pipeline = create_extraction_pipeline(gc)
     with CeleryManager(worker_kws, data, gc.ac_methods) as manager:
-        #for i, row in data.iterrows(): 
-        #if debug: print(data['scene_id'],gc.scene_id)
-        #if gc.scene_id in data['scene_id']: #'T18SUG' '044033' 'T2017252150500'
         data = data.to_dict()
         if debug and gc.timeseries_or_matchups !='matchups': print(data['scene_id'],gc.scene_id)
-        #data = data.to_dict()
         if 'scene_id' in data.keys():
             if gc.scene_id not in data['scene_id']: return 0#'T18SUG' '044033' 'T2017252150500'
-        #data = data.to_dict()
         pipeline.delay(data)
-        #pipeline.apply_async(data)
-        #pipeline(data) #if debug else pipeline.apply_async(data,queue='task2') #pipeline.delay(data)
-        #time.sleep(10)
 
-        # deploy_job.sh {row} - how? This should call a python script to start processing
-                # row.pkl 
-                # strt slrm jobs - activats env
-                # run main.py - starts celery/rabbitMQ? not able to start them from a slurm job.
-                # main row.pkl
-                
-    # pass this celery processing to each node
-    # deploy_job.sh that will receive each row elements 
-    # and create an instance of "pipeline" object and run in parallel
+
 
 def main(debug=True):
     global_config = gc = get_args()
@@ -312,16 +281,6 @@ def main(debug=True):
     # Shuffle samples to minimize risk of multiple threads trying to operate
     # on the same matching scene at once
     data = data.sample(frac=1)
-    #j = 0
-    #for j in range(math.ceil(len(data)/20)):
-    #    data2 = data.iloc[j:j+20,:]
-    #    for i in range(math.ceil(len(data2))): # len of the parsed
-    #        p = Process(target=main2, args=(gc, data2.iloc[i], str(i)))
-    #        p.start()
-    #        time.sleep(60*2)
-    
-    #        folders = list(out_path.glob('*'))
-    #    if (len(folders)>global_config.max_processing_scenes):
     out_path = global_config.output_path.joinpath(global_config.sensors[0])
     print("Outpath is")
     print(out_path)
@@ -341,27 +300,32 @@ def main(debug=True):
     except:
         print("failed to set resource limit")
 
-    #print(random_list_range)
     for i,j in enumerate(list_range):
-        #print(j,data.iloc[j])
-        folders = list(out_path.glob('*'))
-        #while (len(folders)>global_config.max_processing_scenes):
-        #    time.sleep(60*2)
-        #    folders = list(out_path.glob('*'))
-        #    print("Too many output folders")
+        #folders = list(out_path.glob('*'))
 
         p = Process(target=main2, args=(gc, data.iloc[j], str(j)))
         p.start()
         processes.append(p)
-        #p.join()
 
         time.sleep(20*1)
         [proc.join(timeout=0) for proc in processes if proc.is_alive()]
-        #if i >= 2*max_jobs-1 and (i%max_jobs)==0:
-        #    [proc.join(timeout=0) for proc in processes[finished_processing*max_jobs:((finished_processing+1)*max_jobs-1)]]
-        #    finished_processing = finished_processing+1
     [ process.join(timeout=0) for process in processes if process.is_alive()]
+    from .utils.combine_csvs      import combine_csvs
+    from .create_csv              import main as main_create_csv
+    from .Plot.plot_timeseries import main as main_plot_timeseries
+    import subprocess, os
+    from subprocess import Popen, PIPE, check_output, STDOUT
     
+    for dataset in global_config.datasets:
+        for sensor in global_config.sensors:
+            for ac_method in global_config.ac_methods:
+                out_path = global_config.output_path.joinpath(dataset).joinpath(sensor).joinpath(ac_method).joinpath('Matchups').joinpath('scenes')
+                combine_csvs(out_path)
+    main_create_csv(gc=global_config)
+    
+    datasets_str = str(global_config.datasets).replace('\'','\\\'')
+    os.system(f"pipeline/Plot/plot_timeseries.py {datasets_str}")
+    #main_plot_timeseries(datasets=global_config.datasets)
 
 def main_local(debug=True):
     global_config = gc = get_args()
@@ -429,14 +393,8 @@ if __name__ == '__main__':
     Eventually:
      - migration to zarr
      - better monitoring (plotext) / logging
-     - plotting functionality task / pipeline (hand over to Ryan?)
      - more tests / validate other sensors
-     - validate polymer (+polymer cleanup)
     '''
-    
-    # How to set up slurm 
-    # deploy_job can call this main with 1 row first
-    
     # To set up slurm without celery/rabbitMQ 
     # Search the API --> all the sceneids- info
     # deploy jobs with info
