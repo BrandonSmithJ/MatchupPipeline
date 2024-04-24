@@ -73,8 +73,8 @@ def extract_datetime(fname,sensor,index = 1):
         index = 2
     if sensor == 'MOD':
         out = [datetime.datetime.strptime(str(file_name[1:]),datetime_convertor) if type(file_name) == str else datetime.datetime.now() for file_name in fname ]
-    else:
-        out = [datetime.datetime.strptime(str(file_name).split('_')[index],datetime_convertor) if type(file_name) == str else datetime.datetime.now() for file_name in fname ]
+    else:#[datetime.datetime.strptime(str(file_name).split('_')[index],datetime_convertor) if type(file_name) == str and '-32768' not in file_name else datetime.datetime.now() for file_name in fname ]
+        out = [datetime.datetime.strptime(str(file_name).split('_')[index],datetime_convertor) if type(file_name) == str and '-32768' not in file_name else datetime.datetime.now() for file_name in fname ]
     return out #[datetime.datetime.strptime(file.split('_')[index],datetime_convertor) for file in fname]
 
 def load_csv(csv_path,header=0):
@@ -137,7 +137,7 @@ def load_gathered_data(gathered_path,folder_names=[],products=[],overwrite=True)
     sensors        = ["MOD","MSI","OLI"] #,"OLI","MSI"]
     atm_corrs      = ["aquaverse","l2gen"]
     datasets       = ["GSL_1999_2022","OLI_test_image_MS_AC","OLI_test_image_CB_subset","OLI_test_image_CB_ET42_EE31","OLI_test_image_Boston_timeseries","OLI_test_image_Erie_stations","OLI_test_image_Damariscotta_1",'OLI_test_image_Damariscotta_2',"OLI_test_image_Oyster_farm","OLI_test_image_Honga_TS_1","OLI_test_image_Honga_TS_2","OLI_test_image_Wachusett_reservoir_timeseries","OLI_test_image_Quabbin_reservoir_timeseries"] #,"OLI_test_image_Honga_TS_1","OLI_test_image_Honga_TS_2"
-    datasets = ['OLI_test_image_Quabbin_reservoir_timeseries']#,"OLI_test_image_Wachusett_reservoir_timeseries"] #["OLI_test_image_MS_AC"]#["OLI_test_image_Honga_TS_1"]
+    datasets = ['OLI_test_image_Wachusett_reservoir_timeseries']#,"OLI_test_image_Wachusett_reservoir_timeseries"] #["OLI_test_image_MS_AC"]#["OLI_test_image_Honga_TS_1"]
     ######
     #datasets = ["OLI_test_image_Erie_stations"]
     gathered_data     = {}

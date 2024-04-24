@@ -249,11 +249,12 @@ def main2(gc, data, i, debug=True):
     Path(Path(__file__).parent.joinpath('Logs').joinpath(username)).mkdir(parents=True, exist_ok=True)
     import uuid, random, string
     #unique_uuid = str(uuid.uuid4())[0:8]
+    scene_id_local=data['scene_id']
     #unique_uuid = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
     unique_uuid = f'{random.randint(0,10)}{random.randint(0,10)}{random.randint(0,10)}{random.randint(0,10)}{random.randint(0,10)}{random.randint(0,10)}{random.randint(0,10)}{random.randint(0,10)}'
     worker_kws = [
         # Multiple threads for download
-        {   'logname'     : f'{username}/worker1{i}',
+        {   'logname'     : f'{username}/{scene_id_local}_{i}', #worker1{i}',
             'queues'      : ['search','download','correct','extract','plot','celery','write',unique_uuid],
             #'queues'      : ['search', 'celery'],
             'concurrency' : 4,

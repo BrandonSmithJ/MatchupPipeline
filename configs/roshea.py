@@ -16,7 +16,7 @@ if proc == "MSI":
 	sensors  = ['MSI']
 
 if proc == "MOD":
-        datasets = ['OLI_test_image_Erie_stations'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
+        datasets = ['OLI_test_image_Wachusett_reservoir_timeseries'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
         sensors  = ['MOD']
 
 if proc == "VI":
@@ -166,7 +166,7 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0]:
     #extra_cmd.keys()
 
 if   'MODIS' in datasets[0] or 'VIIRS' in datasets[0] or 'GSL' in datasets[0]:
-    overwrite              = True# what does it overwrite - everything - yes, even pikle file
+    overwrite              = False# what does it overwrite - everything - yes, even pikle file
     ac_methods             =['l2gen'] #'l2gen','acolite','polymer','aquaverse'
     download_via_aquaverse = False
     timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
@@ -177,10 +177,10 @@ if   'MODIS' in datasets[0] or 'VIIRS' in datasets[0] or 'GSL' in datasets[0]:
     plot_Rrs               = False
     extract_window         = 1 #3x3
     apply_bounding_box     = True # what is this - process only a portion of the image
-    search_day_window      = 9000 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
+    search_day_window      = 0 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
     max_cloud_cover        = 20#5
     aquaverse_prod_level   = 0
-    local_processing       = True  #deploy to SLURM nodes
+    local_processing       = False  #deploy to SLURM nodes
     save_nc                = True
     save_tif               = True
     #scene_id               = "2021099184000"

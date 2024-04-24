@@ -30,7 +30,8 @@ def write(self,
     # sensor    = 
     to_write = {}
     
-    out_path = global_config.output_path_local.joinpath(sample_config['dataset']).joinpath(sample_config['sensor']).joinpath(sample_config['ac_method']).joinpath('Matchups')
+    out_path = global_config.output_path_local.joinpath(sample_config['dataset']).joinpath(sample_config['sensor']).joinpath(sample_config['ac_method']).joinpath('Matchups').joinpath('scenes').joinpath(sample_config['scene_id'])
+    
     print("Out path",out_path)
     out_path.mkdir(exist_ok=True, parents=True)
     # sfile = out_path.joinpath('store.zarr')

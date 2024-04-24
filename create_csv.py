@@ -168,8 +168,9 @@ def create_csv(global_config, insitu, path):
     for key in data.keys():
         for i,j in enumerate(data[key]):
             if type(j)==int or type(j)==float:
-                data[key][i] = [len(data[key][i-1][0])* [-32768]] #if i>0 else [-32768, -32768, -32768, -32768, -32768, -32768, -32768, -32768, -32768, -32768, -32768, -32768, -32768]
-
+                print(key,i)
+                data[key][i] = [len(data[key][i-1])*[len(data[key][i-1][0])* [-32768.0]] ] if type(data[key][i-1][0]) is list else len(data[key][i-1])* [-32768.0]
+                print(data[key][i],data[key][i-1])
                 #data[key][i] = [-32768,-32768,-32768]
 
 
