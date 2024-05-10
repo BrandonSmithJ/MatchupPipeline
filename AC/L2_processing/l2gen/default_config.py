@@ -121,6 +121,15 @@ SENSOR_CONFIG = {
     'aer_wave_long'  : '2258',
     'l2prod_exclude' : ['depth'],
   },
+
+
+  'SNPPVI' : {
+    #'aer_opt'        : '-3',
+    'aer_wave_short' : '862',
+    'aer_wave_long'  : '2257',
+    'l2prod_exclude' : ['depth'],
+  },
+
   'MERIS' : {
     #'aer_opt'        : '-3',      
     'aer_wave_short' : '779',

@@ -5,22 +5,22 @@ import sys
 username = getoutput('whoami') 
 
 #===============***** This is for f001 - av3 - Matchup processing
-proc = "MOD"
+proc = "MSI"
 
 if proc == "OLI":
 	datasets = ['OLI_test_image_Erie_stations'] # _Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF']# ['OLI_test_image_Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF'] #OLI_MSI_matchups_Lake_Erie
 	sensors  = ['OLI'] # 'MOD','VI'
 
 if proc == "MSI":
-	datasets = ['OLI_test_image_Wachusett_reservoir_timeseries']#['OLI_test_image_Quabbin_reservoir_timeseries'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
+	datasets = ['OLI_test_image_Damariscotta_1']#['OLI_test_image_Quabbin_reservoir_timeseries'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
 	sensors  = ['MSI']
 
 if proc == "MOD":
-        datasets = ['MODIS_VIIRS_test_image'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
+        datasets = ['GSL_1999_2022']#['OLI_test_image_Erie_stations'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
         sensors  = ['MOD']
 
 if proc == "VI":
-        datasets = ['MODIS_VIIRS_test_image']
+        datasets = ['GSL_1999_2022']
         sensors  = ['VI']
 #===================================
 #         Path Definitions
@@ -142,7 +142,7 @@ if 'CONUS' in datasets[0]:
 
 if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0]: 
     overwrite              = False# what does it overwrite - everything - yes, even pikle file
-    ac_methods             = ['aquaverse'] #['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
+    ac_methods             = ['l2gen'] #['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
     download_via_aquaverse = False
     timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
     remove_scene_folder    = True
@@ -177,7 +177,7 @@ if   'MODIS' in datasets[0] or 'VIIRS' in datasets[0] or 'GSL' in datasets[0]:
     plot_Rrs               = False
     extract_window         = 1 #3x3
     apply_bounding_box     = True # what is this - process only a portion of the image
-    search_day_window      = 0 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
+    search_day_window      = 9000 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
     max_cloud_cover        = 20#5
     aquaverse_prod_level   = 0
     local_processing       = False  #deploy to SLURM nodes

@@ -270,7 +270,7 @@ def main2(gc, data, i, debug=True):
 
 
 
-def main(debug=True):
+def main(debug=True,skip_processing=False):
     global_config = gc = get_args()
     print(f'\nRunning pipeline with parameters: {pretty_print(gc.__dict__)}\n')
     data = load_insitu_data(gc)
@@ -299,17 +299,20 @@ def main(debug=True):
         resource.getrlimit(resource.RLIMIT_NOFILE)
     except:
         print("failed to set resource limit")
+    if not skip_processing:
+        for i,j in enumerate(list_range):
+            #folders = list(out_path.glob('*'))
 
-    for i,j in enumerate(list_range):
-        #folders = list(out_path.glob('*'))
+            p = Process(target=main2, args=(gc, data.iloc[j], str(j)))
+            p.start()
+            processes.append(p)
+            if data.iloc[j]['sensor'] == "MOD":
+                time.sleep(20*1)
+            else:
+                time.sleep(20*1)
 
-        p = Process(target=main2, args=(gc, data.iloc[j], str(j)))
-        p.start()
-        processes.append(p)
-
-        time.sleep(20*1)
-        [proc.join(timeout=0) for proc in processes if proc.is_alive()]
-    [ process.join(timeout=0) for process in processes if process.is_alive()]
+            [proc.join(timeout=0) for proc in processes if proc.is_alive()]
+        [ process.join(timeout=0) for process in processes if process.is_alive()]
     from .utils.combine_csvs      import combine_csvs
     from .create_csv              import main as main_create_csv
     from .Plot.plot_timeseries import main as main_plot_timeseries

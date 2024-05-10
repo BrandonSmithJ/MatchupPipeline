@@ -49,19 +49,23 @@ def _run_seadas_script(script_file: str):
 			if not out_file.exists() or overwrite:
 
 				# Ensure necessary locations exist
-				assert(ocssw_path.exists()),  f'SeaDAS installation does not exist at "{ocssw_path}"'
-				assert(script_file.exists()), f'SeaDAS script does not exist at "{script_file}"'
-				assert(inp_file.exists()),    f'Input file does not exist at "{inp_file}"'
+                                assert(ocssw_path.exists()),  f'SeaDAS installation does not exist at "{ocssw_path}"'
+                                assert(script_file.exists()), f'SeaDAS script does not exist at "{script_file}"'
+                                assert(inp_file.exists()),    f'Input file does not exist at "{inp_file}"'
 
 				# Create command and execution environment
-				cmd = [sys.executable, script_file.as_posix(), inp_file.as_posix(), '-o', out_file.as_posix(), '--verbose']
+                                cmd = [sys.executable, script_file.as_posix(), inp_file.as_posix(), '-o', out_file.as_posix(), '--verbose']
                 #Overwrite command 
-				if n!='' and s!='' and e!='' and w!='':
-								cmd = [sys.executable, script_file.as_posix(), inp_file.as_posix(),'-g', inp_file.as_posix().split('.')[0] + '.GEO', '-o', out_file.as_posix(),'-n',n,'-s',s,'-e',e,'-w',w, '--verbose']
-				if geofile:
-								cmd = [sys.executable, script_file.as_posix(), inp_file.as_posix(), geofile, '-o', out_file.as_posix(), '--verbose']
-				env = dict(os.environ)
-				env.update({
+                                if n!='' and s!='' and e!='' and w!='':
+                                    cmd = [sys.executable, script_file.as_posix(), inp_file.as_posix(),'-g', inp_file.as_posix().split('.')[0] + '.GEO', '-o', out_file.as_posix(),'-n',n,'-s',s,'-e',e,'-w',w, '--verbose']
+                                if geofile:
+                                    cmd = [sys.executable, script_file.as_posix(), inp_file.as_posix(), geofile, '-o', out_file.as_posix(), '--verbose']
+                                if "modis_GEO.py" in str(script_file):
+                                    cmd.append("--ancdb")
+                                    cmd.append(inp_file.parent.joinpath('ancillary_data.db').as_posix())
+
+                                env = dict(os.environ)
+                                env.update({
 					'PYTHONPATH' : module_path.as_posix(),
 					'L2GEN_ANC'  : ancill_path.as_posix(),
 					'OCSSWROOT'  : ocssw_path.as_posix(),
@@ -72,8 +76,8 @@ def _run_seadas_script(script_file: str):
 				})
 
 				# Execute the script in a temporary folder to ensure everything is cleaned up
-				with tempfile.TemporaryDirectory(dir=inp_file.parent) as tmpdir:
-					execute_cmd(cmd, env, str(tmpdir))
+                                with tempfile.TemporaryDirectory(dir=inp_file.parent) as tmpdir:
+                                    execute_cmd(cmd, env, str(tmpdir))
 		return wrapper
 	return decorator
 

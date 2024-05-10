@@ -320,7 +320,10 @@ def generate_cmd(
         if alias == sensor or alias in inp_file.as_posix():
         
             # Add sensor-specific default parameters and gains
-            if alias in SENSOR_CONFIG: cmd.update(SENSOR_CONFIG[alias])
+            if 'VI/SNPP_VIIRS' in str(inp_file): 
+                cmd.update(SENSOR_CONFIG['SNPPVI'])
+            else:
+                if alias in SENSOR_CONFIG: cmd.update(SENSOR_CONFIG[alias])
             if alias in SENSOR_GAINS:  cmd.update({'gain':SENSOR_GAINS[alias]})
              
 
