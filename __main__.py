@@ -355,7 +355,7 @@ def main_local(debug=True):
         # Multiple threads for correction
         {   'logname'     : f'{username}/worker2',
             'queues'      : ['correct'],
-            'concurrency' : 2,
+            'concurrency' : 4,
         },
         # Multiple threads for extraction
         {   'logname'     : f'{username}/worker3',

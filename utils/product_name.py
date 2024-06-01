@@ -32,9 +32,10 @@ def product_name(inp_file, out_path,date,dataset,sensor,ac_method,product,extens
     
     """
    sensor = identify_subsensor(inp_file,sensor)
+   tile_name = Path(inp_file).parent.parent.parent.stem
    date=date if type(date) == str else date.strftime("%Y_%m_%d")
    product='_'.join((product.split(',')))
-   product_name = '_'.join([prefix,date,dataset,sensor,ac_method,product+extension])
+   product_name = '_'.join([prefix,date,tile_name,ac_method,product+extension])
    extension_folder = extension.split('.')[-1]+'s'
    out_path = Path(out_path).joinpath(extension_folder)
    out_path.mkdir(exist_ok=True, parents=True)

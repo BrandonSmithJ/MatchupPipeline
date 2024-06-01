@@ -22,8 +22,8 @@ def plot(self,
             return sid.split('____')[1].split('_')[0] 
         if sample_config['sensor'] in ['OLI']:
             return sid.split('_')[3]
-        if sample_config['sensor'] in ['MSI']:
-            return sid.split('_')[-1].split('T')[0]
+        if sample_config['sensor'] in ['MSI','S2A','S2B']:
+            return sid.split('_')[-5].split('T')[0]
         return     sid.split('.')[1]
         
     kwargs = {

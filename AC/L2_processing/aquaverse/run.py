@@ -11,7 +11,7 @@ from pathlib import Path
 import os
 import psycopg2
 
-AQV_version = "202402"
+AQV_version = "202405"
 
 try: 
     from ....utils import Location, assert_contains
