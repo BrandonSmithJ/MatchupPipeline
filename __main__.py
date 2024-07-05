@@ -355,17 +355,17 @@ def main_local(debug=True):
         # Multiple threads for correction
         {   'logname'     : f'{username}/worker2',
             'queues'      : ['correct'],
-            'concurrency' : 4,
+            'concurrency' : 2,
         },
         # Multiple threads for extraction
         {   'logname'     : f'{username}/worker3',
             'queues'      : ['extract'],
-            'concurrency' : 1,
+            'concurrency' : 2,
         },
         # Multiple threads for plotting
         {   'logname'     : f'{username}/worker4',
             'queues'      : ['plot'],
-            'concurrency' : 1,
+            'concurrency' : 2,
         },
         # Single dedicated thread (i.e. for writing)
         {   'logname'     : f'{username}/worker5',

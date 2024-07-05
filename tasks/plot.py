@@ -52,7 +52,7 @@ def plot(self,
             'scene_id' : str(kwargs['inp_file'].parent.parent.parent.stem),
             'out_path' : str(sample_config['out_path'].parent.joinpath('Rrs_maps')),
             'sensor'   : sample_config['sensor'],
-            'atm_corrs': ['acolite','l2gen','polymer']
+            #'atm_corrs': ['acolite','l2gen','polymer']
             }
         #MSI
         # base_dir = '/data/roshea/SCRATCH/Gathered/Scenes/MSI/S2A_MSIL1C_20201017T155251_N0209_R054_T18SUH_20201017T193914/out/MSI_test_image_20201017_XCI0001/'
@@ -61,6 +61,7 @@ def plot(self,
         # atm_corrs = ['acolite','l2gen','polymer']
         # sensor='MSI'
         if kwargs_Rrs['sensor'] in ['MSI','OLI']:
+            #del kwargs_Rrs['atm_corrs']
             plot_Rrs(**kwargs_Rrs)
         # plot_Rrs(base_dir, scene_id, atm_corrs= ['acolite','l2gen','polymer'], sensor='OLI')
         

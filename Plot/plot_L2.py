@@ -112,6 +112,10 @@ def rgb_enhance(rgb:'np.ndarray') -> 'np.ndaray':
 def extract_lat_lon(image):
     if 'lon' in image.variables.keys() and 'lat' in image.variables.keys():
         return image['lat'][:], image['lon'][:] 
+
+    if 'longitude' in image.variables.keys() and 'latitude' in image.variables.keys():
+        return image['latitude'][:], image['longitude'][:]
+
     return image['navigation_data']['latitude'][:], image['navigation_data']['longitude'][:]
 
 def extract_data(image, avail_bands, req_bands, allow_neg=False, key='Rrs',apply_min_threshold = False,cholesky_min_val=1e-7):

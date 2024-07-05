@@ -46,7 +46,7 @@ def get_scenes_from_query(satellite,start,end,min_cloud_cover=0,max_cloud_cover=
 
             #f"processorVersion=05.00&"+\
             
-            if tileID != "": alternate_url = alternate_url + f"&tileId={tileID}"
+            #if tileID != "": alternate_url = alternate_url + f"&tileId={tileID}"
 
             url = alternate_url
             #print(url)
