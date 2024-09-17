@@ -41,6 +41,7 @@ colors        = {'MSI': {'aquaverse': 'xkcd:red',    'acolite': 'xkcd:red',   'l
                  'VI':  {'aquaverse': 'xkcd:dark pink',   'acolite': 'xkcd:dark pink',  'l2gen': 'xkcd:dark pink',  'polymer':'xkcd:dark pink',   'cyan': 'xkcd:dark pink'},
                 }
 
+
 def default_dd(d={}, f=lambda k: k):
 	''' Helper function to allow defaultdicts whose default value returned is the queried key '''
 
@@ -142,7 +143,7 @@ def load_gathered_data(gathered_path,folder_names=[],products=[],overwrite=True,
     sensors        = ["MOD","MSI","OLI","VI"] 
     atm_corrs      = ["aquaverse","l2gen"]
     if not len(datasets):
-        datasets       = ["GSL_1999_2022","OLI_test_image_MS_AC","OLI_test_image_CB_subset","OLI_test_image_CB_ET42_EE31","OLI_test_image_Boston_timeseries","OLI_test_image_Erie_stations","OLI_test_image_Damariscotta_1",'OLI_test_image_Damariscotta_2',"OLI_test_image_Oyster_farm","OLI_test_image_Honga_TS_1","OLI_test_image_Honga_TS_2","OLI_test_image_Wachusett_reservoir_timeseries","OLI_test_image_Quabbin_reservoir_timeseries"] 
+        datasets       = ["MonoLake_1999_2024","SaltonSea_1999_2022","GSL_1999_2022","OLI_test_image_MS_AC","OLI_test_image_CB_subset","OLI_test_image_CB_ET42_EE31","OLI_test_image_Boston_timeseries","OLI_test_image_Erie_stations","OLI_test_image_Damariscotta_1",'OLI_test_image_Damariscotta_2',"OLI_test_image_Oyster_farm","OLI_test_image_Honga_TS_1","OLI_test_image_Honga_TS_2","OLI_test_image_Wachusett_reservoir_timeseries","OLI_test_image_Quabbin_reservoir_timeseries"] 
     #datasets = ["OLI_test_image_Erie_stations"]
     gathered_data     = {}
     gathered_data_uid = {}
@@ -214,7 +215,9 @@ insitu_data_dictionary = {"OLI_test_image_Oyster_farm"                     : [''
                           "OLI_test_image_CB_ET42_EE31"                    : ["CPB_WaterQualityWaterQualityStation",0],
                           "OLI_test_image_CB_subset"                       : ["CPB_WaterQualityWaterQualityStation",0],
                           "OLI_test_image_MS_AC"                           : ["",0],
-                          "GSL_1999_2022"                                  : ["",0],
+                          "GSL_1999_2022"                                  : ["gsl_usgs_utahdeq00_22_formatted",0],
+                          "SaltonSea_1999_2022"                            : ["combined_Salton_Sea_BOR_Spaulding_2",0],#["terminalLakes",0],
+                          "MonoLake_1999_2024"                             : ["terminalLakes",0],
                           }
 
 
@@ -271,7 +274,7 @@ def average_output(datetimes,products,products_max=None,products_min=None):
         grouped_data          = data.agg({'products':'mean','products_max':'mean','products_min':'mean'})
     else:
         grouped_data          = data.agg({'products':'mean',})
-    data                  = grouped_data.reindex(pd.date_range('01-01-2015','02-02-2024'),fill_value=np.nan)
+    data                  = grouped_data.reindex(pd.date_range('01-01-2000','07-02-2024'),fill_value=np.nan)
     data['30day_average'] = data.products.rolling(window=30,min_periods=1,center=True,win_type='gaussian').mean(std=7)
     data['30day_std'] = data.products.rolling(window=30,min_periods=1,center=True,win_type='gaussian').std(std=7)
     data['1day_average']  = data.products.rolling(window=1,min_periods=1,center=True,win_type='gaussian').mean(std=1)
@@ -318,10 +321,13 @@ def assign_Rrs_products(gathered_data, min_wavelength = 400, max_wavelength=800)
 
     return grouped_Rrs #sorted(list(set(Rrs_products)))
 
-def plot_products(gathered_data,insitu_data,save_location,products=['Rrs(443)','Rrs(490)','Rrs(560)','Rrs(665)','chla','tss','secchi','cdom'],plot_matchups=0): #['chla','tss','secchi','cdom']
+def plot_products(gathered_data,insitu_data,save_location,products=['Rrs(443)','Rrs(490)','Rrs(560)','Rrs(665)','chla','tss','secchi','cdom'],plot_matchups=0,name_suffix=''): #['chla','tss','secchi','cdom']
     Rrs_products = assign_Rrs_products(gathered_data)
-    if products == 'Rrs': products = Rrs_products
-
+    if products == 'Rrs': 
+        products = Rrs_products
+        product_label = "Rrs"
+    else:
+        product_label = "BPs"
     markers       = {'OLI' : 'o',
                      'MSI' : 'X',
                      'MOD' : '.',
@@ -333,17 +339,27 @@ def plot_products(gathered_data,insitu_data,save_location,products=['Rrs(443)','
                      'MOD': {'aquaverse': 'xkcd:blue',   'acolite': 'xkcd:blue',  'l2gen': 'xkcd:blue',  'polymer':'xkcd:blue',   'cyan': 'xkcd:teal'},
                      'VI':  {'aquaverse': 'xkcd:dark pink',   'acolite': 'xkcd:dark pink',  'l2gen': 'xkcd:dark pink',  'polymer':'xkcd:dark pink',   'cyan': 'xkcd:dark pink'},
                      }    #[ 'k','xkcd:red']
+
+
+    line_colors   = {'MSI': {'aquaverse': 'xkcd:red',    'acolite': 'xkcd:red',   'l2gen': 'xkcd:red',   'polymer':'xkcd:red',    'cyan': 'xkcd:teal'},
+                     'OLI': {'aquaverse': 'xkcd:violet', 'acolite': 'xkcd:violet','l2gen': 'xkcd:violet','polymer':'xkcd:violet', 'cyan': 'xkcd:teal'},
+                     'MOD': {'aquaverse': 'xkcd:blue',   'acolite': 'xkcd:blue',  'l2gen': 'xkcd:blue',  'polymer':'xkcd:blue',   'cyan': 'xkcd:teal'},
+                     'VI':  {'aquaverse': 'xkcd:dark pink',   'acolite': 'xkcd:dark pink',  'l2gen': 'xkcd:magenta',  'polymer':'xkcd:dark pink',   'cyan': 'xkcd:dark pink'},
+                     }
+
     
     colors_insitu = 'xkcd:black'
     
     n_rows_fig    = len(products)
     n_cols_fig    = 1
-    
+
+    station_id_renames = {'GSL_1999_2022': {"GSL_2_FI":  "USGS-411116112244401","GSL_3_FI": "USGS-410637112270401","GSL_4_SAL" : "UTAHDWQ_WQX-4982080", "GSL_5_CI" : "USGS-410323112301901","GSL_6_SAL" : "UTAHDWQ_WQX-4982000","GSL_7_NA" : "UTAHDWQ_WQX-4983380","GSL_8_NA": "UTAHDWQ_WQX-4983150",}}
+
     limits        = {
-                    'chla'    : [0.1,100],
-                    'tss'     : [0.1,100],
+                    'chla'    : [0.1,200],
+                    'tss'     : [1,200],
                     'secchi'  : [0.1,10],
-                    'cdom'    : [0.05,5],
+                    'cdom'    : [0.05,3],
                     }
     
     limits_eutrophic = {
@@ -371,7 +387,7 @@ def plot_products(gathered_data,insitu_data,save_location,products=['Rrs(443)','
             fig, axs      = plt.subplots(nrows=n_rows_fig, ncols=n_cols_fig,
                              figsize=(24, 16*n_rows_fig/4), sharex=True, sharey=False)#24,9
             years         = YearLocator()
-            months        = MonthLocator()
+            months        = MonthLocator((4,7, 10,))
             years_format  = DateFormatter('%Y')
             months_format = DateFormatter('%b')
             plot_iterator = 0
@@ -391,7 +407,7 @@ def plot_products(gathered_data,insitu_data,save_location,products=['Rrs(443)','
                             #if sensor in ['MOD','VI'] and 'Rrs' in product:
                             #    product = equivalent_Rrs[sensor][product]
                             if (product == 'chla' or 'Boston' in dataset) and sensor == 'OLI': 
-                                ax.plot([0],[0.001],label=f'{sensor_label[sensor]} {atm_corr_label[atm_corr]} 30-day average' if i == 0 else None, linewidth=2,color=colors[sensor][atm_corr],zorder=103)
+                                #ax.plot([0],[0.001],label=f'{sensor_label[sensor]} {atm_corr_label[atm_corr]} 30-day average' if i == 0 else None, linewidth=2,color=colors[sensor][atm_corr],zorder=103)
                                 continue 
                             
 
@@ -415,7 +431,12 @@ def plot_products(gathered_data,insitu_data,save_location,products=['Rrs(443)','
                             if dataset in insitu_data.keys():
                                 if product in insitu_data[dataset].keys():
                                     if 'station' in insitu_data[dataset].keys():
-                                        station_id = uid.split('_')[-1]
+                                        if dataset in station_id_renames.keys():
+                                            dataset_uid = uid.split('GSL_1999_2022_')[1]
+                                            station_id = station_id_renames[dataset][dataset_uid] if dataset_uid in station_id_renames[dataset].keys() else dataset_uid
+                                        else:
+                                            station_id = uid.split('_')[-1]
+                                        
                                         insitu_dataset = insitu_data[dataset][insitu_data[dataset]['station']==station_id]
                                         if 'depth' in insitu_dataset.keys():
 
@@ -428,11 +449,11 @@ def plot_products(gathered_data,insitu_data,save_location,products=['Rrs(443)','
 
                                     #if plot_matchups<2: ax.scatter(insitu_dataset['datetime'], insitu_dataset[product],color='xkcd:dodger blue',marker='*',alpha=0.9,zorder = 99,label=f'in situ',edgecolors='none',s=80)
                                     print("Insitu",dataset,uid,sensor,atm_corr,product)
-                                    if plot_matchups<2 and plot_iterator==1 and plot_insitu_average: sns.lineplot(x = 'datetimes',y='30day_average',data=data_ins,label=f'In-situ 30-day average',ax=ax, linewidth=2,color=colors_insitu,zorder=101)
+                                    if plot_matchups<2 and plot_iterator==1 and plot_insitu_average: sns.lineplot(x = 'datetimes',y='30day_average',data=data_ins,ax=ax, linewidth=2,color=colors_insitu,zorder=101) #label=f'In-situ 30-day average'
                                      
                                     if plot_matchups<2 and plot_iterator==1 and plot_matchups!= 0: ax.fill_between(data_ins['datetimes'], data_ins['30day_average']-0.3*data_ins['30day_average'],data_ins['30day_average']+0.3*data_ins['30day_average'], alpha=.3,color = colors_insitu)
                                     if plot_iterator==1 and plot_matchups>-1: ax.scatter(insitu_dataset['datetime'], insitu_dataset[product],color=colors_insitu,alpha=0.7,zorder = 102,label=f'In-situ')
-                                    if plot_matchups<2 and plot_iterator==1 and plot_matchups!= 0 : sns.lineplot(x = 'datetimes',y='30day_average',data=data_ins,label=f'30-day average in situ',ax=ax, linewidth=2,color=colors_insitu,zorder=101)
+                                    if plot_matchups<2 and plot_iterator==1 and plot_matchups!= 0 : sns.lineplot(x = 'datetimes',y='30day_average',data=data_ins,ax=ax, linewidth=2,color=colors_insitu,zorder=101) #label=f'30-day average in situ'
                                     #sns.lineplot(x = 'datetimes',y='1day_average',data=data_ins,label=f'30-day average in situ',ax=ax, linewidth=2,color='xkcd:vivid blue')
                                     #gathered_data[dataset][uid][sensor][atm_corr]['datetime_from_scene_id']
                                     #min_dt = [min(gathered_data[dataset][uid][sensor][atm_corr]['datetime'], key=lambda d: abs(d - item)) for item in insitu_dataset['datetime']]
@@ -463,7 +484,7 @@ def plot_products(gathered_data,insitu_data,save_location,products=['Rrs(443)','
 
                                 data = average_output(datetimes_filtered,products_filtered,products_max_filtered,products_min_filtered)
                                 #sns.lineplot(x = 'datetimes',y='products',data=data,label=f'sns {sensor} {atm_corr}',ax=ax)
-                                if plot_matchups<2: sns.lineplot(x = 'datetimes',y='30day_average',data=data,label=f'{sensor_label[sensor]} {atm_corr_label[atm_corr]} 30-day average' if i == 0 else None,ax=ax, linewidth=2,color=colors[sensor][atm_corr],zorder=103)
+                                if plot_matchups<2: sns.lineplot(x = 'datetimes',y='30day_average',data=data,ax=ax, linewidth=3.25,color=line_colors[sensor][atm_corr],zorder=103,alpha=1.0) #label=f'{sensor_label[sensor]} {atm_corr_label[atm_corr]} 30-day average' if i == 0 else None,ax=ax
                                 
                                 #if plot_matchups<2: sns.lineplot(x = 'datetimes',y='30day_std',data=data,label=f'30-day std {sensor} {atm_corr}' if i == 0 else None,ax=ax, linewidth=2,color=colors[sensor][atm_corr],zorder=103)
                                 if plot_matchups<2: ax.fill_between(data['datetimes'], data['30day_average']-0.6*data['30day_average'],data['30day_average']+0.6*data['30day_average'], alpha=.3,color = colors[sensor][atm_corr])
@@ -473,7 +494,7 @@ def plot_products(gathered_data,insitu_data,save_location,products=['Rrs(443)','
                                 #if plot_matchups<2: ax.fill_between(data['datetimes'], data['30day_average']-data['30day_std'],data['30day_average']+data['30day_std'], alpha=.3,color = colors[sensor][atm_corr])
 
                                 #if plot_matchups<2: ax.plot(data['datetimes'].values, data['30day_average'].values,'k',linewidth=3)
-                                if plot_matchups==1: ax.scatter(datetimes_filtered, products_filtered,color=colors[sensor][atm_corr],marker=markers[sensor],alpha=0.5,zorder = 100,label=f'{sensor_label[sensor]} {atm_corr_label[atm_corr]}',s=60,edgecolors='none')
+                                if plot_matchups==1: ax.scatter(datetimes_filtered, products_filtered,color=colors[sensor][atm_corr],marker=markers[sensor],alpha=0.35,zorder = 100,label=f'{sensor_label[sensor]} {atm_corr_label[atm_corr]}',s=60 if sensor=="MOD" else 25,edgecolors='none')
                                 
                                 #ax.scatter([datetimes_filtered[i] for i in matchups_gathered],[products_filtered[i] for i in matchups_gathered],color='m',marker=markers[sensor],alpha=0.75,zorder = 100,label=f'{sensor} {atm_corr}',s=60,edgecolors='none')
                                 #ax.scatter([insitu_dataset['datetime'][i] for i in matchups_insitu],[insitu_dataset[product][i] for i in matchups_insitu],color='c',marker=markers[sensor],alpha=0.75,zorder = 100,label=f'{sensor} {atm_corr}',s=60,edgecolors='none')     
@@ -485,14 +506,14 @@ def plot_products(gathered_data,insitu_data,save_location,products=['Rrs(443)','
                                 #ax.plot(monthly_average.index.to_pydatetime(),monthly_average.values,color=colors[sensor][atm_corr],alpha=1,zorder = 97,linewidth=2)
 
                             # Formatting
-                            ax.set_xlim(pd.Timestamp('2015-01-01 00:00:00'), pd.Timestamp('2024-01-01 00:00:00'))
+                            ax.set_xlim(pd.Timestamp('2000-01-01 00:00:00'), pd.Timestamp('2024-01-01 00:00:00'))
                             ax.xaxis.set_major_locator(years)
                             ax.xaxis.set_major_formatter(years_format)
                             ax.xaxis.set_minor_locator(months)
                             ax.xaxis.set_minor_formatter(months_format)
                             ax.tick_params(axis='x', which='major', labelsize=16,pad=32)
                             ax.tick_params(axis='y', which='major', labelsize=16)
-                            ax.tick_params(axis='x'   , which='minor', labelsize=14)
+                            ax.tick_params(axis='x'   , which='minor', labelsize=14.5)
                             ax.set_xlabel('') 
                             plt.setp(ax.xaxis.get_minorticklabels(), rotation = 90)
                             plt.setp(ax.xaxis.get_majorticklabels(), fontweight='bold')
@@ -528,7 +549,7 @@ def plot_products(gathered_data,insitu_data,save_location,products=['Rrs(443)','
                 uid_name = '_'.join(uid.split('_')[-2:])
 
             os.makedirs(Path(save_location).joinpath(dataset),exist_ok=True)
-            plt.savefig(str(save_location) + f'/{dataset}/{dataset}_{sensor}_{atm_corr}_{uid_name}_timeseries_{plot_matchups}.png',dpi=400)
+            plt.savefig(str(save_location) + f'/{dataset}/{dataset}_{sensor}_{atm_corr}_{uid_name}_timeseries_{plot_matchups}_{product_label}_{name_suffix}.png',dpi=400)
             plt.close()        
 
     return
@@ -629,15 +650,17 @@ def main(datasets=[]):
     for dataset in datasets:
         if dataset not in insitu_data_dictionary.keys():
             insitu_data_dictionary[dataset] = ["",0]
-
+    #matchup_locations, erie_sites_products, CB_sites_products, GSL_sites_products = load_insitu_datasets()
     insitu_data   = load_insitu_data(insitu_path,insitu_data_dictionary)
     #with open('/tis/m2cross/scratch/f003/roshea/For_Arun/insitu_data.pickle', 'wb') as handle:
     #    pickle.dump(insitu_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
     #plot_products(gathered_data,insitu_data,save_path,plot_matchups=-1)
     #plot_products(gathered_data,insitu_data,save_path,plot_matchups=0)
+    plot_products(gathered_data,insitu_data,save_path,plot_matchups=1,products=['chla','tss','cdom'],name_suffix='chl_tss_cdom')
     plot_products(gathered_data,insitu_data,save_path,plot_matchups=1)
     #plot_spectra(gathered_data)
-    #plot_products(gathered_data,insitu_data,save_path,plot_matchups=1,products='Rrs')
+    plot_products(gathered_data,insitu_data,save_path,plot_matchups=1,products='Rrs')
+    
     #plot_products(gathered_data,insitu_data,save_path,plot_matchups=2)
 
 if __name__ == "__main__":

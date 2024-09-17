@@ -8,19 +8,23 @@ username = getoutput('whoami')
 proc = "MSI"
 
 if proc == "OLI":
-	datasets = ['PC_1_OLI_202405'] # _Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF']# ['OLI_test_image_Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF'] #OLI_MSI_matchups_Lake_Erie
+	datasets = ['PC_1_Ocean_Optics']#['PC_1_OLI_202405'] # _Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF']# ['OLI_test_image_Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF'] #OLI_MSI_matchups_Lake_Erie
 	sensors  = ['OLI'] # 'MOD','VI'
 
 if proc == "MSI":
-	datasets = ['PC_1_MSI_202405'] #['OLI_test_image_Erie_stations']#['OLI_test_image_Quabbin_reservoir_timeseries'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
+	datasets = ["PC_2_DA_matchups"] #['PC_1_Ocean_Optics']#['OLI_test_image_Erie_stations']#['PC_1_MSI_202405'] #['OLI_test_image_Erie_stations']#['OLI_test_image_Quabbin_reservoir_timeseries'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
 	sensors  = ['MSI']
 
+if proc == "OLCI":
+        datasets = ["PC_2_DA_matchups"] #["PC_1_Ocean_Optics"]
+        sensors  = ["OLCI"]
+
 if proc == "MOD":
-        datasets = ['GSL_1999_2022']#['OLI_test_image_Erie_stations'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
+        datasets = ['MonoLake_1999_2024']#['OLI_test_image_Erie_stations'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
         sensors  = ['MOD']
 
 if proc == "VI":
-        datasets = ['GSL_1999_2022']
+        datasets = ['SaltonSea_1999_2022']
         sensors  = ['VI']
 #===================================
 #         Path Definitions
@@ -54,6 +58,7 @@ os.environ['PROJ_LIB'] = proj_path
 #===================================
 local_processing       = True
 test_pipeline_celery   = False
+job_deploy_delay       = 90
 #===================================
 #    Data Search Parameters
 #===================================  
@@ -141,8 +146,8 @@ if 'CONUS' in datasets[0]:
     filter_unprocessed_imagery = False
 
 if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] or 'PC_1'  in datasets[0] : 
-    overwrite              = True# what does it overwrite - everything - yes, even pikle file
-    ac_methods             = ['aquaverse']#,'aquaverse','acolite','polymer'] #['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
+    overwrite              = False# what does it overwrite - everything - yes, even pikle file
+    ac_methods             = ['acolite']#,'aquaverse','acolite','polymer'] #['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
     download_via_aquaverse = False
     timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
     remove_scene_folder    = False
@@ -151,9 +156,9 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] or 'PC_1
     plot_products          = True # for which AC processor it works
     plot_Rrs               = True
     extract_window         = 1 #3x3
-    apply_bounding_box     = False # what is this - process only a portion of the image
-    search_day_window      = 0 #3000 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
-    max_cloud_cover        = 50#5
+    apply_bounding_box     = True#False # what is this - process only a portion of the image
+    search_day_window      = 0#3000 #3000 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
+    max_cloud_cover        = 100#50#5
     aquaverse_prod_level   = 3
     local_processing       = True  #deploy to SLURM nodes
     extra_cmd              = {'l2gen': {'OLI' : {'l2prod' : [ 'Rrs_nnn', 'rhos_nnn', 'Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
@@ -163,11 +168,37 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] or 'PC_1
     save_nc                = False #if 'aquaverse' in ac_methods else True
     save_tif               = False #if 'aquaverse' in ac_methods else True
     filter_unprocessed_imagery = False
-    scene_id = 'S2A_MSIL1C_20201017T155251_N0500_R054_T18SUH_20230310T060014'
+    #scene_id = 'S2A_MSIL1C_20201017T155251_N0500_R054_T18SUH_20230310T060014'
     #scene_id = "19TCH"#"LC09_L1TP_012030_20220722_20230406_02_T1"
     #extra_cmd.keys()
 
-if   'MODIS' in datasets[0] or 'VIIRS' in datasets[0] or 'GSL' in datasets[0]:
+
+if  'PC_2'  in datasets[0] :
+    overwrite              = False# what does it overwrite - everything - yes, even pikle file
+    ac_methods             = ['aquaverse']#,'polymer','l2gen']#,'aquaverse','acolite','polymer'] #['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
+    download_via_aquaverse = False
+    timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
+    remove_scene_folder    = False
+    remove_L1_tile         = False
+    fix_projection_Rrs     = False
+    plot_products          = False # for which AC processor it works
+    plot_Rrs               = False
+    extract_window         = 1 #3x3
+    apply_bounding_box     = True#False # what is this - process only a portion of the image
+    search_day_window      = 0#3000 #3000 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
+    max_cloud_cover        = 100#50#5
+    aquaverse_prod_level   = 3
+    local_processing       = False  #deploy to SLURM nodes
+    #extra_cmd              = {'l2gen': {'OLI' : {'l2prod' : [ 'Rrs_nnn', 'rhos_nnn', 'Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
+    #                                    'MSI' : {'l2prod' : [ 'Rrs_nnn', 'rhos_nnn', 'Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},}},
+#extra_cmd              = {'l2gen': {'OLI' : {'gain':[1.00,1.00,1.00,1.00,1.00,1.00,1.00],'filter_opt':0},
+    #                                    'MSI' : {'gain':[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],'filter_opt':0}}}
+    save_nc                = False #if 'aquaverse' in ac_methods else True
+    save_tif               = False #if 'aquaverse' in ac_methods else True
+    filter_unprocessed_imagery = False
+
+
+if   'MODIS' in datasets[0] or 'VIIRS' in datasets[0] or 'GSL' in datasets[0] or 'SaltonSea_' in datasets[0] or 'MonoLake' in datasets[0] or 'PyramidLake' in datasets[0] :
     overwrite              = False# what does it overwrite - everything - yes, even pikle file
     ac_methods             =['l2gen'] #'l2gen','acolite','polymer','aquaverse'
     download_via_aquaverse = False
@@ -179,15 +210,14 @@ if   'MODIS' in datasets[0] or 'VIIRS' in datasets[0] or 'GSL' in datasets[0]:
     plot_Rrs               = False
     extract_window         = 1 #3x3
     apply_bounding_box     = True # what is this - process only a portion of the image
-    search_day_window      = 9000 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
-    max_cloud_cover        = 20#5
+    search_day_window      = 9000 #9000#3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
+    max_cloud_cover        = 100#5
     aquaverse_prod_level   = 0
     local_processing       = False  #deploy to SLURM nodes
     save_nc                = True
     save_tif               = True
     #scene_id               = "2021099184000"
-
-
+    job_deploy_delay       = 2
 
 if 'Urias' in datasets[0]:
     remove_scene_folder    = False
@@ -251,6 +281,8 @@ if search_day_window is None  and search_year_range is None and search_minute_wi
     search_day_window=0
 
 #if 'aquaverse' not in ac_methods and download_via_aquaverse == True: assert(0)
+
+if not save_nc: print("Will not save AQV products for timeseries")
 
 if 'aquaverse' in ac_methods and 'OLI' not in sensors and 'MSI' not in sensors: assert(0)
 

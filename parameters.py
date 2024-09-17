@@ -56,6 +56,11 @@ parser.add_argument('--test_pipeline_celery', action='store_true',
     default=config.test_pipeline_celery,
     help='Runs pipeline on users username_test vhost on celery (so one version can be deployed on username vhost, while another is tested for an individual user, without getting mixed messages).')
 
+parser.add_argument('--job_deploy_delay', action='store_true',
+    default=config.job_deploy_delay,
+    help='Seconds between job deployments to HPC \n(default: 30)')
+
+
 #===================================
 #    Data Search Parameters
 #===================================  

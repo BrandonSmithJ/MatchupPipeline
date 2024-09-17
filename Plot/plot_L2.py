@@ -209,12 +209,12 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     if 'aquaverse' not in str(inp_file):
         Rrs   = extract_data(image, bands, req_bands,allow_neg=False,apply_min_threshold = True)
     if sensor in ['PACE']: Rrs = Rrs[::-1, :, :]
-    #if sensor in ['VI'] or (Aqua_or_Terra =='A' and 'MOD' in sensor): Rrs = Rrs[::-1, ::-1, :] 
+    #Flips only products #if sensor in ['VI'] or (Aqua_or_Terra =='A' and 'MOD' in sensor): Rrs = Rrs[::-1, ::-1, :] 
 
     rgb   = extract_data(image, bands, rgb_bands,key='rhos')
  
     if sensor in ['PACE']: rgb = rgb[::-1, :, :] 
-    #if sensor in ['VI'] or (Aqua_or_Terra =='A' and 'MOD' in sensor): rgb = rgb[::-1, ::-1, :]
+    #Flips only products #if sensor in ['VI'] or (Aqua_or_Terra =='A' and 'MOD' in sensor): rgb = rgb[::-1, ::-1, :]
     if 'aquaverse' not in str(inp_file):
         products = np.full((np.shape(Rrs)[0],np.shape(Rrs)[1],3), -999)
         slices   = {'chl':0,'tss':1,'cdom':2}

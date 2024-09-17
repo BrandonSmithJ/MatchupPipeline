@@ -47,7 +47,7 @@ class Location:
             self.given = 'bbox'
 
         if point:
-            degree = 0.2 # Degree window around point
+            degree = 0.05 # Degree window around point
             self.n = self.lat + degree
             self.s = self.lat - degree
             self.e = self.lon + degree

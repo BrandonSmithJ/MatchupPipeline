@@ -60,7 +60,7 @@ def _run_seadas_script(script_file: str):
                                     cmd = [sys.executable, script_file.as_posix(), inp_file.as_posix(),'-g', inp_file.as_posix().split('.')[0] + '.GEO', '-o', out_file.as_posix(),'-n',n,'-s',s,'-e',e,'-w',w, '--verbose']
                                 if geofile:
                                     cmd = [sys.executable, script_file.as_posix(), inp_file.as_posix(), geofile, '-o', out_file.as_posix(), '--verbose']
-                                if "modis_GEO.py" in str(script_file):
+                                if "modis_GEO.py" in str(script_file) or "modis_L1A_extract.py" in str(script_file):
                                     cmd.append("--ancdb")
                                     cmd.append(inp_file.parent.joinpath('ancillary_data.db').as_posix())
 

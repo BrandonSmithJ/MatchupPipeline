@@ -100,7 +100,7 @@ def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
                     for data_kwarg in data_kwargs:
                         data_kwarg['scene_details'] =  str(data_kwarg['scene_details'])
                         current_dataset.append(pd.DataFrame.from_dict([data_kwarg])) 
-                        if not j%10: print(f"Searched {j} Matchups")
+                        if not j%10: print(f"Found {j} matchups from {i} searched")
                         j= j + 1
                     
             pd.concat(current_dataset).to_pickle(dataset_path)
@@ -294,7 +294,7 @@ def main(debug=True,skip_processing=False):
     #update number of max files prior to SLURM deployment
     import resource
     try:
-        resource.prlimit(0,resource.RLIMIT_NOFILE,(30000,523288))
+        resource.prlimit(0,resource.RLIMIT_NOFILE,(80000,523288))
         print("Set resource limit is:")
         resource.getrlimit(resource.RLIMIT_NOFILE)
     except:
@@ -306,10 +306,10 @@ def main(debug=True,skip_processing=False):
             p = Process(target=main2, args=(gc, data.iloc[j], str(j)))
             p.start()
             processes.append(p)
-            if data.iloc[j]['sensor'] == "MOD":
-                time.sleep(20*1)
-            else:
-                time.sleep(20*1)
+            #if data.iloc[j]['sensor'] == "MOD":
+            time.sleep(global_config.job_deploy_delay)
+            #else:
+            #    time.sleep(global_config.job_depl_delay)
 
             [proc.join(timeout=0) for proc in processes if proc.is_alive()]
         [ process.join(timeout=0) for process in processes if process.is_alive()]

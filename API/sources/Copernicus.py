@@ -7,7 +7,7 @@ from functools import partial
 from pathlib import Path 
 from typing import Union 
 
-import os, zipfile
+import os, zipfile, datetime
 from sentinelsat import SentinelAPI
 import requests
 import numpy as np
@@ -26,7 +26,7 @@ def split_date_time(start,end, difference=365):
 #https://documentation.dataspace.copernicus.eu/APIs/OpenSearch.html
 #XML description: https://catalogue.dataspace.copernicus.eu/resto/api/collections/Sentinel2/describe.xml
 def get_scenes_from_query(satellite,start,end,min_cloud_cover=0,max_cloud_cover=100,max_records=2000,bbox="-21,23,-24,15",tileID=""):
-        if int(start[0:4])<2018: start = '2018-01-01'
+        #if int(start[0:4])<2018: start = '2018-01-01'
         
         list_of_datetimes = list(split_date_time(start,end))
         print(f"Querying Copernicus for {bbox} {start} {end}")
@@ -42,6 +42,7 @@ def get_scenes_from_query(satellite,start,end,min_cloud_cover=0,max_cloud_cover=
             f"startDate={start}T00:00:00Z&completionDate={end}T23:59:59Z"+\
             f"&maxRecords={max_records}&"+\
             f"processingLevel=S2MSI1C&"+\
+            f"processorVersion=05.00&"+\
             f"box={bbox}"
 
             #f"processorVersion=05.00&"+\
@@ -65,6 +66,24 @@ def get_scenes_from_query(satellite,start,end,min_cloud_cover=0,max_cloud_cover=
             dictionary_out = {p:s for p,s in zip(scene_ids,product_ids)}
             print("Found: ", len(dictionary_out))
 
+            #full_dictionary.update(dictionary_out)
+            keys = list(dictionary_out.keys())
+            scenes_to_keep = []
+            for key in keys: 
+                scene_id_base = '_'.join(key.split('_')[:-1])
+                #print(scene_id_base)
+                matching_scenes = [matching_scene for matching_scene in keys if scene_id_base in matching_scene]
+                datetimes             = [datetime.datetime.strptime(matching_scene.split('_')[-1], "%Y%m%dT%H%M%S") for matching_scene in matching_scenes]
+                most_recent_datetime  = max(dt for dt in datetimes if dt < datetime.datetime.now())
+                most_recent_scene_id  = scene_id_base + '_' + most_recent_datetime.strftime("%Y%m%dT%H%M%S")
+                #print(matching_scenes,most_recent_scene_id)
+                scenes_to_keep.append(most_recent_scene_id)
+            scenes_to_keep = set(scenes_to_keep)
+            for key in keys:
+                if key not in scenes_to_keep: 
+                    dictionary_out.pop(key)
+            print(scenes_to_keep,keys) 
+            print("Kept",len(scenes_to_keep),"of",len(keys))
             full_dictionary.update(dictionary_out)
             #list_of_dictionaries.append(dictionary_out)
         return full_dictionary #{**i for i in list_of_dictionaries}
@@ -129,8 +148,8 @@ class Copernicus(BaseSource, SentinelAPI):
     """
     site_url      = 'scihub.copernicus.eu'
     valid_dates   = { # Dates available for the sensors
-        #'MSI'  : (dt(2015, 6, 23), dt.now()),
-        'MSI'  : (dt(2018, 1,  1), dt.now()),
+        'MSI'  : (dt(2015, 6, 23), dt.now()),
+        #'MSI'  : (dt(2018, 1,  1), dt.now()),
         'OLCI' : (dt(2016, 2, 16), dt.now()),
     }
     valid_sensors = {

@@ -31,13 +31,17 @@ def combine_csvs(out_path):
                 print("Failed to load:", directory,f)
     for i,scene_id in enumerate(data_dictionary.keys()):
         variable_length_holder = {}
+        variable_separators    = {}
+
         for variable in data_dictionary[scene_id].keys():
             variable_length_holder[variable] = len(data_dictionary[scene_id][variable])
+            variable_separators[variable]    = sum( [ str(i[0]).count('||') for i in data_dictionary[scene_id][variable]])
             if variable == 'meta.csv':
                 variable_length_holder[variable] = variable_length_holder[variable] - 1
-
+        [variable_separators[var_key] for var_key in variable_separators.keys()]
+        separators_list = [variable_separators[var_key] for var_key in variable_separators.keys()]
         data_dictionary[scene_id]['data_lens'] = variable_length_holder
-        data_dictionary[scene_id]['valid']     = len(set([data_dictionary[scene_id]['data_lens'][var_key] for var_key in data_dictionary[scene_id]['data_lens'].keys()])) == 1
+        data_dictionary[scene_id]['valid']     = (len(set([data_dictionary[scene_id]['data_lens'][var_key] for var_key in data_dictionary[scene_id]['data_lens'].keys()])) == 1) and (0 not in separators_list)
         print(scene_id,len(data_dictionary[scene_id].keys()),data_dictionary[scene_id]['data_lens']) 
         if data_dictionary[scene_id]['valid']: 
             

@@ -107,11 +107,11 @@ def land_mask(base_dir):
 
 
 #finds bounds based on provided lat lon box
-def load_Rrs_aquaverse(base_dir, land_masked, scene_id, pixel_bounds, wavelengths = [443,482,561,655],zoom_dict={'OLI':1/3,'MSI':1/2}):
+def load_Rrs_aquaverse(base_dir, land_masked, scene_id, pixel_bounds, wavelengths = [443,482,561,655],zoom_dict={'OLI':1/3,'MSI':1/2},unc_suffix=''):
     rrs = {}
     rrs_mask = {}
     for wavelength in wavelengths:
-        rrs_file = base_dir + '/'+ scene_id + f'_RRS_{wavelength}nm.TIF'
+        rrs_file = base_dir + '/'+ scene_id + f'_RRS_{wavelength}nm{unc_suffix}.TIF'
         rrs[wavelength] = np.squeeze(rasterio.open(rrs_file).read()).astype(float)#*land_masked,
         rrs[wavelength][rrs[wavelength] <= 0] = np.nan
         if 'OLI' in base_dir: 
@@ -369,6 +369,84 @@ def plot_Rrs_composite(out_path, AC_Rrs, AQV_Rrs, l8_rgb,vbounds,wavelengths = [
         
     plt.close()
 
+
+def plot_Rrs_AQV_uncertainty(out_path, AC_Rrs, AQV_Rrs, l8_rgb,vbounds,wavelengths = [443,482,561,655], atm_corrs = 'acolite', rgb = True, scene_id="",AQV_Rrs_unc=None):
+    from matplotlib.colors import LogNorm
+    fig, axs = plt.subplots(1, len(wavelengths), figsize=(18,4))
+    box = dict(boxstyle="square", ec= 'black', fc='white')
+    txt_x, txt_y = 0.0175, 0.936
+    fsize = 16
+
+    vbounds_unc={}
+    vbounds_unc['min']={}
+    vbounds_unc['max']={}
+    min_max_prc = 100
+    vbounds_unc['min'][443] = 0
+    vbounds_unc['min'][482] = 0
+    vbounds_unc['min'][490] = 0
+    vbounds_unc['min'][560] = 0
+    vbounds_unc['min'][561] = 0
+    vbounds_unc['min'][655] = 0
+    vbounds_unc['min'][665] = 0
+    vbounds_unc['min'][705] = 0
+    vbounds_unc['min'][740] = 0
+    vbounds_unc['min'][780] = 0
+
+    vbounds_unc['max'][443] = 100
+    vbounds_unc['max'][482] = 100 #40
+    vbounds_unc['max'][490] = 100 #40
+    vbounds_unc['max'][560] = 100 #25
+    vbounds_unc['max'][561] = 100 #40
+    vbounds_unc['max'][655] = 100 #80
+    vbounds_unc['max'][665] = 100 #50
+    vbounds_unc['max'][705] = 100 #50
+    vbounds_unc['max'][740] = 100
+    vbounds_unc['max'][780] = 100
+
+
+    atm_corr_labels = {'aquaverse':'AQUAVERSE','l2gen':'SeaDAS','polymer':'POLYMER','acolite':'ACOLITE'}
+    j=0
+    for i,wavelength in enumerate(wavelengths):
+        #if rgb:
+        #    axs[0,0+i].imshow(l8_rgb)
+        # z1_plot = axs[0,0+i].imshow(AQV_Rrs[wavelength], vmin=vbounds['min'][wavelength], vmax=vbounds['max'][wavelength], cmap = 'jet' )
+        #z1_plot = axs[0,0+i].imshow(AQV_Rrs[wavelength], norm=LogNorm(vmin=vbounds['min'][wavelength], vmax=vbounds['max'][wavelength]), cmap = 'jet' )
+
+        #clb = plt.colorbar(z1_plot, ax=axs[0,0+i],fraction=0.046, pad=0.04)
+        #clb.ax.set_title(r'$R_{rs} [sr^{-1}]$')
+        #if i == 0: axs[0,0+i].text(txt_x, txt_y, 'AQUAVERSE', color='black', fontsize=fsize, bbox=box,transform=axs[0,0+i].transAxes)
+        #axs[0,0+i].xaxis.set_ticklabels([])
+        #axs[0,0+i].yaxis.set_ticklabels([])
+        #axs[0,0+i].set_title(f'{wavelength} nm', fontsize=24)
+
+        #print(atm_corrs)
+        #for j,atm_corr in enumerate(atm_corrs):
+        if rgb:
+            axs[i].imshow(l8_rgb)
+            # z1_plot = axs[1+j,0+i].imshow(AC_Rrs[atm_corr][wavelength], vmin=vbounds['min'][wavelength], vmax=vbounds['max'][wavelength], cmap = 'jet')
+
+        if AQV_Rrs_unc is not None:
+            #z1_plot = axs[i].imshow(100*AQV_Rrs_unc[wavelength]/AQV_Rrs[wavelength], vmin=vbounds_unc['min'][wavelength], vmax=vbounds_unc['max'][wavelength], cmap = 'jet')
+            z1_plot = axs[i].imshow(100*AQV_Rrs_unc[wavelength]/AQV_Rrs[wavelength], norm=LogNorm(vmin=1, vmax=vbounds_unc['max'][wavelength]), cmap = 'jet')
+
+
+            clb_2 = plt.colorbar(z1_plot, ax=axs[i],fraction=0.046, pad=0.04)
+            clb_2.ax.set_title('%')
+        if i == 0: axs[i].text(txt_x, txt_y, "Uncertainty", color='black', fontsize=fsize, bbox=box,transform=axs[i].transAxes)
+        axs[i].xaxis.set_ticklabels([])
+        axs[i].yaxis.set_ticklabels([])
+        axs[i].set_title(f'{wavelength} nm', fontsize=24)
+    plt.rcParams["axes.labelweight"] = "bold"
+    plt.rcParams["font.size"] = 18
+    plt.tight_layout()
+    plt.savefig(out_path + f'/{scene_id}_AQV_Rrs_unc.png')
+
+    plt.close()
+
+
+
+
+
 def plot_Rrs_diff(base_dir,AC_Rrs,AQV_Rrs,l8_rgb,wavelengths = [443,482,561,655],atm_corr_label = 'ACOLITE',rgb = True,scene_id=""):
     box = dict(boxstyle="square",
          ec= 'black',
@@ -500,6 +578,7 @@ def plot_OLI_Rrs(base_dir, scene_id, atm_corrs,sensor,out_path):
                        'MSI': {'aquaverse':[443,490,560,665],'acolite':[443,492,560,665],'polymer':[443,490,560,665],'l2gen':[443,492,560,665],'output':[443,490,560,665]},
                        }
         AQV_Rrs, AQV_Rrs_mask = load_Rrs_aquaverse(base_dir,scene_id, nir_mask,pixel_bounds, wavelengths = wavelengths[sensor]['aquaverse'],zoom_dict=zoom_dict)
+        #AQV_Rrs_unc, AQV_Rrs_mask_unc = load_Rrs_aquaverse(base_dir,scene_id, nir_mask,pixel_bounds, wavelengths = wavelengths[sensor]['aquaverse'],zoom_dict=zoom_dict,unc_suffix='_UNC')
         l8_rgb = gen_RGB(base_dir,pixel_bounds,sensor,zoom_dict=zoom_dict)
         vbounds = set_vbounds()
         #atm_corrs_list = ['acolite','polymer','l2gen']
@@ -514,6 +593,8 @@ def plot_OLI_Rrs(base_dir, scene_id, atm_corrs,sensor,out_path):
     
         plot_Rrs_composite(out_path,     AC_Rrs_dict, AQV_Rrs, l8_rgb, vbounds, wavelengths = wavelengths[sensor]['output'], atm_corrs = atm_corrs_list,scene_id=scene_id)
         plot_Rrs_diff_composite(out_path,AC_Rrs_dict, AQV_Rrs, l8_rgb,          wavelengths = wavelengths[sensor]['output'], atm_corrs = atm_corrs_list,scene_id=scene_id)
+        #plot_Rrs_AQV_uncertainty(out_path,     AC_Rrs_dict, AQV_Rrs, l8_rgb, vbounds, wavelengths = wavelengths[sensor]['output'], atm_corrs = atm_corrs_list,scene_id=scene_id,AQV_Rrs_unc=AQV_Rrs_unc)
+
         plt.close('all') 
         return True
 
@@ -557,6 +638,7 @@ def plot_all_Rrs(base_dir, scene_id, sensor, out_path):
                        }
         if aqv_flag:
             AQV_Rrs, AQV_Rrs_mask = load_Rrs_aquaverse(base_dir, land_masked, scene_id, pixel_bounds, wavelengths = wavelengths[sensor]['aquaverse'],zoom_dict=zoom_dict)
+            AQV_Rrs_unc, AQV_Rrs_mask_unc = load_Rrs_aquaverse(base_dir, land_masked, scene_id, pixel_bounds, wavelengths = wavelengths[sensor]['aquaverse'],zoom_dict=zoom_dict,unc_suffix="_unc")
             rgb = gen_RGB_aqv(base_dir)
         
         vbounds = set_vbounds()
@@ -568,8 +650,11 @@ def plot_all_Rrs(base_dir, scene_id, sensor, out_path):
         else:
             AC_Rrs_dict = {}
             
+        #plot_Rrs_AQV_uncertainty(out_path, AC_Rrs_dict, AQV_Rrs, rgb, vbounds, wavelengths = wavelengths[sensor]['output'], atm_corrs = atm_corrs_list, scene_id=scene_id,AQV_Rrs_unc=AQV_Rrs_unc)
         plot_Rrs_composite(out_path, AC_Rrs_dict, AQV_Rrs, rgb, vbounds, wavelengths = wavelengths[sensor]['output'], atm_corrs = atm_corrs_list, scene_id=scene_id)
         plot_Rrs_diff_composite(out_path,AC_Rrs_dict, AQV_Rrs, rgb,wavelengths = wavelengths[sensor]['output'], atm_corrs = atm_corrs_list,scene_id=scene_id)
+        #plot_Rrs_AQV_uncertainty(out_path, AC_Rrs_dict, AQV_Rrs, rgb, vbounds, wavelengths = wavelengths[sensor]['output'], atm_corrs = atm_corrs_list, scene_id=scene_id,AQV_Rrs_unc=AQV_Rrs_unc) 
+
         plt.close('all')
         
         if sensor == "MSI":
@@ -631,10 +716,19 @@ if __name__ == '__main__':
     
     # #%% test S2B plotting
     from pathlib import Path
+    sensor = 'MSI'
+    scene_id = 'S2A_MSIL1C_20201017T155251_N0500_R054_T18SUH_20230310T060014'
+    base_dir = '/tis/m2cross/scratch/f003/roshea/matchup_pipeline_dev_test/roshea/SCRATCH/Gathered/Scenes/MSI/S2A_MSIL1C_20201017T155251_N0500_R054_T18SUH_20230310T060014/out/PC_1_MSI_202405_CB0001'
+
     sensor = 'OLI'
-    scene_id = 'LC08_L1TP_045030_20190729_20200827_02_T1'#'LC08_L1TP_015033_20201017_20201105_02_T1'#'S2B_MSIL1C_20230609T154819_N0509_R054_T18SUH_20230609T193000'#"S2B_MSIL1C_20210904T185909_N0301_R013_T10TEM_20210904T211144"
+    scene_id = 'LC08_L1TP_019031_20230819_20230825_02_T1'
+    base_dir = '/tis/m2cross/scratch/f003/roshea/matchup_pipeline_dev_test/roshea/SCRATCH/Gathered/Scenes/OLI/LC08_L1TP_019031_20230819_20230825_02_T1/out/PC_1_OLI_202405_Erie0004'
+
+
+    #scene_id = 'LC08_L1TP_045030_20190729_20200827_02_T1'#'LC08_L1TP_015033_20201017_20201105_02_T1'#'S2B_MSIL1C_20230609T154819_N0509_R054_T18SUH_20230609T193000'#"S2B_MSIL1C_20210904T185909_N0301_R013_T10TEM_20210904T211144"
     #base_dir = glob.glob("/data/skabir/av1/skabir/SCRATCH/Gathered/Scenes/MSI/"+scene_id+"/out/"+"MSI_**")[0]
-    base_dir = '/run/cephfs/m2cross_scratch/f003/roshea/matchup_pipeline_dev_test/roshea/SCRATCH/Gathered/Scenes/OLI/LC08_L1TP_045030_20190729_20200827_02_T1/out/PC_1_OLI_202405_UK0003'#'/tis/m2cross/scratch/f003/roshea/matchup_pipeline_dev_test/roshea/SCRATCH/Gathered/Scenes/MSI/S2B_MSIL1C_20230609T154819_N0509_R054_T18SUH_20230609T193000_old/out/OLI_MSI_matchups_CB_intercomparison_X0002'
+    #base_dir = '/run/cephfs/m2cross_scratch/f003/roshea/matchup_pipeline_dev_test/roshea/SCRATCH/Gathered/Scenes/OLI/LC08_L1TP_045030_20190729_20200827_02_T1/out/PC_1_OLI_202405_UK0003'#'/tis/m2cross/scratch/f003/roshea/matchup_pipeline_dev_test/roshea/SCRATCH/Gathered/Scenes/MSI/S2B_MSIL1C_20230609T154819_N0509_R054_T18SUH_20230609T193000_old/out/OLI_MSI_matchups_CB_intercomparison_X0002'
+    #base_dir = '/tis/m2cross/scratch/f003/roshea/matchup_pipeline_dev_test/roshea/SCRATCH/Gathered/Scenes/MSI/S2A_MSIL1C_20201017T155251_N0500_R054_T18SUH_20230310T060014/out/PC_1_MSI_202405_CB0001'
     print(base_dir)
     out_path = "/tis/m2cross/scratch/f003/roshea/matchup_pipeline_dev_test/roshea/SCRATCH/Rrs_maps/"
     #atm_corrs = ['aquaverse']#,'polymer'

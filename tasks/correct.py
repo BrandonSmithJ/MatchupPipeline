@@ -37,7 +37,8 @@ def correct(self,
         'timeout'   : global_config.ac_timeout,
         'location'  : sample_config['location'],
     }
-    kwargs.update(global_config.extra_cmd[0][ac_method][sample_config['sensor']] if ac_method in global_config.extra_cmd[0].keys() and sample_config['sensor'] in global_config.extra_cmd[0][ac_method].keys() else {})
+    if len(global_config.extra_cmd):  kwargs.update(global_config.extra_cmd[0][ac_method][sample_config['sensor']] if ac_method in global_config.extra_cmd[0].keys() and sample_config['sensor'] in global_config.extra_cmd[0][ac_method].keys() else {})
+    #kwargs.update(global_config.extra_cmd[0][ac_method][sample_config['sensor']] if ac_method in global_config.extra_cmd[0].keys() and sample_config['sensor'] in global_config.extra_cmd[0][ac_method].keys() else {})
     if not global_config.apply_bounding_box: kwargs['location'] = None
     if ac_method == 'aquaverse': kwargs.update({'prod_level': global_config.aquaverse_prod_level})
     kwargs['correction_path'] = AC_FUNCTIONS[ac_method](**kwargs)
