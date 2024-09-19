@@ -35,7 +35,8 @@ VALID = [
     'OLI', 
     'TM', 
     'ETM', 
-]
+    'EMIT',
+    ]
 
 
 # @subprocess_wrapper

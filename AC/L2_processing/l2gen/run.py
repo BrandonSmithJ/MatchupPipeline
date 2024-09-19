@@ -38,7 +38,7 @@ FILENAME = {
     'MOD'   : '**/*.L1A_LAC',
     'VI'    : '*.nc',
     'HICO'  : '*.nc',
-
+    'OCI'   : '*.nc',
 
     }
 

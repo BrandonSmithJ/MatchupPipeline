@@ -5,7 +5,7 @@ import sys
 username = getoutput('whoami') 
 
 #===============***** This is for f001 - av3 - Matchup processing
-proc = "MSI"
+proc = "OCI"
 
 if proc == "OLI":
 	datasets = ['PC_1_Ocean_Optics']#['PC_1_OLI_202405'] # _Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF']# ['OLI_test_image_Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF'] #OLI_MSI_matchups_Lake_Erie
@@ -26,6 +26,16 @@ if proc == "MOD":
 if proc == "VI":
         datasets = ['SaltonSea_1999_2022']
         sensors  = ['VI']
+
+
+if proc == "OCI":
+    datasets = ['PC_1_OCI']
+    sensors  = ['OCI']
+
+if proc == "EMIT":
+    datasets = ['PC_1_OCI']
+    sensors  = ['EMIT']
+
 #===================================
 #         Path Definitions
 #===================================
@@ -34,7 +44,7 @@ tiles = {'OLI' : {'IRL' : '016040', 'GB': '024029','CB':'014034'},
 
 # AC processors' paths 
 l2gen_path             = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/matchup_deployment_SLURM/atm_corr/ac_processors/SeaDAS/SeaDAS_V2022_3/ocssw'
-
+l2gen_path             = '/tis/m2cross/scratch/f003/roshea/atm_corr/seadas/ocssw'
 #if 'MOD' in sensors: l2gen_path = '/data/roshea/SCRATCH/AC/ocssw'
 
 acolite_path           = '/tis/m2cross/scratch/f003/roshea/atm_corr/acolite/source_code/acolite-20231023.0/acolite' #'/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/matchup_deployment_SLURM/atm_corr/ac_processors/acolite/acolite-20221114.0/acolite' 
@@ -147,14 +157,14 @@ if 'CONUS' in datasets[0]:
 
 if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] or 'PC_1'  in datasets[0] : 
     overwrite              = False# what does it overwrite - everything - yes, even pikle file
-    ac_methods             = ['acolite']#,'aquaverse','acolite','polymer'] #['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
+    ac_methods             = ['l2gen']#,'aquaverse','acolite','polymer'] #['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
     download_via_aquaverse = False
     timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
     remove_scene_folder    = False
     remove_L1_tile         = False
     fix_projection_Rrs     = False
-    plot_products          = True # for which AC processor it works
-    plot_Rrs               = True
+    plot_products          = False # for which AC processor it works
+    plot_Rrs               = False
     extract_window         = 1 #3x3
     apply_bounding_box     = True#False # what is this - process only a portion of the image
     search_day_window      = 0#3000 #3000 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
@@ -162,7 +172,8 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] or 'PC_1
     aquaverse_prod_level   = 3
     local_processing       = True  #deploy to SLURM nodes
     extra_cmd              = {'l2gen': {'OLI' : {'l2prod' : [ 'Rrs_nnn', 'rhos_nnn', 'Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
-                                        'MSI' : {'l2prod' : [ 'Rrs_nnn', 'rhos_nnn', 'Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},}},
+                                        'MSI' : {'l2prod' : [ 'Rrs_nnn', 'rhos_nnn', 'Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
+                                        'OCI' : {'l2prod' : [ 'Rrs_nnn', ]},}},
 #extra_cmd              = {'l2gen': {'OLI' : {'gain':[1.00,1.00,1.00,1.00,1.00,1.00,1.00],'filter_opt':0},
     #                                    'MSI' : {'gain':[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],'filter_opt':0}}}
     save_nc                = False #if 'aquaverse' in ac_methods else True

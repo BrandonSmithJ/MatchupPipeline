@@ -3,7 +3,8 @@
 SENSOR_ALIASES = {
 	'MSI'  : ['S2A', 'S2B'],
 	'OLCI' : ['S3A', 'S3B'],
-}
+        'OCI'  : ['PACE']
+        }
 
 
 # Sensor gains

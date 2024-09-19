@@ -151,11 +151,13 @@ SENSOR_CONFIG = {
     'l2prod_exclude' : [ 'depth'],
   },
   
-  'OLCI': {
+  'OCI': {
     #'aer_opt'        : '-2',
     'l2prod_exclude' : [ 'depth'],
   },
-  
+ 
+
+
   'MSI' : {
     'l2prod_exclude' : [ 
         #'Rrs_unc_vvv', 'aot_nnn', 

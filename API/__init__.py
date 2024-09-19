@@ -3,6 +3,8 @@ from .HICO  import HICO
 from .MERIS import MERIS 
 from .MOD   import MOD
 from .MSI   import MSI
+from .OCI   import OCI
+from .EMIT  import EMIT
 from .OLCI  import OLCI 
 from .OLI   import OLI 
 from .TM    import TM 
@@ -26,4 +28,6 @@ API = {
 	'MERIS' : MERIS,
 	'MOD'   : MOD,
 	'VI'    : VI,
+        'OCI'   : OCI,
+        'EMIT'  : EMIT,
 }

@@ -6,3 +6,5 @@ from .EarthExplorer import EarthExplorer
 from .Google        import Google
 from .LAADS         import LAADS
 from .OBPG          import OBPG
+from .earth_access  import earth_access
+

@@ -96,6 +96,8 @@ class BaseSource(Picklable, metaclass=BaseSourceMeta):
                     'OLCI' : (dt(2016, 2, 16), dt.now()),
                     'S3A'  : (dt(2016, 2, 16), dt.now()),
                     'S3B'  : (dt(2018, 4, 25), dt.now()),
+                    'OCI'  : (dt(2024, 2, 8), dt.now()),
+                    'EMIT' : (dt(2022, 7, 14), dt.now()),
                     'OLI'  : (dt(2013, 2, 11), dt.now()),
                     'OLI2' : (dt(2021, 9, 27), dt.now()),
                     'MOD'  : (dt(1999, 12, 1), dt.now()),
