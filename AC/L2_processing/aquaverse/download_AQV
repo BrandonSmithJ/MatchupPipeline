@@ -21,6 +21,6 @@ source $2
 
 echo "Downloading $5 tile..." 
 echo "--site $3 $4"
-python downloads/stream_download_manager.py --site $3 $4
+python downloads/stream_download_manager.py --site $3 $4 --production
 
 

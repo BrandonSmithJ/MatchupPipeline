@@ -98,7 +98,7 @@ def land_mask(base_dir):
         rho_rc_nir = aqv_proc(glob.glob(base_dir+ '/**rayleigh_corrected_864nm.TIF')[0])
 
     ndwi = (rho_rc_green - rho_rc_nir)/(rho_rc_green + rho_rc_nir)
-    ndwi_mask =  np.where(ndwi > 0, ndwi, np.nan)
+    ndwi_mask =   np.where(ndwi > 0, ndwi, np.nan)
     land_masked = ndwi_mask !=0
     
     #if 'MSI' in base_dir: land_masked  = zoom(land_masked, 1/3, order=0)
@@ -114,11 +114,14 @@ def load_Rrs_aquaverse(base_dir, land_masked, scene_id, pixel_bounds, wavelength
         rrs_file = base_dir + '/'+ scene_id + f'_RRS_{wavelength}nm{unc_suffix}.TIF'
         rrs[wavelength] = np.squeeze(rasterio.open(rrs_file).read()).astype(float)#*land_masked,
         rrs[wavelength][rrs[wavelength] <= 0] = np.nan
-        if 'OLI' in base_dir: 
+        if '/OLI/' in base_dir: 
             rrs[wavelength] = rrs[wavelength][pixel_bounds['row']:pixel_bounds['row_u'], pixel_bounds['col']:pixel_bounds['col_u']]
             rrs[wavelength] = zoom(rrs[wavelength],zoom_dict['OLI'],order=0)
+        #else:
+        #    rrs[wavelength] = zoom(rrs[wavelength],zoom_dict['MSI'],order=0)
         rrs_mask[wavelength] = rrs[wavelength].copy()
-        rrs_mask[wavelength][rrs_mask[wavelength]>0] = 1.0
+        rrs_mask[wavelength][rrs_mask[wavelength]>=0] = 1.0
+        rrs_mask[wavelength][rrs_mask[wavelength]<=0] = 0
     return rrs,rrs_mask
 
  
@@ -253,8 +256,9 @@ def load_Rrs(base_dir, AQV_rrs_mask,pixel_bounds, wavelengths = [443,483,561,655
             AC_Rrs[wavelength] = zoom(AC_Rrs[wavelength],zoom_amount,order=0)
             #print(np.shape(AC_Rrs[wavelength]),np.shape(AQV_rrs_mask[wavelength]))
             #AQV_rrs_mask[wavelength] = zoom(AQV_rrs_mask[wavelength],zoom_amount,order=0)
-        local_AQV_rrs_mask = AQV_rrs_mask[wavelength] #zoom(AQV_rrs_mask[wavelength],zoom_amount,order=0) if sensor =='OLI' else AQV_rrs_mask[wavelength]
-        AC_Rrs[wavelength] = local_AQV_rrs_mask*AC_Rrs[wavelength]
+        if False:
+            local_AQV_rrs_mask = AQV_rrs_mask[wavelength] #zoom(AQV_rrs_mask[wavelength],zoom_amount,order=0) if sensor =='OLI' else AQV_rrs_mask[wavelength]
+            AC_Rrs[wavelength] = local_AQV_rrs_mask*AC_Rrs[wavelength]
 
     return AC_Rrs
        
@@ -625,7 +629,7 @@ def plot_all_Rrs(base_dir, scene_id, sensor, out_path):
     
     #print(aqv_flag)
     #print(atm_corrs_list)
-    zoom_dict = {'OLI':1 ,'MSI':1/2}
+    zoom_dict = {'OLI':1/3 ,'MSI':1/2}
 
     if len(glob.glob(base_dir +'/*RRS*nm.TIF')) and all([len(glob.glob(base_dir +f'/*{atm_corr}.nc')) for atm_corr in atm_corrs_list]):
           
@@ -638,7 +642,7 @@ def plot_all_Rrs(base_dir, scene_id, sensor, out_path):
                        }
         if aqv_flag:
             AQV_Rrs, AQV_Rrs_mask = load_Rrs_aquaverse(base_dir, land_masked, scene_id, pixel_bounds, wavelengths = wavelengths[sensor]['aquaverse'],zoom_dict=zoom_dict)
-            AQV_Rrs_unc, AQV_Rrs_mask_unc = load_Rrs_aquaverse(base_dir, land_masked, scene_id, pixel_bounds, wavelengths = wavelengths[sensor]['aquaverse'],zoom_dict=zoom_dict,unc_suffix="_unc")
+            #AQV_Rrs_unc, AQV_Rrs_mask_unc = load_Rrs_aquaverse(base_dir, land_masked, scene_id, pixel_bounds, wavelengths = wavelengths[sensor]['aquaverse'],zoom_dict=zoom_dict,unc_suffix="_unc")
             rgb = gen_RGB_aqv(base_dir)
         
         vbounds = set_vbounds()
@@ -723,7 +727,14 @@ if __name__ == '__main__':
     sensor = 'OLI'
     scene_id = 'LC08_L1TP_019031_20230819_20230825_02_T1'
     base_dir = '/tis/m2cross/scratch/f003/roshea/matchup_pipeline_dev_test/roshea/SCRATCH/Gathered/Scenes/OLI/LC08_L1TP_019031_20230819_20230825_02_T1/out/PC_1_OLI_202405_Erie0004'
+    
+    sensor = 'MSI'
+    scene_id = 'S2A_MSIL1C_20240418T161831_N0510_R040_T17TLG_20240418T201305'
+    base_dir = '/tis/m2cross/scratch/f003/roshea/matchup_pipeline_dev_test/roshea/SCRATCH/Gathered/Scenes/MSI/S2A_MSIL1C_20240418T161831_N0510_R040_T17TLG_20240418T201305/out/PC_1_OCI_4_MSI_Erie_OCI'
 
+    #sensor   = 'OLI'
+    #scene_id = 'LC08_L1TP_020031_20240422_20240430_02_T1'
+    #base_dir = '/tis/m2cross/scratch/f003/roshea/matchup_pipeline_dev_test/roshea/SCRATCH/Gathered/Scenes/OLI/LC08_L1TP_020031_20240422_20240430_02_T1/out/PC_1_OCI_4_OLI_Erie_OCI'
 
     #scene_id = 'LC08_L1TP_045030_20190729_20200827_02_T1'#'LC08_L1TP_015033_20201017_20201105_02_T1'#'S2B_MSIL1C_20230609T154819_N0509_R054_T18SUH_20230609T193000'#"S2B_MSIL1C_20210904T185909_N0301_R013_T10TEM_20210904T211144"
     #base_dir = glob.glob("/data/skabir/av1/skabir/SCRATCH/Gathered/Scenes/MSI/"+scene_id+"/out/"+"MSI_**")[0]

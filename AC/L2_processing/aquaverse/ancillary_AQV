@@ -8,4 +8,4 @@ cd $1
 source $2
 echo "Downloading ancillary data..."
  
-python downloads/date_range_ancillary.py $3 $4
+python downloads/date_range_ancillary.py $3 $4 --production

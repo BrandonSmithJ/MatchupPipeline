@@ -156,6 +156,9 @@ parser.add_argument('--apply_bounding_box', action='store_true',
     default=config.apply_bounding_box,
     help='Applies bounding box during correction, if true')
 
+parser.add_argument('--save_L2R', action='store_true',
+    default=config.save_L2R,
+    help='Saves acolite L2R data to output netcdf, if true')
 
 parser.add_argument('--aquaverse_prod_level', type=int,
     default=config.aquaverse_prod_level,

@@ -46,6 +46,11 @@ def search(self,
                 'scene_folder'  : out_path,
                 'overwrite'     : global_config.overwrite,
             }
+            if 'sceneID' in sample_config.keys():
+                if scene not in sample_config['sceneID']:
+                    print(scene,"not in", sample_config['sceneID'])
+                    continue
+
             kwargs.update(sample_config)
             total_kwargs.append(kwargs)
     else:
@@ -172,6 +177,9 @@ def download(self,
         run_aquaverse_download(scene_id=sample_config['scene_id'],sensor = sample_config['sensor'],AQV_location=global_config.ac_path['aquaverse'],stream_backend_path=global_config.stream_backend_path,stream_env_path=global_config.stream_env_path,output_folder=kwargs['scene_folder'],overwrite = global_config.overwrite)
         #copy tar to local repo
         downloaded_from_stream = copy_from_stream(kwargs)
+        from ..utils.insert_satellite_data import insert_satellite_data
+        insert_satellite_data(sample_config['scene_id'])
+
         #tis_output_path = '/tis/stream/data/'+str(kwargs['scene_id']) + '.tar.gz'
        # from ..utils.decompress import decompress
         #decompress(Path(tis_output_path),Path(kwargs['scene_path']),remove=False)
@@ -185,7 +193,8 @@ def download(self,
             kwargs.pop('scene_path')
             sample_config.pop('scene_path')
             kwargs['scene_path'] = api.download_scene(**kwargs)
-
+        from ..utils.insert_satellite_data import insert_satellite_data
+        insert_satellite_data(sample_config['scene_id'])
     if ('aquaverse' in global_config.ac_methods or sample_config['sensor'] in ['MSI','OLI']) and not downloaded_from_stream:
         #compress output
         

@@ -34,23 +34,36 @@ def get_scenes_from_query(satellite,start,end,min_cloud_cover=0,max_cloud_cover=
         #bbox     = location.get_footprint(as_string=True),
         #dt_range = dt_range.ensure_unique().strftime(),
         full_dictionary = {}
+        if satellite == 'MSI':
+            mission          = 'Sentinel2'
+            cloud_cover      = f"cloudCover=%5B{min_cloud_cover},{max_cloud_cover}%5D&"
+            processing_level = 'S2MSI1C'
+            filter_suffix    = '.SAFE'
+            instrument       = ''
+        if satellite in ['OLCI','S3A','S3B']:
+            mission          = 'Sentinel3'
+            cloud_cover      = ""#f"cloudCover=[{min_cloud_cover},{max_cloud_cover}]&"
+            processing_level = '1'
+            filter_suffix    = '.SEN3'
+            instrument       = "instrument=OLCI&"
         for i,start in enumerate(list_of_datetimes):
             if i+2>len(list_of_datetimes): continue
             if len(list_of_datetimes)>2: end = (dt.strptime(list_of_datetimes[i+1],'%Y-%m-%d') - timedelta(1)).strftime('%Y-%m-%d')    #list_of_datetimes[i+1]
-            alternate_url = "https://catalogue.dataspace.copernicus.eu/resto/api/collections/Sentinel2/search.json?"+\
-            f"cloudCover=%5B{min_cloud_cover},{max_cloud_cover}%5D&"+\
+            alternate_url = f"https://catalogue.dataspace.copernicus.eu/resto/api/collections/{mission}/search.json?"+\
+            f"{instrument}"+\
+            f"{cloud_cover}"+\
             f"startDate={start}T00:00:00Z&completionDate={end}T23:59:59Z"+\
             f"&maxRecords={max_records}&"+\
-            f"processingLevel=S2MSI1C&"+\
-            f"processorVersion=05.00&"+\
+            f"processingLevel={processing_level}&"+\
             f"box={bbox}"
 
+            #f"processorVersion=05.10&"+\
             #f"processorVersion=05.00&"+\
             
             #if tileID != "": alternate_url = alternate_url + f"&tileId={tileID}"
 
             url = alternate_url
-            #print(url)
+            print(url)
             #response = requests.get(url)
             data_list=None
             while data_list is None:
@@ -61,8 +74,8 @@ def get_scenes_from_query(satellite,start,end,min_cloud_cover=0,max_cloud_cover=
                     time.sleep(2)
                     pass
 
-            scene_ids = [d['properties']['title'].replace('.SAFE','') for d in data_list if '.SAFE' in d['properties']['title']]
-            product_ids = [d['id'] for d in data_list if '.SAFE' in d['properties']['title']]
+            scene_ids = [d['properties']['title'].replace('.SAFE','') for d in data_list if filter_suffix in d['properties']['title']]
+            product_ids = [d['id'] for d in data_list if filter_suffix in d['properties']['title']]
             dictionary_out = {p:s for p,s in zip(scene_ids,product_ids)}
             print("Found: ", len(dictionary_out))
 
@@ -70,6 +83,7 @@ def get_scenes_from_query(satellite,start,end,min_cloud_cover=0,max_cloud_cover=
             keys = list(dictionary_out.keys())
             scenes_to_keep = []
             for key in keys: 
+                if satellite == 'OLCI': continue
                 scene_id_base = '_'.join(key.split('_')[:-1])
                 #print(scene_id_base)
                 matching_scenes = [matching_scene for matching_scene in keys if scene_id_base in matching_scene]
@@ -79,6 +93,7 @@ def get_scenes_from_query(satellite,start,end,min_cloud_cover=0,max_cloud_cover=
                 #print(matching_scenes,most_recent_scene_id)
                 scenes_to_keep.append(most_recent_scene_id)
             scenes_to_keep = set(scenes_to_keep)
+            if satellite == 'OLCI': scenes_to_keep = [key for key in keys if 'EFR_' in key] #keys #[key for key in keys if 'ERR_' not in key]
             for key in keys:
                 if key not in scenes_to_keep: 
                     dictionary_out.pop(key)
@@ -193,7 +208,7 @@ class Copernicus(BaseSource, SentinelAPI):
         # Avoid unnecessary search; skip dates prior to first data for sensor
         if not self.dates_available(sensor, dt_range): return {}
 
-        scenes = get_scenes_from_query("MSI",start=dt_range.strftime(fmt="%Y-%m-%d")[0],end=dt_range.strftime(fmt="%Y-%m-%d")[1],min_cloud_cover=0,max_cloud_cover=max_cloud_cover,max_records=2000,bbox=','.join([str(i) for i in location.get_bbox(order='wsen')]),tileID=tileID)
+        scenes = get_scenes_from_query(sensor,start=dt_range.strftime(fmt="%Y-%m-%d")[0],end=dt_range.strftime(fmt="%Y-%m-%d")[1],min_cloud_cover=0,max_cloud_cover=max_cloud_cover,max_records=2000,bbox=','.join([str(i) for i in location.get_bbox(order='wsen')]),tileID=tileID)
         #config = {
         #    'platformname' : self.valid_sensors[sensor],
         #    'date'         : dt_range.ensure_unique().strftime(),

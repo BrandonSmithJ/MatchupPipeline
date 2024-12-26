@@ -3,6 +3,8 @@ from ..Plot.plot_Rrs import plot_all_Rrs as plot_Rrs
 from .. import app
 from argparse import Namespace
 from pathlib import Path
+import shutil
+import os
 @app.task(bind=True, name='plot', queue='plot',priority=5)
 def plot(self,
  	sample_config : dict,      # Config for this sample
@@ -64,7 +66,22 @@ def plot(self,
             #del kwargs_Rrs['atm_corrs']
             plot_Rrs(**kwargs_Rrs)
         # plot_Rrs(base_dir, scene_id, atm_corrs= ['acolite','l2gen','polymer'], sensor='OLI')
-        
+    if global_config.save_nc:
+        if os.path.exists(kwargs['inp_file']):
+            #m2cross_file = '/tis/m2cross/data/'+kwargs['inp_file'].stem.split('.')[0]+'_'+kwargs['inp_file'].parent.parent.parent.stem + '.nc'
+            m2cross_file = '/tis/m2cross/data/'+kwargs['inp_file'].parent.parent.parent.stem + '_' + kwargs['inp_file'].stem.split('.')[0] + '.nc'
+            print("Saving to: ", m2cross_file)
+            saved_ncs_txt = Path(sample_config['out_path']).joinpath('saved_ncs_m2cross.txt')
+            saved_ncs_txt_global = Path(sample_config['out_path']).parent.parent.parent.joinpath('saved_ncs_m2cross.txt')
+            
+            #with open(saved_ncs_txt, 'a') as saved_ncs_txt_file:
+            #    saved_ncs_txt_file.write(m2cross_file + '\n')
+            with open(saved_ncs_txt_global, 'a') as saved_ncs_txt_file:
+                saved_ncs_txt_file.write(m2cross_file + '\n')
+
+            shutil.copyfile(kwargs['inp_file'],m2cross_file)
+            
+
     kwargs.update(sample_config)
     return kwargs
 

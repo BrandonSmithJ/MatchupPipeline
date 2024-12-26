@@ -7,4 +7,4 @@ echo "The scene_id is: $3"
 cd $1
 source $2
 
-sbatch slurm/aquaverse_mdn_ac.sh $3 --redo
+sbatch slurm/aquaverse_mdn_ac.sh $3 --redo --production

@@ -255,7 +255,7 @@ def main2(gc, data, i, debug=True):
             'queues'      : ['search','download','correct','extract','plot','celery','write',unique_uuid],
             #'queues'      : ['search', 'celery'],
             'concurrency' : 4,
-            'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0001-0041],slrm[0046-0055]'},
+            'slurm_kwargs': {'partition' : 'ubuntu20',}, #'exclude':'slrm[0001-0041],slrm[0046-0055]'},
         },
     ]
     print("UUID is:",unique_uuid)

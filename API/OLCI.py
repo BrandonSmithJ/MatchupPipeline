@@ -14,5 +14,5 @@ class OLCI(BaseAPI):
         search:   OBPG, Copernicus, LAADS
         download: OBPG, LAADS, Copernicus
     """
-    search_sources   = ['OBPG', 'Copernicus',  'LAADS']
+    search_sources   = ['Copernicus','LAADS','OBPG']
     download_sources = ['OBPG', 'LAADS', 'Copernicus']

@@ -20,7 +20,7 @@ task = 'pipeline.tasks.pipelines.PipelineTask:PipelineTask'
 app  = Celery('pipeline', task_cls=task)
 #app.control.inspect().active()
 
-rmq_hostname = 'slrm0055'
+rmq_hostname = 'slrm0017'
 
 
 # Set configuration options

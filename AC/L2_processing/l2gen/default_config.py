@@ -148,7 +148,7 @@ SENSOR_CONFIG = {
   
   'OLCI': {
     #'aer_opt'        : '-2',
-    'l2prod_exclude' : [ 'depth'],
+    'l2prod_exclude' : [ 'depth','Rrs_unc_vvv'],
   },
   
   'OCI': {

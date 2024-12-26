@@ -39,7 +39,8 @@ colors        = {'MSI': {'aquaverse': 'xkcd:red',    'acolite': 'xkcd:red',   'l
                  'OLI': {'aquaverse': 'xkcd:violet', 'acolite': 'xkcd:violet','l2gen': 'xkcd:violet','polymer':'xkcd:violet', 'cyan': 'xkcd:teal'},
                  'MOD': {'aquaverse': 'xkcd:blue',   'acolite': 'xkcd:blue',  'l2gen': 'xkcd:blue',  'polymer':'xkcd:blue',   'cyan': 'xkcd:teal'},
                  'VI':  {'aquaverse': 'xkcd:dark pink',   'acolite': 'xkcd:dark pink',  'l2gen': 'xkcd:dark pink',  'polymer':'xkcd:dark pink',   'cyan': 'xkcd:dark pink'},
-                }
+                'OLCI':  {'aquaverse': 'xkcd:dark pink',   'acolite': 'xkcd:dark pink',  'l2gen': 'xkcd:dark pink',  'polymer':'xkcd:dark pink',   'cyan': 'xkcd:dark pink'},
+                 }
 
 
 def default_dd(d={}, f=lambda k: k):
@@ -66,7 +67,9 @@ def find_filenames(sensor, basefile,atmospheric_correction):
 def extract_datetime(fname,sensor,index = 1):
 
     if sensor == 'MOD': datetime_convertor = '%Y%j%H%M%S'
-    if sensor in [ 'OLCI']: datetime_convertor = '%Y%m%dT%H%M%S'
+    if sensor in [ 'OLCI']: 
+        index = 7
+        datetime_convertor = '%Y%m%dT%H%M%S'
     if sensor in ['VI'] : datetime_convertor = 'VIIRS.%Y%m%dT%H%M%S.L1A'
 
     if sensor == 'OLI': 
@@ -140,10 +143,10 @@ product_rename_dictionary = {'Chla'  : 'chla',
                              'AQV_cdom':'cdom',}
 
 def load_gathered_data(gathered_path,folder_names=[],products=[],overwrite=True,datasets=[]):
-    sensors        = ["MOD","MSI","OLI","VI"] 
+    sensors        = ["MOD","MSI","OLI","VI","OLCI"] 
     atm_corrs      = ["aquaverse","l2gen"]
     if not len(datasets):
-        datasets       = ["MonoLake_1999_2024","SaltonSea_1999_2022","GSL_1999_2022","OLI_test_image_MS_AC","OLI_test_image_CB_subset","OLI_test_image_CB_ET42_EE31","OLI_test_image_Boston_timeseries","OLI_test_image_Erie_stations","OLI_test_image_Damariscotta_1",'OLI_test_image_Damariscotta_2',"OLI_test_image_Oyster_farm","OLI_test_image_Honga_TS_1","OLI_test_image_Honga_TS_2","OLI_test_image_Wachusett_reservoir_timeseries","OLI_test_image_Quabbin_reservoir_timeseries"] 
+        datasets       = ["PC_1_OLI_Boston_N07_timeseries","MonoLake_1999_2024","SaltonSea_1999_2022","GSL_1999_2022","OLI_test_image_MS_AC","OLI_test_image_CB_subset","OLI_test_image_CB_ET42_EE31","OLI_test_image_Boston_timeseries","OLI_test_image_Erie_stations","OLI_test_image_Damariscotta_1",'OLI_test_image_Damariscotta_2',"OLI_test_image_Oyster_farm","OLI_test_image_Honga_TS_1","OLI_test_image_Honga_TS_2","OLI_test_image_Wachusett_reservoir_timeseries","OLI_test_image_Quabbin_reservoir_timeseries"] 
     #datasets = ["OLI_test_image_Erie_stations"]
     gathered_data     = {}
     gathered_data_uid = {}
@@ -218,6 +221,8 @@ insitu_data_dictionary = {"OLI_test_image_Oyster_farm"                     : [''
                           "GSL_1999_2022"                                  : ["gsl_usgs_utahdeq00_22_formatted",0],
                           "SaltonSea_1999_2022"                            : ["combined_Salton_Sea_BOR_Spaulding_2",0],#["terminalLakes",0],
                           "MonoLake_1999_2024"                             : ["terminalLakes",0],
+                          "PC_1_OLI_Boston_N07_timeseries"                 : ["boston_combined",0],
+
                           }
 
 
@@ -274,8 +279,8 @@ def average_output(datetimes,products,products_max=None,products_min=None):
         grouped_data          = data.agg({'products':'mean','products_max':'mean','products_min':'mean'})
     else:
         grouped_data          = data.agg({'products':'mean',})
-    data                  = grouped_data.reindex(pd.date_range('01-01-2000','07-02-2024'),fill_value=np.nan)
-    data['30day_average'] = data.products.rolling(window=30,min_periods=1,center=True,win_type='gaussian').mean(std=7)
+    data                  = grouped_data.reindex(pd.date_range('01-01-2016','12-10-2024'),fill_value=np.nan)
+    data['30day_average'] = data.products.rolling(window=30,min_periods=1,center=True).median()#,win_type='gaussian').mean(std=7) #std=7
     data['30day_std'] = data.products.rolling(window=30,min_periods=1,center=True,win_type='gaussian').std(std=7)
     data['1day_average']  = data.products.rolling(window=1,min_periods=1,center=True,win_type='gaussian').mean(std=1)
     
@@ -331,13 +336,16 @@ def plot_products(gathered_data,insitu_data,save_location,products=['Rrs(443)','
     markers       = {'OLI' : 'o',
                      'MSI' : 'X',
                      'MOD' : '.',
-                     'VI'  : 'o'}
+                     'VI'  : 'o',
+                     'OLCI'  : 'o'}
 
     alphas        = [0.8,0.35]
     colors        = {'MSI': {'aquaverse': 'xkcd:red',    'acolite': 'xkcd:red',   'l2gen': 'xkcd:red',   'polymer':'xkcd:red',    'cyan': 'xkcd:teal'},
 		     'OLI': {'aquaverse': 'xkcd:violet', 'acolite': 'xkcd:violet','l2gen': 'xkcd:violet','polymer':'xkcd:violet', 'cyan': 'xkcd:teal'},
                      'MOD': {'aquaverse': 'xkcd:blue',   'acolite': 'xkcd:blue',  'l2gen': 'xkcd:blue',  'polymer':'xkcd:blue',   'cyan': 'xkcd:teal'},
                      'VI':  {'aquaverse': 'xkcd:dark pink',   'acolite': 'xkcd:dark pink',  'l2gen': 'xkcd:dark pink',  'polymer':'xkcd:dark pink',   'cyan': 'xkcd:dark pink'},
+                     'OLCI':  {'aquaverse': 'xkcd:viridian',   'acolite': 'xkcd:viridian',  'l2gen': 'xkcd:viridian',  'polymer':'xkcd:viridian',   'cyan': 'xkcd:viridian'},
+
                      }    #[ 'k','xkcd:red']
 
 
@@ -345,6 +353,7 @@ def plot_products(gathered_data,insitu_data,save_location,products=['Rrs(443)','
                      'OLI': {'aquaverse': 'xkcd:violet', 'acolite': 'xkcd:violet','l2gen': 'xkcd:violet','polymer':'xkcd:violet', 'cyan': 'xkcd:teal'},
                      'MOD': {'aquaverse': 'xkcd:blue',   'acolite': 'xkcd:blue',  'l2gen': 'xkcd:blue',  'polymer':'xkcd:blue',   'cyan': 'xkcd:teal'},
                      'VI':  {'aquaverse': 'xkcd:dark pink',   'acolite': 'xkcd:dark pink',  'l2gen': 'xkcd:magenta',  'polymer':'xkcd:dark pink',   'cyan': 'xkcd:dark pink'},
+                     'OLCI':  {'aquaverse': 'xkcd:viridian',   'acolite': 'xkcd:viridian',  'l2gen': 'xkcd:viridian',  'polymer':'xkcd:viridian',   'cyan': 'xkcd:viridian'},
                      }
 
     
@@ -372,7 +381,8 @@ def plot_products(gathered_data,insitu_data,save_location,products=['Rrs(443)','
     sensor_label   = {"MSI":"Sentinel-2",
                       "OLI":"Landsat-8/9",
                       "MOD":"MODIS",
-                      "VI" :"VIIRS",}
+                      "VI" :"VIIRS",
+                      "OLCI": "Sentinel-3"}
 
 
     equivalent_Rrs = { 
@@ -408,7 +418,7 @@ def plot_products(gathered_data,insitu_data,save_location,products=['Rrs(443)','
                             #    product = equivalent_Rrs[sensor][product]
                             if (product == 'chla' or 'Boston' in dataset) and sensor == 'OLI': 
                                 #ax.plot([0],[0.001],label=f'{sensor_label[sensor]} {atm_corr_label[atm_corr]} 30-day average' if i == 0 else None, linewidth=2,color=colors[sensor][atm_corr],zorder=103)
-                                continue 
+                                print("chla or Boston and OLI")#continue 
                             
 
                             if product in      gathered_data[dataset][uid][sensor][atm_corr].keys():
@@ -506,7 +516,7 @@ def plot_products(gathered_data,insitu_data,save_location,products=['Rrs(443)','
                                 #ax.plot(monthly_average.index.to_pydatetime(),monthly_average.values,color=colors[sensor][atm_corr],alpha=1,zorder = 97,linewidth=2)
 
                             # Formatting
-                            ax.set_xlim(pd.Timestamp('2000-01-01 00:00:00'), pd.Timestamp('2024-01-01 00:00:00'))
+                            ax.set_xlim(pd.Timestamp('2016-01-01 00:00:00'), pd.Timestamp('2024-01-01 00:00:00'))
                             ax.xaxis.set_major_locator(years)
                             ax.xaxis.set_major_formatter(years_format)
                             ax.xaxis.set_minor_locator(months)
@@ -549,6 +559,7 @@ def plot_products(gathered_data,insitu_data,save_location,products=['Rrs(443)','
                 uid_name = '_'.join(uid.split('_')[-2:])
 
             os.makedirs(Path(save_location).joinpath(dataset),exist_ok=True)
+            print("Saving timeseries to:", str(save_location) + f'/{dataset}/{dataset}_{sensor}_{atm_corr}_{uid_name}_timeseries_{plot_matchups}_{product_label}_{name_suffix}.png')
             plt.savefig(str(save_location) + f'/{dataset}/{dataset}_{sensor}_{atm_corr}_{uid_name}_timeseries_{plot_matchups}_{product_label}_{name_suffix}.png',dpi=400)
             plt.close()        
 
@@ -654,14 +665,14 @@ def main(datasets=[]):
     insitu_data   = load_insitu_data(insitu_path,insitu_data_dictionary)
     #with open('/tis/m2cross/scratch/f003/roshea/For_Arun/insitu_data.pickle', 'wb') as handle:
     #    pickle.dump(insitu_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    #plot_products(gathered_data,insitu_data,save_path,plot_matchups=-1)
-    #plot_products(gathered_data,insitu_data,save_path,plot_matchups=0)
+    plot_products(gathered_data,insitu_data,save_path,plot_matchups=-1,products=['chla','tss','cdom'],name_suffix='chl_tss_cdom')
+    plot_products(gathered_data,insitu_data,save_path,plot_matchups=0,products=['chla','tss','cdom'],name_suffix='chl_tss_cdom')
     plot_products(gathered_data,insitu_data,save_path,plot_matchups=1,products=['chla','tss','cdom'],name_suffix='chl_tss_cdom')
     plot_products(gathered_data,insitu_data,save_path,plot_matchups=1)
     #plot_spectra(gathered_data)
     plot_products(gathered_data,insitu_data,save_path,plot_matchups=1,products='Rrs')
     
-    #plot_products(gathered_data,insitu_data,save_path,plot_matchups=2)
+    plot_products(gathered_data,insitu_data,save_path,plot_matchups=2,products=['chla','tss','cdom'],name_suffix='chl_tss_cdom')
 
 if __name__ == "__main__":
     n = len(sys.argv)

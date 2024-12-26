@@ -19,7 +19,7 @@ def psql_insert_scene_entry(scene_dict):
     try:
         # read database configuration
         # connect to the PostgreSQL database
-        conn = psycopg2.connect(service='stream-stage-rw')
+        conn = psycopg2.connect(service='stream-prod-rw') #
         # create a new cursor
         cur = conn.cursor()
         # SQL values
@@ -49,7 +49,7 @@ def get_geo_from_tiles(tiles):
         conn = None
         try:
             # connect to the PostgreSQL database
-            conn = psycopg2.connect(service='stream-stage-rw')
+            conn = psycopg2.connect(service='stream-prod-rw')
             # create a new cursor
             cur = conn.cursor(cursor_factory = psycopg2.extras.DictCursor)
             # execute the INSERT statement

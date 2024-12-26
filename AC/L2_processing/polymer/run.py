@@ -65,10 +65,12 @@ def run_polymer(
     out_file = Path(out_dir).absolute().joinpath('polymer.nc')
     inp_file = Path(inp_file).absolute()
     
+    if sensor in ['OLCI','S3A','S3B']:
+        inp_file = inp_file.joinpath(str(inp_file.stem) + str(inp_file.suffix))
     # Perform any additional preprocessing which is necessary
     if sensor in ['OLI', 'MSI', 'S2A', 'S2B', 'TM', 'ETM']:
         inp_file = inp_file.parent if sensor not in ['OLI','MSI'] else  inp_file.joinpath(str(inp_file.stem) + '.SAFE') if sensor in ['MSI'] else inp_file
-
+        
         if not inp_file.exists() and sensor == 'MSI':  
             inp_file = inp_file.parent
             inp_file = [i for i in inp_file.glob('*S2*')][0]

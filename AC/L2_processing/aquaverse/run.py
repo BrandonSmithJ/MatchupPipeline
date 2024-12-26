@@ -78,7 +78,7 @@ def check_ancillary_present(date):
     sql = f"SELECT * FROM ancillary_data WHERE creation_date = '{date}';"      
     conn = None
     try:
-        conn = psycopg2.connect(service='stream-stage-rw')
+        conn = psycopg2.connect(service='stream-prod-rw')
         cur = conn.cursor()
         cur.execute(sql, ())
         results = cur.fetchall()
@@ -93,7 +93,7 @@ def check_ancillary_present(date):
 
     return(len(results))    
     
-def run_aquaverse_ancillary(sensor,scene_id, AQV_location,timeout=600,stream_backend_path='/tis/m2cross/scratch/f002/wwainwr1/stream/backend', stream_env_path='/tis/m2cross/scratch/f002/wwainwr1/venv/bin/activate'):
+def run_aquaverse_ancillary(sensor,scene_id, AQV_location,timeout=600,stream_backend_path='/tis/m2cross/scratch/f002/wwainwr1/stream/backend', stream_env_path='/tis/m2cross/scratch/f002/wwainwr1/unified38/bin/activate'):
     from subprocess import Popen, PIPE, check_output, STDOUT
     from pathlib import Path
     # from datetime import datetime
@@ -160,7 +160,7 @@ def check_job_id(out,timeout,output_path,job_id_list,AQV_error_path,stream_backe
     print("Failed to find output")
     
 
-def run_aquaverse_rayleigh(scene_id, AQV_location,timeout=3600,stream_backend_path='/tis/m2cross/scratch/f002/wwainwr1/stream/backend', stream_env_path='/tis/m2cross/scratch/f002/wwainwr1/venv/bin/activate', stream_output_path = '/tis/stream/data/',overwrite=False):
+def run_aquaverse_rayleigh(scene_id, AQV_location,timeout=3600,stream_backend_path='/tis/m2cross/scratch/f002/wwainwr1/stream/backend', stream_env_path='/tis/m2cross/scratch/f002/wwainwr1/unified38/bin/activate', stream_output_path = '/tis/stream/data/',overwrite=False):
     from subprocess import Popen, PIPE, check_output, STDOUT
     from pathlib import Path
     import os
@@ -176,7 +176,7 @@ def run_aquaverse_rayleigh(scene_id, AQV_location,timeout=3600,stream_backend_pa
     
         check_job_id(process_output,timeout,rayleigh_output_path)
     
-def run_aquaverse_MDN_AC(scene_id, AQV_location,timeout=3600,stream_backend_path='/tis/m2cross/scratch/f002/wwainwr1/stream/backend', stream_env_path='/tis/m2cross/scratch/f002/wwainwr1/venv/bin/activate', stream_output_path = '/tis/stream/data/',overwrite=False):
+def run_aquaverse_MDN_AC(scene_id, AQV_location,timeout=3600,stream_backend_path='/tis/m2cross/scratch/f002/wwainwr1/stream/backend', stream_env_path='/tis/m2cross/scratch/f002/wwainwr1/unified38/bin/activate', stream_output_path = '/tis/stream/data/',overwrite=False):
     from subprocess import Popen, PIPE, check_output, STDOUT
     from pathlib import Path
     import os
@@ -193,7 +193,7 @@ def run_aquaverse_MDN_AC(scene_id, AQV_location,timeout=3600,stream_backend_path
     
         check_job_id(process_output,timeout,rrs_output_path)
             
-def run_aquaverse_MDN_downstream_products(scene_id, AQV_location,timeout=3600,stream_backend_path='/tis/m2cross/scratch/f002/wwainwr1/stream/backend', stream_env_path='/tis/m2cross/scratch/f002/wwainwr1/venv/bin/activate', stream_output_path = '/tis/stream/data/',overwrite=False):
+def run_aquaverse_MDN_downstream_products(scene_id, AQV_location,timeout=3600,stream_backend_path='/tis/m2cross/scratch/f002/wwainwr1/stream/backend', stream_env_path='/tis/m2cross/scratch/f002/wwainwr1/unified38/bin/activate', stream_output_path = '/tis/stream/data/',overwrite=False):
     from subprocess import Popen, PIPE, check_output, STDOUT
     from pathlib import Path
     import os
@@ -210,7 +210,7 @@ def run_aquaverse_MDN_downstream_products(scene_id, AQV_location,timeout=3600,st
     
         check_job_id(process_output,timeout,rrs_output_path)
 
-def run_aquaverse_switch(scene_id, AQV_location,timeout=3600,stream_backend_path='/tis/m2cross/scratch/f002/wwainwr1/stream/backend', stream_env_path='/tis/m2cross/scratch/f002/wwainwr1/venv/bin/activate', stream_output_path = '/tis/stream/data/',overwrite=False,product_selector="rayleigh",job_id_list=[],AQV_error_path='/tis/m2cross/scratch/f003/roshea/matchup_pipeline_dev_test/pipeline/Logs/'):
+def run_aquaverse_switch(scene_id, AQV_location,timeout=3600,stream_backend_path='/tis/m2cross/scratch/f002/wwainwr1/stream/backend', stream_env_path='/tis/m2cross/scratch/f002/wwainwr1/unified38/bin/activate', stream_output_path = '/tis/stream/data/',overwrite=False,product_selector="rayleigh",job_id_list=[],AQV_error_path='/tis/m2cross/scratch/f003/roshea/matchup_pipeline_dev_test/pipeline/Logs/'):
     
     if product_selector == "rayleigh":
         product_generation = str(AQV_location)  + '/rayleigh_correct_AQV'

@@ -47,7 +47,8 @@ def run_acolite(
     ac_path   : Union[str, Path]   = '',
     overwrite : bool               = False, 
     timeout   : float              = 30, 
-    location  : Optional[Location] = None, 
+    location  : Optional[Location] = None,
+    save_L2R  : bool               = True,
     **extra_cmd, 
 ) -> Path:
     """Atmospherically correct the given input file using acolite.
@@ -107,6 +108,8 @@ def run_acolite(
         if not inp_file.exists():
             inp_file = inp_file.parent
             inp_file = [i for i in inp_file.glob('*S2*')][0]
+    if sensor in ['OLCI']: inp_file = Path(inp_file).joinpath(str(inp_file.stem) + inp_file.suffix) 
+
 
     out_file = Path(out_dir).absolute().joinpath('acolite.nc')
     
@@ -157,13 +160,14 @@ def run_acolite(
         outputs[0].rename(out_file)
 
         # Add variables from the other L2 file to the acolite.nc file
-        l2r = list(out_file.parent.glob('*L2R.nc'))[0].as_posix()
-        with Dataset(l2r) as source, Dataset(out_file.as_posix(), 'a') as target:
-            for name, variable in source.variables.items():
-                if 'rho' in name: 
-                    target.createVariable(name, variable.datatype, variable.dimensions) 
-                    target[name].setncatts(source[name].__dict__)
-                    target[name][:] = source[name][:]
+        if save_L2R:
+            l2r = list(out_file.parent.glob('*L2R.nc'))[0].as_posix()
+            with Dataset(l2r) as source, Dataset(out_file.as_posix(), 'a') as target:
+                for name, variable in source.variables.items():
+                    if 'rho' in name: 
+                        target.createVariable(name, variable.datatype, variable.dimensions) 
+                        target[name].setncatts(source[name].__dict__)
+                        target[name][:] = source[name][:]
 
     return out_file         
 
