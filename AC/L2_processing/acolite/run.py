@@ -36,6 +36,8 @@ VALID = [
     'TM', 
     'ETM', 
     'EMIT',
+    'PACE',
+    'OCI',
     ]
 
 

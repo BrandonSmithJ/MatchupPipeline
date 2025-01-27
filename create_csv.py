@@ -204,7 +204,7 @@ def create_csv(global_config, insitu, path):
     
     columns = []
     for i in range(0, data.shape[1]):
-        if str(data.columns[i][0]) in ['Rrs','rayleigh_corrected','VZA','VAA','sena','senz','rhos','rhot','polcor','aot']:#, 'rhos', 'rhot']:    
+        if str(data.columns[i][0]) in ['Rrs_blue','Rrs_SWIR','Rrs_red','Rrs','rayleigh_corrected','VZA','VAA','sena','senz','rhos','rhot','polcor','aot']:#, 'rhos', 'rhot']:    
             col = str(data.columns[i][0]) + '(' + str(data.columns[i][1]) + ')'
         else:
             if data.columns[i][0] in ["meta"]:

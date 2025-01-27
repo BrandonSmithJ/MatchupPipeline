@@ -5,7 +5,7 @@ import sys
 username = getoutput('whoami') 
 
 #===============***** This is for f001 - av3 - Matchup processing
-proc = "OLI"
+proc = "OCI"
 
 if proc == "OLI":
 	datasets =  ['PC_1_Akash_OLI_matchups'] #['PC_1_OCI_4_OLI']#['PC_1_David_Coulter']#['PC_1_OLI_Boston_N07_timeseries']#["PC_1_OCI_4_OLI"]#['PC_1_Ocean_Optics']#['PC_1_OLI_202405'] # _Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF']# ['OLI_test_image_Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF'] #OLI_MSI_matchups_Lake_Erie
@@ -28,7 +28,7 @@ if proc == "VI":
         sensors  = ['VI']
 
 if proc == "OCI":
-    datasets = ['PC_1_Aeronet'] # ['PC_1_Chintan_matchups']#['PC_1_OCI']#'PC_1_OCI_2']
+    datasets = ['PC_1_OCI'] #['PC_1_Aeronet'] # ['PC_1_Chintan_matchups']#['PC_1_OCI']#'PC_1_OCI_2']
     sensors  = ['OCI']
 
 if proc == "EMIT":
@@ -47,6 +47,8 @@ if 'OCI' in sensors: l2gen_path             = '/tis/m2cross/scratch/f003/roshea/
 #if 'MOD' in sensors: l2gen_path = '/data/roshea/SCRATCH/AC/ocssw'
 
 acolite_path           = '/tis/m2cross/scratch/f003/roshea/atm_corr/acolite/source_code/acolite-20231023.0/acolite' #'/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/matchup_deployment_SLURM/atm_corr/ac_processors/acolite/acolite-20221114.0/acolite' 
+if 'OCI' in sensors: acolite_path = '/tis/m2cross/scratch/f003/roshea/atm_corr/acolite/source_code/acolite-20250114.0/acolite'
+
 polymer_path           = '/run/cephfs/m2cross_scratch/f003/roshea/atm_corr/polymer-v4.17beta2/polymer'
 
 aquaverse_path         = str(Path(__file__).resolve().parent.parent.joinpath('AC').joinpath('L2_processing').joinpath('aquaverse'))
@@ -159,7 +161,7 @@ if 'CONUS' in datasets[0]:
 
 if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] or 'PC_1'  in datasets[0] : 
     overwrite              = False# what does it overwrite - everything - yes, even pikle file
-    ac_methods             = ['aquaverse','l2gen','acolite','polymer'] #['aquaverse']#,'l2gen','polymer','acolite']#['acolite','l2gen','polymer']#,'acolite','polymer'] #['acolite','l2gen','polymer','aquaverse']#,'aquaverse','acolite']#,'aquaverse','acolite','polymer'] #['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
+    ac_methods             = ['acolite'] #['aquaverse','l2gen','acolite','polymer'] #['aquaverse']#,'l2gen','polymer','acolite']#['acolite','l2gen','polymer']#,'acolite','polymer'] #['acolite','l2gen','polymer','aquaverse']#,'aquaverse','acolite']#,'aquaverse','acolite','polymer'] #['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
     download_via_aquaverse = False
     timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
     remove_scene_folder    = False
