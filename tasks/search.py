@@ -54,7 +54,7 @@ def search(self,
             kwargs.update(sample_config)
             total_kwargs.append(kwargs)
     else:
-        print('No Scenes found')
+        print('No Scenes found',sample_config)
         kwargs={}
 
     return kwargs if global_config.timeseries_or_matchups == 'matchups' else total_kwargs
@@ -193,8 +193,10 @@ def download(self,
             kwargs.pop('scene_path')
             sample_config.pop('scene_path')
             kwargs['scene_path'] = api.download_scene(**kwargs)
-        from ..utils.insert_satellite_data import insert_satellite_data
-        insert_satellite_data(sample_config['scene_id'])
+        if ('aquaverse' in global_config.ac_methods and sample_config['sensor'] in ['MSI','OLI']):
+
+            from ..utils.insert_satellite_data import insert_satellite_data
+            insert_satellite_data(sample_config['scene_id'])
     if ('aquaverse' in global_config.ac_methods or sample_config['sensor'] in ['MSI','OLI']) and not downloaded_from_stream:
         #compress output
         

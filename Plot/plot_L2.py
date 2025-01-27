@@ -147,11 +147,13 @@ def extract_data(image, avail_bands, req_bands, allow_neg=False, key='Rrs',apply
     if key == 'rhos':
         key = 'rhos' if any('rhos' in word for  word in image.variables.keys()) else 'Rrs' 
         key = 'rayleigh_corrected' if  any('rayleigh_corrected' in word for  word in image.variables.keys()) else 'Rrs'    
+        key = 'Rw' if  any('Rw' in word for  word in image.variables.keys()) else 'Rrs'
     def extract(requested):
         bands = [closest_wavelength(band, avail_bands,tol=50 if key == ['rhos','rayleigh_corrected'] else 50) for band in requested]
         # avail_bands = list(image['sensor_band_parameters'].variables['wavelength'][:])
         # bands = [closest_wavelength(band, avail_bands) for band in requested]
         div   = np.pi if key == 'Rw' else 1
+        if key == 'Rw': return np.ma.stack([image[f'{key}{band}'][:]/ div  for band in bands], axis=-1)
         return np.ma.stack([image[f'{key}_{band}'][:]/ div  for band in bands], axis=-1) if 'Rrs' not in image.variables.keys() else np.ma.stack([image[key][:,:,avail_bands.index(b) ] / div for b in bands], axis=-1)
     
     # Extract the requested bands from the image object     
@@ -191,9 +193,14 @@ def plot_product(ax, title, product, rgb, vmin, vmax):
     plt.colorbar(img, ax=ax,fraction=0.046, pad=0.04)
 
 def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product = 'chl,tss,cdom',overwrite=True, fix_projection_Rrs = False,save_nc_bool=False,save_tif_bool=False):
+    sat_suffix=''
     if sensor == 'OCI': sensor='PACE'
-
-    if sensor in ['OLCI']: product = 'chl,tss,cdom,pc'
+    if sensor in ['S2A','S2B']:
+        sensor = 'MSI'
+        product = 'chl,tss,cdom'
+    if sensor in ['OLCI','S3A','S3B']: 
+        sat_suffix= '-sat'
+        product   = 'chl,tss,cdom,pc'
     if sensor in ['PACE']: 
         product  = 'aph,chl,tss,pc,ad,ag,cdom'
     
@@ -204,7 +211,8 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
         #PACE_adag_wvls = get_sensor_bands('PACE-adag')
     
     #Identifies the subsensor from input path
-    sensor = identify_subsensor(inp_file,sensor)
+    if sensor not in ['MSI']:
+        sensor = identify_subsensor(inp_file,sensor)
     kwargs = {
         'sensor'        : sensor,
         'product'       : product,
@@ -236,21 +244,22 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     image = Dataset(location)
     im_lat, im_lon = extract_lat_lon(image)
     image = image['geophysical_data'] if ac_method == 'l2gen' else image if ac_method == 'acolite' else image
-    bands = sorted([int(k.replace('Rrs_', '')) for k in image.variables.keys() if 'Rrs_' in k and 'unc' not in k])
+    bands = sorted([int(k.replace('Rrs_', '').replace('Rw', '')) for k in image.variables.keys() if ('Rrs_' in k or 'Rw' in k) and 'unc' not in k])
 
-    
-    bands = list(image['sensor_band_parameters'].variables['wavelength'][:]) if not bands else bands
+    if not bands:
+        bands = list(image['sensor_band_parameters'].variables['wavelength'][:])
+    #bands = list(image['sensor_band_parameters'].variables['wavelength'][:]) if not bands else bands
     if 'aquaverse' not in str(inp_file):
         
-        bands, Rrs =  get_tile_data(location, sensor,allow_neg=False,flipud=False)
+        bands, Rrs =  get_tile_data(location, sensor+sat_suffix,allow_neg=False,flipud=False)
         lon, lat, extent = get_tile_geographic_info(location)
 
         #Rrs   = extract_data(image, bands, req_bands,allow_neg=False,apply_min_threshold = True)
     #if sensor in ['PACE']: Rrs = Rrs[::-1, :, :]
     #Flips only products #if sensor in ['VI'] or (Aqua_or_Terra =='A' and 'MOD' in sensor): Rrs = Rrs[::-1, ::-1, :] 
 
-    rgb   = extract_data(image, bands, rgb_bands,key='rhos')
-    #rgb   = display_sat_rgb(location, sensor, figsize=(14,7), title=f"{sensor} image of {location} on {date}", ipython_mode=True,flipud=False)
+    #rgb   = extract_data(image, bands, rgb_bands,key='rhos')
+    rgb   = display_sat_rgb(location, sensor, figsize=(14,7), title=f"{sensor} image of {location} on {date}", ipython_mode=True,flipud=False)
  
     #if sensor in ['PACE']: rgb = rgb[::-1, :, :] 
     #Flips only products #if sensor in ['VI'] or (Aqua_or_Terra =='A' and 'MOD' in sensor): rgb = rgb[::-1, ::-1, :]
@@ -306,7 +315,7 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
         'zsd' : (0.1,  10),
     }
     for i, (key, idx) in enumerate(slices.items()):
-        if key not in ['chl','tss','cdom','pc']: continue
+        if key not in ['zsd','chl','tss','cdom','pc']: continue
         plot_product(np.atleast_1d(axes)[i], key, products[..., idx], rgb, *bounds[key])
 
 

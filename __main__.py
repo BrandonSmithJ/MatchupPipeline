@@ -129,7 +129,7 @@ def load_insitu_data(global_config : Namespace) -> pd.DataFrame:
     datasets_grouped = {}
     for key in [ i for i in pd.concat(datasets[0]).keys().to_list() if i != 'scene_id']: 
         datasets_grouped[key]      = pd.concat(datasets[0]).groupby('scene_id')[key].apply(list).reset_index(name=key)
-        if key in ['sensor',  'scene_details', 'scene_folder', 'overwrite', 'datetime', 'Provider', 'date', 'dataset']:
+        if key in ['sensor',  'scene_details', 'scene_folder', 'overwrite', 'Provider', 'dataset']: #'date' #datetime
             datasets_grouped[key][key] = datasets_grouped[key][key].map(set_func)
    
     datasets_grouped_out = datasets_grouped['sensor'].set_index('scene_id')

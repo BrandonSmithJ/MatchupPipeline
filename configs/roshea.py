@@ -5,18 +5,18 @@ import sys
 username = getoutput('whoami') 
 
 #===============***** This is for f001 - av3 - Matchup processing
-proc = "MSI"
+proc = "OLI"
 
 if proc == "OLI":
-	datasets = ['PC_1_OLI_Boston_N07_timeseries']#["PC_1_OCI_4_OLI"]#['PC_1_Ocean_Optics']#['PC_1_OLI_202405'] # _Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF']# ['OLI_test_image_Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF'] #OLI_MSI_matchups_Lake_Erie
+	datasets =  ['PC_1_Akash_OLI_matchups'] #['PC_1_OCI_4_OLI']#['PC_1_David_Coulter']#['PC_1_OLI_Boston_N07_timeseries']#["PC_1_OCI_4_OLI"]#['PC_1_Ocean_Optics']#['PC_1_OLI_202405'] # _Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF']# ['OLI_test_image_Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF'] #OLI_MSI_matchups_Lake_Erie
 	sensors  = ['OLI'] # 'MOD','VI'
 
 if proc == "MSI":
-	datasets = ['PC_1_MSI_Luka'] #['PC_1_OLI_Boston_N07_timeseries']#['PC_1_OLI_MSI_CB']#["PC_1_OLI_202405_10172020"] #["PC_1_OCI_4_MSI"] #["PC_2_DA_matchups"] #['PC_1_Ocean_Optics']#['OLI_test_image_Erie_stations']#['PC_1_MSI_202405'] #['OLI_test_image_Erie_stations']#['OLI_test_image_Quabbin_reservoir_timeseries'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
+	datasets = ['PC_1_MSI_Planet'] #['PC_1_Akash_MSI_matchups'] #['PC_1_MSI_Luka'] #['PC_1_Joan_Cabeza'] #['OLI_test_image_Damariscotta_1'] #['PC_1_MSI_Luka'] #['PC_1_David_Coulter'] #['PC_1_OLI_Boston_N07_timeseries']#['PC_1_OLI_MSI_CB']#["PC_1_OLI_202405_10172020"] #["PC_1_OCI_4_MSI"] #["PC_2_DA_matchups"] #['PC_1_Ocean_Optics']#['OLI_test_image_Erie_stations']#['PC_1_MSI_202405'] #['OLI_test_image_Erie_stations']#['OLI_test_image_Quabbin_reservoir_timeseries'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
 	sensors  = ['MSI']
 
 if proc == "OLCI":
-        datasets = ['PC_1_OLCI_test_image'] #["PC_1_Ocean_Optics"]#['PC_1_OLI_Boston_N07_timeseries'] #["PC_1_OLI_MSI_CB"] #["PC_1_DA_imagery_subset"] #["PC_2_DA_matchups"] #["PC_1_Ocean_Optics"]
+        datasets = ['PC_1_Akash_P2']#['PC_1_Aeronet'] #['PC_1_Chintan_matchups'] #['PC_1_Akash_AG'] #['PC_1_Akash_P2'] #['PC_1_OLCI_test_image'] #['PC_1_Akash_AG']#['PC_1_OLCI_test_image'] #["PC_1_Ocean_Optics"]#['PC_1_OLI_Boston_N07_timeseries'] #["PC_1_OLI_MSI_CB"] #["PC_1_DA_imagery_subset"] #["PC_2_DA_matchups"] #["PC_1_Ocean_Optics"]
         sensors  = ["OLCI"]
 
 if proc == "MOD":
@@ -28,7 +28,7 @@ if proc == "VI":
         sensors  = ['VI']
 
 if proc == "OCI":
-    datasets = ['PC_1_OCI']#'PC_1_OCI_2']
+    datasets = ['PC_1_Aeronet'] # ['PC_1_Chintan_matchups']#['PC_1_OCI']#'PC_1_OCI_2']
     sensors  = ['OCI']
 
 if proc == "EMIT":
@@ -114,7 +114,9 @@ remove_L1_tile         = False
 #    Atmospheric correction arguments
 #===================================
 extra_cmd              = {}
+AQV_l2gen_requirements = {'l2prod' :['no2_frac','no2_strat','no2_tropo','ozone','pressure', 'water_vapor','humidity','solz', 'senz', 'sola', 'sena', 'relaz', 'Rrs_nnn', 'rhos_nnn', 'rhot_nnn','latitude', 'longitude', 'l2_flags',],'maskcloud' : False, 'maskhilt' : False, 'maskstlight' : False}
 
+acolite_planet_requirements = {"l2w_mask_negative_wave_range" : [505,720],"map_l2w": False,"l2w_mask" : True,"l2w_mask_water_parameters" : False,"l2w_mask_negative_rhow" : False,"l2w_mask_high_toa" :True,"l2w_mask_smooth" : False,"l2w_mask_smooth_sigma" : 1,"l1r_delete_netcdf" : True,"l2w_parameters" : ["Rrs_*"],"min_tgas_rho" : 0.0,"nechad_range" : 625}
 #===================================
 #    Location specific overrides
 #===================================
@@ -156,36 +158,42 @@ if 'CONUS' in datasets[0]:
     filter_unprocessed_imagery = False
 
 if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] or 'PC_1'  in datasets[0] : 
-    overwrite              = True# what does it overwrite - everything - yes, even pikle file
-    ac_methods             = ['aquaverse']#,'acolite','polymer'] #['acolite','l2gen','polymer','aquaverse']#,'aquaverse','acolite']#,'aquaverse','acolite','polymer'] #['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
+    overwrite              = False# what does it overwrite - everything - yes, even pikle file
+    ac_methods             = ['aquaverse','l2gen','acolite','polymer'] #['aquaverse']#,'l2gen','polymer','acolite']#['acolite','l2gen','polymer']#,'acolite','polymer'] #['acolite','l2gen','polymer','aquaverse']#,'aquaverse','acolite']#,'aquaverse','acolite','polymer'] #['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
     download_via_aquaverse = False
     timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
     remove_scene_folder    = False
     remove_L1_tile         = False
     fix_projection_Rrs     = False
-    plot_products          = True # for which AC processor it works
+    plot_products          = False #True # for which AC processor it works
     plot_Rrs               = False
     extract_window         = 1 #3x3
-    apply_bounding_box     = False#False # what is this - process only a portion of the image
-    search_day_window      = 3000#3000#30#3000 #3000 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
+    apply_bounding_box     = True#False # what is this - process only a portion of the image
+    search_day_window      = 0#400 #3000#3000#30#3000 #3000 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
     max_cloud_cover        = 100#50#5
     aquaverse_prod_level   = 3
     local_processing       = False  #deploy to SLURM nodes
-    extra_cmd              = {'l2gen': {'OLCI' :{'l2prod' : [ 'Rrs_nnn', 'rhos_nnn', 'latitude', 'longitude', 'l2_flags',],'maskcloud' : False, 'maskhilt' : False, 'maskstlight' : False},
-                                        'OLI' : {'l2prod' : [ 'Rrs_nnn', 'rhos_nnn', 'Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
-                                        'MSI' : {'l2prod' : [ 'Rrs_nnn', 'latitude', 'longitude', 'l2_flags',],'maskcloud' : False, 'maskhilt' : False, 'maskstlight' : False},
-                                        'OCI' : {'l2prod' : [ 'Rrs_nnn', 'rhos_nnn', 'rhot_nnn', 'solz', 'senz', 'sola', 'sena', 'relaz', 'humidity', 'water_vapor', 'latitude', 'longitude', 'l2_flags',]},}},
+    #No2, O3, surface pressure, WV, Humidity, Sensor and solar geometry. 
+    
+    extra_cmd              = {'l2gen': {'OLCI': AQV_l2gen_requirements,
+                                        'OLI' : AQV_l2gen_requirements, #{'l2prod' : [ 'Rrs_nnn', 'rhos_nnn', 'Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},
+                                        'MSI' : AQV_l2gen_requirements, #{'l2prod' : [ 'Rrs_nnn', 'latitude', 'longitude', 'l2_flags',],'maskcloud' : False, 'maskhilt' : False, 'maskstlight' : False},
+                                        'OCI' : AQV_l2gen_requirements, #{'l2prod' : [ 'Rrs_nnn', 'rhos_nnn', 'rhot_nnn', 'solz', 'senz', 'sola', 'sena', 'relaz', 'humidity', 'water_vapor', 'latitude', 'longitude', 'l2_flags',]},
+                                        },
+                            #'acolite' : {'MSI': acolite_planet_requirements,},
+
+                                        },
 #extra_cmd              = {'l2gen': {'OLI' : {'gain':[1.00,1.00,1.00,1.00,1.00,1.00,1.00],'filter_opt':0},
     #                                    'MSI' : {'gain':[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],'filter_opt':0}}}
-    save_nc                = False #if 'aquaverse' in ac_methods else True
+    save_nc                = False #True if plot_products == True and 'aquaverse' not in ac_methods else False #if 'aquaverse' in ac_methods else True
     save_tif               = False #if 'aquaverse' in ac_methods else True
     filter_unprocessed_imagery = False
     #scene_id = 'S2A_MSIL1C_20240418T161831_N0510_R040_T17TLG_20240418T201305'
     #scene_id = 'S2A_MSIL1C_20201017T155251_N0500_R054_T18SUH_20230310T060014'
     #scene_id = "19TCH"#"LC09_L1TP_012030_20220722_20230406_02_T1"
     #extra_cmd.keys()
-    save_L2R=False
-    job_deploy_delay= 20
+    save_L2R=False #save acolite L2 as output
+    job_deploy_delay= 40
 
 if  'PC_2'  in datasets[0] :
     overwrite              = False# what does it overwrite - everything - yes, even pikle file
@@ -301,8 +309,17 @@ if plot_Rrs and apply_bounding_box:
     assert(0)
 
 if not save_nc: print("Will not save AQV products for timeseries")
-
+if not save_nc and plot_products: print("Will not save AQV downstream products")
+if 'polymer' in ac_methods and apply_bounding_box: print("Polymer bounding box functionality is still in progress (especially for OLCI)")
 print("Plot products set to: ",plot_products)
+
+if 'OLI' in sensors: 
+    print("OLI download rate is limited, forcing 4 minutes between downloads")
+    job_deploy_delay = 360
+
+if 'OLCI' in sensors:
+    print("OLCI download rate is limited (via Copernicus), forcing 40 seconds between downloads")
+    job_deploy_delay = 40
 
 if 'aquaverse' in ac_methods and 'OLI' not in sensors and 'MSI' not in sensors: assert(0)
 

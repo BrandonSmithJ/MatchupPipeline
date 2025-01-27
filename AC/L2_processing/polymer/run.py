@@ -83,9 +83,15 @@ def run_polymer(
         inp_file = out_file.with_name('l2gen.nc')
         assert(inp_file.exists()), 'Must run l2gen prior to polymer for MODIS & VIIRS'
 
-    # Add bounding box
-    if location is not None:
-        extra_cmd.update({
+    # Only run if output doesn't yet exist, or we want to overwrite
+    if not out_file.exists() or overwrite:
+        kwargs = {'blocksize':2000}
+        if sensor in ['OLCI','S3A','S3B']: 
+            filename = inp_file.joinpath("xfdumanifest.xml")
+        else:
+            filename = inp_file
+        if location is not None:
+            extra_cmd.update({
             'coords' : {
                 'south' : [location.s, (location.e + location.w)/2.],
                 'west'  : [(location.n + location.s)/2., location.w],
@@ -93,14 +99,21 @@ def run_polymer(
                 'east'  : [(location.n + location.s)/2., location.e],
             }
         })
+            x,y, nrow, ncol = extract_xy_from_lonlat(sensor, filename, (location.e + location.w)/2, location.s)
+            kwargs['eline'] = min(nrow, y) # end row
 
-    # Only run if output doesn't yet exist, or we want to overwrite
-    if not out_file.exists() or overwrite:
-        kwargs = {'blocksize':2000}
+            x,y, nrow, ncol = extract_xy_from_lonlat(sensor, filename, (location.e + location.w)/2, location.n)
+            kwargs['sline'] = max(0, y)    # start row
+
+            x,y, nrow, ncol = extract_xy_from_lonlat(sensor, filename, location.w,(location.n + location.s)/2.)
+            kwargs['scol']  = max(0, x)    # start col
+
+            x,y, nrow, ncol = extract_xy_from_lonlat(sensor, filename, location.e,(location.n + location.s)/2.)
+            kwargs['ecol']  = min(ncol, x) # end col
 
         # Approximate the line / column for a given coordinate set
         if sensor in ['MSI', 'S2A', 'S2B', 'OLI', 'ETM', 'TM']:
-            if lon is not None and lat is not None:
+            if lon is not None and lat is not None and location is None:
                 box = 50
                 x,y, nrow, ncol = extract_xy_from_lonlat(sensor, filename, lon, lat)
                 kwargs['sline'] = max(0, y - box)    # start row 
@@ -110,7 +123,7 @@ def run_polymer(
 
         # Use the lonlat2pixline program to determine the line / column
         elif sensor in ['OLCI', 'HICO']:
-            if lon is not None and lat is not None:
+            if lon is not None and lat is not None and location is None:
                 assert(root), 'Must provide root SeaDAS location'
                 box = 50
                 cmd = [f'{root}/bin/lonlat2pixline', str(filename), str(lon), str(lat)]

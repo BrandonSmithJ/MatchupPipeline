@@ -5,7 +5,7 @@ from pathlib import Path
 # import zarr
 import numpy as np
 import shutil
-
+import os
 def serialize(values, separators=['||', '<>', ',']):
 	""" Recursively serialize a nested list of values """
 	if type(values) in [list, tuple, np.ndarray]:
@@ -31,8 +31,8 @@ def write(self,
     to_write = {}
     
     out_path = global_config.output_path_local.joinpath(sample_config['dataset']).joinpath(sample_config['sensor']).joinpath(sample_config['ac_method']).joinpath('Matchups').joinpath('scenes').joinpath(sample_config['scene_id'])
-    
-    print("Out path",out_path)
+    out_path_exists_bool = os.path.exists(out_path)
+    print("Out path: ",out_path," Exists?",out_path_exists_bool)
     out_path.mkdir(exist_ok=True, parents=True)
     # sfile = out_path.joinpath('store.zarr')
     # mode  = 'a' if sfile.exists() else 'w'
@@ -55,7 +55,7 @@ def write(self,
         sample_config[k] if k in sample_config else sample_config['scene_details'][k]
         for k in metadata_keys])
     
-    if not out_path.joinpath('meta.csv').exists():
+    if not out_path.joinpath('meta.csv').exists() and not out_path_exists_bool:
         with out_path.joinpath('meta.csv').open('a+') as f:
             f.write(f'{serialize(metadata_keys)}\n')
 
@@ -82,9 +82,10 @@ def write(self,
             #with out_path.joinpath(f'{ll_feature}.csv').open('a+') as f:
             #    f.write(f'{ll_values}\n')
         else:
-            for feature, values in to_write[ll_feature].items(): 
-                with out_path.joinpath(f'{feature}.csv').open('a+') as f:
-                    f.write(f'{values}\n')
+            if not out_path_exists_bool:
+                for feature, values in to_write[ll_feature].items(): 
+                    with out_path.joinpath(f'{feature}.csv').open('a+') as f:
+                        f.write(f'{values}\n')
 
     try: 
         if global_config.remove_L2_tile: sample_config['correction_path'].unlink()

@@ -47,9 +47,14 @@ def get_corners(sensor, folder):
         ncol   = int(root.xpath('//*[local-name()="columns"]')[0].text.strip())
         return ne, nw, se, sw, nrow, ncol
 
-    elif sensor in ['OLI', 'ETM', 'TM']:
+    elif sensor in ['OLI', 'ETM', 'TM']: 
         filename = list(Path(folder).glob('*_MTL.txt'))[0]
-        meta = read_meta(filename.as_posix())['L1_METADATA_FILE']['PRODUCT_METADATA']
+        
+        if 'LANDSAT_METADATA_FILE' in read_meta(filename.as_posix()).keys():
+            meta = read_meta(filename.as_posix())['LANDSAT_METADATA_FILE']['PROJECTION_ATTRIBUTES']
+        else:
+            meta = read_meta(filename.as_posix())['L1_METADATA_FILE']['PRODUCT_METADATA']
+
         ne   = [meta['CORNER_UR_LAT_PRODUCT'], meta['CORNER_UR_LON_PRODUCT']]
         nw   = [meta['CORNER_UL_LAT_PRODUCT'], meta['CORNER_UL_LON_PRODUCT']]
         se   = [meta['CORNER_LR_LAT_PRODUCT'], meta['CORNER_LR_LON_PRODUCT']]
