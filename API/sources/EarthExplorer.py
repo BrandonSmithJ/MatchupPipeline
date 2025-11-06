@@ -9,7 +9,8 @@ from tqdm import tqdm
 
 from landsatxplore.util import guess_dataset, is_display_id
 from landsatxplore import earthexplorer
-from landsatxplore.api import API
+#from landsatxplore.api import API
+from .usgs_m2m_api import API
 from landsatxplore.earthexplorer import (
     EarthExplorer as EE,
     EarthExplorerError,
@@ -158,7 +159,7 @@ class EarthExplorer(BaseSource, API):
 
     def __init__(self, *args, **kwargs):
         username, password = get_credentials(self.site_url)
-        self.ee = EE_Fixed(username, password)
+        #self.ee = EE_Fixed(username, password)
         BaseSource.__init__(self, *args, **kwargs)
         API.__init__(self, username, password)
         self.username=username
@@ -218,10 +219,10 @@ class EarthExplorer(BaseSource, API):
         complete, output = self.get_output(scene_folder, scene_id, overwrite)
 
         if not complete:
-            assert(self.ee.logged_in()), 'EarthExplorer session expired.'
+            #assert(self.logged_in()), 'EarthExplorer session expired.'
             #self.ee.logout()
             #self.ee.login(self.username,self.password)
-            archive = self.ee.download(scene_id, output)
+            archive = self.download(scene_id, output)
             # decompress(Path(archive), output) 
             tar = tarfile.open(archive)
             tf_contents = tar.getnames()

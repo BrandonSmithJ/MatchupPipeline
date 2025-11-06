@@ -57,12 +57,20 @@ def _run_seadas_script(script_file: str):
                                 cmd = [sys.executable, script_file.as_posix(), inp_file.as_posix(), '-o', out_file.as_posix(), '--verbose']
                 #Overwrite command 
                                 if n!='' and s!='' and e!='' and w!='':
-                                    cmd = [sys.executable, script_file.as_posix(), inp_file.as_posix(),'-g', inp_file.as_posix().split('.')[0] + '.GEO', '-o', out_file.as_posix(),'-n',n,'-s',s,'-e',e,'-w',w, '--verbose']
+                                    cmd = [sys.executable, script_file.as_posix(), inp_file.as_posix(),'-g', (inp_file.parent.joinpath(Path(inp_file.stem + '.GEO'))), '-o', out_file.as_posix(),'-n',n,'-s',s,'-e',e,'-w',w, '--verbose']
                                 if geofile:
                                     cmd = [sys.executable, script_file.as_posix(), inp_file.as_posix(), geofile, '-o', out_file.as_posix(), '--verbose']
                                 if "modis_GEO.py" in str(script_file) or "modis_L1A_extract.py" in str(script_file):
                                     cmd.append("--ancdb")
                                     cmd.append(inp_file.parent.joinpath('ancillary_data.db').as_posix())
+                                
+                                if "modis_L1B.py" in str(script_file): 
+                                    cmd.append("--qkm")
+                                    cmd.append(str(inp_file.parent.joinpath(Path(inp_file.stem + '.L1B_QKM'))))
+                                    cmd.append("--hkm")
+                                    cmd.append(str(inp_file.parent.joinpath(Path(inp_file.stem + '.L1B_HKM'))))
+                                    cmd.append("--obc")
+                                    cmd.append(str(inp_file.parent.joinpath(Path(inp_file.stem + '.L1B_OBC'))))
 
                                 env = dict(os.environ)
                                 env.update({
@@ -88,7 +96,7 @@ def run_geo_modis(inp_file: Path) -> Path:
 	''' 
 	Runs Seadas_scripts/modis_GEO.py to produce MODIS GEO files for the given input
 	'''
-	return Path(inp_file.as_posix().replace('L1A_LAC', 'GEO'))
+	return (inp_file.parent.joinpath(Path(inp_file.stem + '.GEO'))) #Path(inp_file.as_posix().replace('L1A_LAC', 'GEO'))
 
 
 @_run_seadas_script('modis_L1A_extract.py')
@@ -96,14 +104,14 @@ def run_extract_modis(inp_file: Path) -> Path:
 	''' 
 	Runs Seadas_scripts/L1A extract.py to produce extracted MODIS files for the given input
 	'''
-	return Path(inp_file.as_posix().replace('L1A_LAC', 'SUB.L1A_LAC'))
+	return (inp_file.parent.joinpath(Path(inp_file.stem + '.SUB.L1A_LAC'))) #Path(inp_file.as_posix().replace('L1A_LAC', 'SUB.L1A_LAC'))
 
 @_run_seadas_script('modis_L1B.py')
 def run_l1b(inp_file: Path) -> Path:
 	''' 
 	Runs Seadas_scripts/modis_L1B.py to produce MODIS L1B files from the given L1A input
 	'''
-	return Path(inp_file.as_posix().replace('L1A_LAC', 'L1B_LAC'))
+	return (inp_file.parent.joinpath(Path(inp_file.stem + '.L1B_LAC'))) #Path(inp_file.as_posix().replace('L1A_LAC', 'L1B_LAC'))
 
 
 

@@ -141,6 +141,24 @@ def create_valid_mask(global_config, data, ac_method):
     data['valid'] = ~full_mask
     return data
 
+def drop_unused_columns(data):
+    insitu_keys    = [data_key for data_key in data.keys() if 'insitu_' in data_key]
+    valid_pct_keys = [data_key for data_key in data.keys() if 'valid_pct' in data_key]
+    band_keys      = [data_key for data_key in data.keys() if '_bands' in data_key]
+    unused_columns = insitu_keys + valid_pct_keys + band_keys + ['Rw','datetime','window_lon','window_lat',]
+    
+    for unused_column in unused_columns:
+        if unused_column in data.keys():
+            data.drop(columns=[unused_column], inplace=True)
+    
+    remaining_column_names = list(set(list(data.columns)))
+    remaining_column_names.sort()
+
+    data = data[remaining_column_names]
+
+
+    return data
+
 
 
 def create_csv(global_config, insitu, path):
@@ -219,6 +237,10 @@ def create_csv(global_config, insitu, path):
     if global_config.timeseries_or_matchups == 'matchups': data = data.drop_duplicates('scene_id')
     data.to_csv(path.with_name(f'{path.name}.csv'), na_rep='nan', index=None)
     #data.to_csv(path.with_name(f'{path.name}.csv'), index=None)     
+    data_external = drop_unused_columns(data)
+    data_external.to_csv(path.with_name(f'{path.name}_external.csv'), na_rep='nan', index=None)
+    external_csv_name = '_'.join(str(path).split('/')[-4:])
+    data_external.to_csv(path.with_name(f'{external_csv_name}.csv'), na_rep='nan', index=None)
 
 def combine_matchups(global_config,path,atm_corrs):
     atm_corr_matchups = {}

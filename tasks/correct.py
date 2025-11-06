@@ -18,7 +18,7 @@ def correct(self,
              if sample_config['scene_path'].exists() else 
                 sample_config['scene_path'].parent)
     out_path = (inp_path if inp_path.is_dir() else 
-                inp_path.parent).joinpath('out', sample_config['uid_str'])
+                inp_path.parent).joinpath('out', sample_config['dataset']) #sample_config['uid_str'])
     out_path.mkdir(exist_ok=True, parents=True)
 
     if type(sample_config['location']) == list:

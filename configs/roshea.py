@@ -5,34 +5,34 @@ import sys
 username = getoutput('whoami') 
 
 #===============***** This is for f001 - av3 - Matchup processing
-proc = "OCI"
+proc = "OCI" # "EMIT"
 
 if proc == "OLI":
-	datasets =  ['PC_1_Akash_OLI_matchups'] #['PC_1_OCI_4_OLI']#['PC_1_David_Coulter']#['PC_1_OLI_Boston_N07_timeseries']#["PC_1_OCI_4_OLI"]#['PC_1_Ocean_Optics']#['PC_1_OLI_202405'] # _Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF']# ['OLI_test_image_Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF'] #OLI_MSI_matchups_Lake_Erie
+	datasets =  ['PC_1_Logan_Zebro']#['PC_1_David_Coulter_2'] #['PC_1_Akash_OLI_matchups'] #['PC_1_OCI_4_OLI']#['PC_1_David_Coulter']#['PC_1_OLI_Boston_N07_timeseries']#["PC_1_OCI_4_OLI"]#['PC_1_Ocean_Optics']#['PC_1_OLI_202405'] # _Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF']# ['OLI_test_image_Boston_matchups_10_26_23'] #['OLI_MSI_matchups_CB_SF'] #OLI_MSI_matchups_Lake_Erie
 	sensors  = ['OLI'] # 'MOD','VI'
 
 if proc == "MSI":
-	datasets = ['PC_1_MSI_Planet'] #['PC_1_Akash_MSI_matchups'] #['PC_1_MSI_Luka'] #['PC_1_Joan_Cabeza'] #['OLI_test_image_Damariscotta_1'] #['PC_1_MSI_Luka'] #['PC_1_David_Coulter'] #['PC_1_OLI_Boston_N07_timeseries']#['PC_1_OLI_MSI_CB']#["PC_1_OLI_202405_10172020"] #["PC_1_OCI_4_MSI"] #["PC_2_DA_matchups"] #['PC_1_Ocean_Optics']#['OLI_test_image_Erie_stations']#['PC_1_MSI_202405'] #['OLI_test_image_Erie_stations']#['OLI_test_image_Quabbin_reservoir_timeseries'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
+	datasets = ['PC_1_EROS_oyster'] #['PC_1_Joan_Full'] #['PC_1_Joan_COL'] #['PC_1_Joan_CUB'] #['PC_1_Joan_ELS'] #['PC_1_Joan_MEX'] #['PC_1_Joan_NIC'] #['PC_1_Joan_PER'] #['PC_1_Joan_URU']  #['PC_1_Joan_ARG'] #['PC_1_MS_SouthAfricanDams'] #`['PC_1_CyanoSCape_KR_EMIT'] #['PC_1_CyanoSCape_RV'] #['PC_1_CyanoSCape_ZK'] #['PC_1_MSI_Luka'] #['PC_1_MS_SouthAfricanDams'] #['PC_1_Marie'] #['PC_1_Kiffney']#['PC_1_MSI_AQV_test']  #['PC_1_MSI_Luka']  #['PC_1_MSI_AQV_test'] #['PC_1_Kiffney'] #['PC_1_Tong'] #['PC_1_MSI_Planet'] #['PC_1_Akash_MSI_matchups'] #['PC_1_MSI_Luka'] #['PC_1_Joan_Cabeza'] #['OLI_test_image_Damariscotta_1'] #['PC_1_MSI_Luka'] #['PC_1_David_Coulter'] #['PC_1_OLI_Boston_N07_timeseries']#['PC_1_OLI_MSI_CB']#["PC_1_OLI_202405_10172020"] #["PC_1_OCI_4_MSI"] #["PC_2_DA_matchups"] #['PC_1_Ocean_Optics']#['OLI_test_image_Erie_stations']#['PC_1_MSI_202405'] #['OLI_test_image_Erie_stations']#['OLI_test_image_Quabbin_reservoir_timeseries'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
 	sensors  = ['MSI']
 
 if proc == "OLCI":
-        datasets = ['PC_1_Akash_P2']#['PC_1_Aeronet'] #['PC_1_Chintan_matchups'] #['PC_1_Akash_AG'] #['PC_1_Akash_P2'] #['PC_1_OLCI_test_image'] #['PC_1_Akash_AG']#['PC_1_OLCI_test_image'] #["PC_1_Ocean_Optics"]#['PC_1_OLI_Boston_N07_timeseries'] #["PC_1_OLI_MSI_CB"] #["PC_1_DA_imagery_subset"] #["PC_2_DA_matchups"] #["PC_1_Ocean_Optics"]
+        datasets = ['PC_1_Chintan_matchups'] #['PC_1_Joan_Full'] #['PC_2_OLCI_test_image'] #["PC_2_DA_matchups"] #['PC_1_Chintan_matchups'] #['PC_1_Akash_P2']#['PC_1_Aeronet'] #['PC_1_Chintan_matchups'] #['PC_1_Akash_AG'] #['PC_1_Akash_P2'] #['PC_1_OLCI_test_image'] #['PC_1_Akash_AG']#['PC_1_OLCI_test_image'] #["PC_1_Ocean_Optics"]#['PC_1_OLI_Boston_N07_timeseries'] #["PC_1_OLI_MSI_CB"] #["PC_1_DA_imagery_subset"] #["PC_2_DA_matchups"] #["PC_1_Ocean_Optics"]
         sensors  = ["OLCI"]
 
 if proc == "MOD":
-        datasets = ['terminal_lakes']#['OLI_test_image_Erie_stations'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
+        datasets = ['PC_1_Joan_Full'] #['SaltonSea_1999_2025'] #['GSL_1999_2025'] #['MonoLake_1999_2025'] #['MODIS_VIIRS_test_image'] #['MonoLake_1999_2025'] #['MODIS_VIIRS_test_image'] #['terminal_lakes']#['OLI_test_image_Erie_stations'] #['CONUS_2023'] #['OLI_test_image_Quabbin_reservoir_timeseries'] #['OLI_test_image_Oyster_farm']#['MSI_test_image_chla_tss_matchups'] # ['MSI_test_image_Honga_TS_1']
         sensors  = ['MOD']
 
 if proc == "VI":
-        datasets = ['terminal_lakes'] #['SaltonSea_1999_2022']
+        datasets = ['PC_1_Joan_Full'] #['SaltonSea_1999_2025'] #['GSL_1999_2025'] #['MODIS_VIIRS_test_image'] #['terminal_lakes'] #['SaltonSea_1999_2022']
         sensors  = ['VI']
 
 if proc == "OCI":
-    datasets = ['PC_1_OCI'] #['PC_1_Aeronet'] # ['PC_1_Chintan_matchups']#['PC_1_OCI']#'PC_1_OCI_2']
+    datasets = ['PC_1_Chintan_matchups']  #['PC_1_OCI_total'] #['PC_1_Chintan_matchups'] #['PC_1_Aeronet_Jane'] #['PC_1_OCI'] #['PC_1_Chintan_matchups'] # ['PC_1_OCI'] #['PC_1_Aeronet'] # ['PC_1_Chintan_matchups']#['PC_1_OCI']#'PC_1_OCI_2']
     sensors  = ['OCI']
 
 if proc == "EMIT":
-    datasets = ['PC_1_EMIT_SA_11_08'] #['PC_1_EMIT_Sun_Glint'] #['PC_1_EMIT_SA'] #PC_1_OCI_4
+    datasets = ['PC_1_CyanoSCape_TW_EMIT'] #['PC_1_EMIT_SA_11_08'] #['PC_1_EMIT_Sun_Glint'] #['PC_1_EMIT_SA'] #PC_1_OCI_4
     sensors  = ['EMIT']
 
 #===================================
@@ -43,7 +43,7 @@ tiles = {'OLI' : {'IRL' : '016040', 'GB': '024029','CB':'014034'},
 
 # AC processors' paths 
 l2gen_path             = '/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/matchup_deployment_SLURM/atm_corr/ac_processors/SeaDAS/SeaDAS_V2022_3/ocssw'
-if 'OCI' in sensors: l2gen_path             = '/tis/m2cross/scratch/f003/roshea/atm_corr/seadas/ocssw'
+if 'OCI' in sensors: l2gen_path             = '/tis/m2cross/scratch/f003/roshea/atm_corr/seadas_V2025_1/ocssw' #'/tis/m2cross/scratch/f003/roshea/atm_corr/seadas/ocssw'
 #if 'MOD' in sensors: l2gen_path = '/data/roshea/SCRATCH/AC/ocssw'
 
 acolite_path           = '/tis/m2cross/scratch/f003/roshea/atm_corr/acolite/source_code/acolite-20231023.0/acolite' #'/run/cephfs/m2cross_scratch/f003/skabir/Aquaverse/matchup_deployment_SLURM/atm_corr/ac_processors/acolite/acolite-20221114.0/acolite' 
@@ -103,6 +103,7 @@ fix_projection_Rrs     = False
 plot_products          = True
 plot_Rrs               = False
 save_nc                = False
+save_nc_object_storage = False
 save_tif               = False
 #===================================
 #    Data Cleanup Parameters
@@ -152,6 +153,7 @@ if 'CONUS' in datasets[0]:
     plot_products          = False # for which AC processor it works
     plot_Rrs               = False
     extract_window         = 1 #3x3
+    n
     apply_bounding_box     = True # what is this - process only a portion of the image
     search_day_window      = 200 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
     max_cloud_cover        = 20 #5
@@ -160,18 +162,18 @@ if 'CONUS' in datasets[0]:
     filter_unprocessed_imagery = False
 
 if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] or 'PC_1'  in datasets[0] : 
-    overwrite              = False# what does it overwrite - everything - yes, even pikle file
-    ac_methods             = ['acolite'] #['aquaverse','l2gen','acolite','polymer'] #['aquaverse']#,'l2gen','polymer','acolite']#['acolite','l2gen','polymer']#,'acolite','polymer'] #['acolite','l2gen','polymer','aquaverse']#,'aquaverse','acolite']#,'aquaverse','acolite','polymer'] #['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
+    overwrite              = True# what does it overwrite - everything - yes, even pikle file
+    ac_methods             = ['l2gen',] #'acolite']#['aquaverse'] #,'acolite','l2gen','polymer'] #['aquaverse','acolite','l2gen','polymer']  #'l2gen','acolite','polymer','aquaverse'
     download_via_aquaverse = False
     timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
     remove_scene_folder    = False
     remove_L1_tile         = False
     fix_projection_Rrs     = False
-    plot_products          = False #True # for which AC processor it works
+    plot_products          = True # for which AC processor it works
     plot_Rrs               = False
     extract_window         = 1 #3x3
     apply_bounding_box     = True#False # what is this - process only a portion of the image
-    search_day_window      = 0#400 #3000#3000#30#3000 #3000 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
+    search_day_window      = 0 #750 #365 #3000#0#400 #3000#3000#30#3000 #3000 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
     max_cloud_cover        = 100#50#5
     aquaverse_prod_level   = 3
     local_processing       = False  #deploy to SLURM nodes
@@ -183,23 +185,23 @@ if  'OLI_test_image' in datasets[0]  or 'MSI_test_image' in datasets[0] or 'PC_1
                                         'OCI' : AQV_l2gen_requirements, #{'l2prod' : [ 'Rrs_nnn', 'rhos_nnn', 'rhot_nnn', 'solz', 'senz', 'sola', 'sena', 'relaz', 'humidity', 'water_vapor', 'latitude', 'longitude', 'l2_flags',]},
                                         },
                             #'acolite' : {'MSI': acolite_planet_requirements,},
-
+                              'acolite' : {'MSI': {'s2_target_res':10}},
                                         },
 #extra_cmd              = {'l2gen': {'OLI' : {'gain':[1.00,1.00,1.00,1.00,1.00,1.00,1.00],'filter_opt':0},
     #                                    'MSI' : {'gain':[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],'filter_opt':0}}}
-    save_nc                = False #True if plot_products == True and 'aquaverse' not in ac_methods else False #if 'aquaverse' in ac_methods else True
+    save_nc                = False #if plot_products == True and 'aquaverse' not in ac_methods else False #if 'aquaverse' in ac_methods else True
     save_tif               = False #if 'aquaverse' in ac_methods else True
     filter_unprocessed_imagery = False
     #scene_id = 'S2A_MSIL1C_20240418T161831_N0510_R040_T17TLG_20240418T201305'
     #scene_id = 'S2A_MSIL1C_20201017T155251_N0500_R054_T18SUH_20230310T060014'
     #scene_id = "19TCH"#"LC09_L1TP_012030_20220722_20230406_02_T1"
     #extra_cmd.keys()
-    save_L2R=False #save acolite L2 as output
-    job_deploy_delay= 40
+    save_L2R=True #save acolite L2 as output, for true color imagery
+    job_deploy_delay= 20
 
 if  'PC_2'  in datasets[0] :
     overwrite              = False# what does it overwrite - everything - yes, even pikle file
-    ac_methods             = ['l2gen']#,'polymer','l2gen']#,'aquaverse','acolite','polymer'] #['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
+    ac_methods             = ['l2gen'] #['polymer']#['l2gen']#,'polymer','l2gen']#,'aquaverse','acolite','polymer'] #['aquaverse'] #'l2gen','acolite','polymer','aquaverse'
     download_via_aquaverse = False
     timeseries_or_matchups = 'timeseries' #'matchups' # matchups was not working - key error scene id
     remove_scene_folder    = False
@@ -208,7 +210,7 @@ if  'PC_2'  in datasets[0] :
     plot_products          = False # for which AC processor it works
     plot_Rrs               = False
     extract_window         = 1 #3x3
-    apply_bounding_box     = True#False # what is this - process only a portion of the image
+    apply_bounding_box     = False#False # what is this - process only a portion of the image
     search_day_window      = 0#3000 #3000 #3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
     max_cloud_cover        = 100#50#5
     aquaverse_prod_level   = 3
@@ -217,8 +219,8 @@ if  'PC_2'  in datasets[0] :
     #                                    'MSI' : {'l2prod' : [ 'Rrs_nnn', 'rhos_nnn', 'Rrs_unc_vvv','latitude', 'longitude', 'l2_flags','chlor_a',]},}},
 #extra_cmd              = {'l2gen': {'OLI' : {'gain':[1.00,1.00,1.00,1.00,1.00,1.00,1.00],'filter_opt':0},
     #                                    'MSI' : {'gain':[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],'filter_opt':0}}}
-    save_nc                = False if 'aquaverse' in ac_methods else True
-    save_tif               = False if 'aquaverse' in ac_methods else True
+    save_nc                = False #if 'aquaverse' in ac_methods else True
+    save_tif               = False #if 'aquaverse' in ac_methods else True
     filter_unprocessed_imagery = False
 
 
@@ -234,14 +236,14 @@ if   'MODIS' in datasets[0] or 'VIIRS' in datasets[0] or 'GSL' in datasets[0] or
     plot_Rrs               = False
     extract_window         = 1 #3x3
     apply_bounding_box     = True # what is this - process only a portion of the image
-    search_day_window      = 0#9000 #9000#3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
+    search_day_window      = 4650 #0#9000 #9000#3000 #0 if timeseries_or_matchups == 'matchups' else 3000# looks like it is searching for one day range
     max_cloud_cover        = 100#5
     aquaverse_prod_level   = 0
     local_processing       = False  #deploy to SLURM nodes
     save_nc                = True
     save_tif               = True
     #scene_id               = "2021099184000"
-    job_deploy_delay       = 2
+    job_deploy_delay       = 3 #2
 
 if 'Urias' in datasets[0]:
     remove_scene_folder    = False

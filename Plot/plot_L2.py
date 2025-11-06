@@ -36,7 +36,7 @@ from PIL import Image
 from celery.utils.log import get_task_logger
 logger = get_task_logger('pipeline')
 
-def save_nc(inp_file,out_path,products,uncerts,slices,overwrite,wvls_dict,prefix='AQV'):
+def save_nc(inp_file,out_path,products,slices,overwrite,wvls_dict,prefix='AQV',uncerts_lower=None,uncerts_upper=None,):
     ''' Saves products onto the L2 tile'''
 
     filename = inp_file
@@ -54,7 +54,10 @@ def save_nc(inp_file,out_path,products,uncerts,slices,overwrite,wvls_dict,prefix
                 #if product in ['aph','ad','ag']:
                     #for i,spectral_i in product
                 #else:
-                uncert = uncerts[:,:,slices[product]].astype(np.float32) 
+                if uncerts_lower is not None:
+                    uncert_lower = uncerts_lower[:,:,slices[product]].astype(np.float32) 
+                if uncerts_upper is not None:
+                    uncert_upper = uncerts_upper[:,:,slices[product]].astype(np.float32)
                 prod   = products[:,:,slices[product]].astype(np.float32)
                 wavelengths = wvls_dict[product] if product in wvls_dict else []
                 print(product,prod.shape[-1])
@@ -66,15 +69,20 @@ def save_nc(inp_file,out_path,products,uncerts,slices,overwrite,wvls_dict,prefix
                         dims = dst[[k for k in dst.variables.keys() if 'Rrs' in k or 'Rw' in k][0]].get_dims()
                         dst.createVariable(varname, np.float32, [d.name for d in dims], fill_value=-999)
                     dst[varname][:] = np.squeeze(prod[:,:,i]) # if prod.shape[-1] == #np.squeeze(products[:,:,slices[product]].astype(np.float32))
-                    
-                    varname = f'{prefix}_{product}_uncert' if prod.shape[-1] < 2 else f'{prefix}_{product}_{wavelengths[i]}_uncert'
-                    print(varname,np.shape(uncert[:,:,i]))
-                    if varname not in dst.variables.keys():
-                        dims = dst[[k for k in dst.variables.keys() if 'Rrs' in k or 'Rw' in k][0]].get_dims()
-                        dst.createVariable(varname, np.float32, [d.name for d in dims], fill_value=-999)
-                    dst[varname][:] = np.squeeze(uncert[:,:,i]) # if prod.shape[-1] == #np.squeeze(products[:,:,slices[product]].astype(np.float32))
-
-
+                    if uncerts_lower is not None:
+                        varname = f'{prefix}_{product}_uncert_lower' if prod.shape[-1] < 2 else f'{prefix}_{product}_{wavelengths[i]}_uncert_lower'
+                        print(varname,np.shape(uncert_lower[:,:,i]))
+                        if varname not in dst.variables.keys():
+                            dims = dst[[k for k in dst.variables.keys() if 'Rrs' in k or 'Rw' in k][0]].get_dims()
+                            dst.createVariable(varname, np.float32, [d.name for d in dims], fill_value=-999)
+                        dst[varname][:] = np.squeeze(uncert_lower[:,:,i]) # if prod.shape[-1] == #np.squeeze(products[:,:,slices[product]].astype(np.float32))
+                    if uncerts_upper is not None:
+                        varname = f'{prefix}_{product}_uncert_upper' if prod.shape[-1] < 2 else f'{prefix}_{product}_{wavelengths[i]}_uncert_upper'
+                        print(varname,np.shape(uncert_upper[:,:,i]))
+                        if varname not in dst.variables.keys():
+                            dims = dst[[k for k in dst.variables.keys() if 'Rrs' in k or 'Rw' in k][0]].get_dims()
+                            dst.createVariable(varname, np.float32, [d.name for d in dims], fill_value=-999)
+                        dst[varname][:] = np.squeeze(uncert_upper[:,:,i]) # if prod.shape[-1] == #np.squeeze(products[:,:,slices[product]].astype(np.float32))
 
     message = f"In save_nc: Copying {new_fn} to: {filename}"
     logger.warn(message)
@@ -132,6 +140,12 @@ def rgb_enhance(rgb:'np.ndarray') -> 'np.ndaray':
     
     return rgb_enhanced
 
+def rgb_enhance_2(rgb,gamma=1,low_percent=5,high_percent=98):
+    rgb_gamma     = rgb**gamma
+    bsc           = np.nanpercentile(rgb_gamma, (low_percent,high_percent))
+    rgb_gamma_bsc = np.interp(rgb_gamma, bsc, [0, 1])
+    return rgb_gamma_bsc
+
 def extract_lat_lon(image):
     if 'lon' in image.variables.keys() and 'lat' in image.variables.keys():
         return image['lat'][:], image['lon'][:] 
@@ -146,8 +160,8 @@ def extract_data(image, avail_bands, req_bands, allow_neg=False, key='Rrs',apply
 
     if key == 'rhos':
         key = 'rhos' if any('rhos' in word for  word in image.variables.keys()) else 'Rrs' 
-        key = 'rayleigh_corrected' if  any('rayleigh_corrected' in word for  word in image.variables.keys()) else 'Rrs'    
-        key = 'Rw' if  any('Rw' in word for  word in image.variables.keys()) else 'Rrs'
+        key = 'rayleigh_corrected' if  any('rayleigh_corrected' in word for  word in image.variables.keys()) else key
+        key = 'Rw' if  any('Rw' in word for  word in image.variables.keys()) else key
     def extract(requested):
         bands = [closest_wavelength(band, avail_bands,tol=50 if key == ['rhos','rayleigh_corrected'] else 50) for band in requested]
         # avail_bands = list(image['sensor_band_parameters'].variables['wavelength'][:])
@@ -194,6 +208,8 @@ def plot_product(ax, title, product, rgb, vmin, vmax):
 
 def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product = 'chl,tss,cdom',overwrite=True, fix_projection_Rrs = False,save_nc_bool=False,save_tif_bool=False):
     sat_suffix=''
+    uncerts_lower = None
+    uncerts_upper = None
     if sensor == 'OCI': sensor='PACE'
     if sensor in ['S2A','S2B']:
         sensor = 'MSI'
@@ -203,7 +219,9 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
         product   = 'chl,tss,cdom,pc'
     if sensor in ['PACE']: 
         product  = 'aph,chl,tss,pc,ad,ag,cdom'
-    
+    if sensor in ['VI','MOD','MERIS']:
+        product = 'Chl,TSS,aCDOM443,aCDOM555,aNAP443,aNAP555,aph443,aph488,aph555,aph667'
+
     wvls_dict = {'aph': get_sensor_bands('PACE-aph'),
                  'ag':  get_sensor_bands('PACE-adag'),
                  'ad':  get_sensor_bands('PACE-adag'),}
@@ -211,7 +229,7 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
         #PACE_adag_wvls = get_sensor_bands('PACE-adag')
     
     #Identifies the subsensor from input path
-    if sensor not in ['MSI']:
+    if sensor not in ['MSI','MOD']:
         sensor = identify_subsensor(inp_file,sensor)
     kwargs = {
         'sensor'        : sensor,
@@ -233,7 +251,8 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     jpg_filename = product_name(inp_file=inp_file,out_path=out_path,date=date,dataset=dataset,sensor=sensor,ac_method=ac_method,product=product,extension='.jpg',prefix='AQV')
 
     geotiff_filename = product_name(inp_file=inp_file,out_path=out_path,date=date,dataset=dataset,sensor=sensor,ac_method=ac_method,product=product,extension='.tif',prefix='AQV')
-    nc_filename = product_name(inp_file=inp_file,out_path=out_path,date=date,dataset=dataset,sensor=sensor,ac_method=ac_method,product=product,extension='.nc',prefix='AQV')
+    nc_filename_pardees = product_name(inp_file=inp_file,out_path=out_path,date=date,dataset=dataset,sensor=sensor,ac_method=ac_method,product=product,extension='.nc',prefix='AQV')
+    nc_filename      = inp_file.parent.joinpath(Path(nc_filename_pardees).name)
 
     if os.path.exists(png_filename) and not overwrite:
         print(png_filename,f'exists, moving to next location')
@@ -241,10 +260,26 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     time_start = time.time()
 
     # Load data, using rhos as the visible background
+    
+    if sensor in ['OCI','PACE'] and ac_method in ['acolite']:
+        
+        with Dataset(location,'r+') as image:
+            unused_wavelengths = ['Rrs_blue_601', 'Rrs_blue_603', 'Rrs_blue_606']
+            original_keys = list(image.variables.keys())
+            for acolite_key in original_keys:
+                if acolite_key in unused_wavelengths:
+                    if  acolite_key.replace('rhos_','RHOS_').replace('rhot_','RHOT_').replace('Rrs_','RRS_') not in image.variables.keys():
+                        print("Renaming",acolite_key,acolite_key.replace('rhos_','RHOS_').replace('rhot_','RHOT_').replace('Rrs_','RRS_'))
+                        image.renameVariable(acolite_key, acolite_key.replace('rhos_','RHOS_').replace('rhot_','RHOT_').replace('Rrs_','RRS_'))
+                else:
+                    if acolite_key.replace('red_','').replace('blue_','').replace('SWIR_','') not in image.variables.keys():
+                        print("Renaming",acolite_key, acolite_key.replace('red_','').replace('blue_','').replace('SWIR_',''))
+                        image.renameVariable(acolite_key, acolite_key.replace('red_','').replace('blue_','').replace('SWIR_',''))
+
     image = Dataset(location)
     im_lat, im_lon = extract_lat_lon(image)
     image = image['geophysical_data'] if ac_method == 'l2gen' else image if ac_method == 'acolite' else image
-    bands = sorted([int(k.replace('Rrs_', '').replace('Rw', '')) for k in image.variables.keys() if ('Rrs_' in k or 'Rw' in k) and 'unc' not in k])
+    bands = sorted([int(k.replace('Rrs_', '').replace('Rw', '').replace('red_', '').replace('blue_', '').replace('SWIR_', '')) for k in image.variables.keys() if ('Rrs_' in k or 'Rw' in k) and 'unc' not in k]) #sorted([int(k.replace('Rrs_', '').replace('Rw', '')) for k in image.variables.keys() if ('Rrs_' in k or 'Rw' in k) and 'unc' not in k])
 
     if not bands:
         bands = list(image['sensor_band_parameters'].variables['wavelength'][:])
@@ -259,8 +294,23 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     #Flips only products #if sensor in ['VI'] or (Aqua_or_Terra =='A' and 'MOD' in sensor): Rrs = Rrs[::-1, ::-1, :] 
 
     #rgb   = extract_data(image, bands, rgb_bands,key='rhos')
-    rgb   = display_sat_rgb(location, sensor, figsize=(14,7), title=f"{sensor} image of {location} on {date}", ipython_mode=True,flipud=False)
- 
+    rgb   = display_sat_rgb(location, sensor, figsize=(14,7), title=f"{sensor} image of {location} on {date}", ipython_mode=True, flipud=False, auto_determine_L1B=False)
+    
+    #plot rgb with lat_lon overlay
+    from pipeline.Plot.plot_RGB_site import overlay_sites
+    from pipeline.utils.add_scale    import add_scale
+    if False:
+        #from acolite.acolite.shared.rgb_stretch import rgb_stretch
+        rgb_plot   = rgb_enhance_2(extract_data(image, bands, rgb_bands,key='rhos'))
+        site_name = str(inp_file.parent.stem).split('_')[-1][:-2]
+        rgb_png   = '/'.join(png_filename.split('/')[:-1]) + '/' + '_'.join(png_filename.split('/')[-1].split('_')[1:-3]) + '_rgb.png'
+        rgb_plot, extent_plot, (im_lat_plot, im_lon_plot)  = fix_projection(rgb_plot,im_lon,im_lat,reproject=False,nearestNeighborInterp=False, sparse_resample=True)
+        
+        overlay_sites(im_lat_plot,im_lon_plot,rgb_plot,extent_plot,site_name=site_name,sites_filename=rgb_png)
+        
+        #overlay_sites(im_lat_plot,im_lon_plot,rgb_stretch(rgb_plot),extent_plot,site_name=site_name,sites_filename=rgb_png)
+
+
     #if sensor in ['PACE']: rgb = rgb[::-1, :, :] 
     #Flips only products #if sensor in ['VI'] or (Aqua_or_Terra =='A' and 'MOD' in sensor): rgb = rgb[::-1, ::-1, :]
     if 'aquaverse' not in str(inp_file):
@@ -269,7 +319,8 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     if fix_projection_Rrs:
         try:
             #products, slices = image_estimates(Rrs, **kwargs)
-            products, uncerts, slices = map_cube(np.asarray(Rrs), bands, sensor, product, flg_uncert=True, scaler_mode="invert")
+            products, uncerts_lower, uncerts_upper, slices = map_cube(np.asarray(Rrs), bands, sensor, product, flg_uncert=True, scaler_mode="invert",uncert_mode="bound")
+            #products, uncerts, slices = map_cube(np.asarray(Rrs), bands, sensor, product, flg_uncert=True, scaler_mode="invert")
  #map_cube(np.asarray(Rrs), bands, sensor, product)
 
         except:
@@ -292,7 +343,8 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
             slices = {'zsd' : slice(0,1),'tss':slice(1,2),'chl':slice(2,3)}
             products = np.concatenate((zsd,tss,chl),axis=2)
         else:
-            products, uncerts, slices = map_cube(np.asarray(Rrs), bands, sensor, product, flg_uncert=True, scaler_mode="invert")
+            products, uncerts_lower, uncerts_upper, slices = map_cube(np.asarray(Rrs), bands, sensor, product, flg_uncert=True, scaler_mode="invert",uncert_mode="bound")
+            #products, uncerts, slices = map_cube(np.asarray(Rrs), bands, sensor, product, flg_uncert=True, scaler_mode="invert")
 
             #products, slices = map_cube(np.asarray(Rrs), bands, sensor, product)
             #products, slices = image_estimates(Rrs, **kwargs)
@@ -302,7 +354,8 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
         print('Failed to produce products for ', png_filename)
         print('----------------------------------')
         if not fix_projection_Rrs:
-            if save_nc_bool: save_nc(inp_file,nc_filename,products,uncerts,slices,overwrite,wvls_dict)
+            save_nc(inp_file,nc_filename,products,slices,overwrite,wvls_dict,uncerts_lower = uncerts_lower ,uncerts_upper = uncerts_upper)
+            if save_nc_bool and overwrite: os.system(f'cp {nc_filename} {nc_filename_pardees}') #save_nc(inp_file,nc_filename,products,uncerts,slices,overwrite,wvls_dict)
         return nc_filename if os.path.exists(nc_filename) else False
 
     # Create plot for each product, bounding the colorbar per product
@@ -327,18 +380,43 @@ def plot_products(sensor, inp_file, out_path, date, dataset, ac_method, product 
     convert_png_to_jpg(png_filename,jpg_filename)
     print(f'Generated',png_filename,geotiff_filename,jpg_filename,'in {time.time()-time_start:.1f} seconds')
     print(np.shape(products),len(products))
-    plot_individual_products_bool = False 
-    if plot_individual_products_bool:
+    plot_individual_products_bool = True 
+    if plot_individual_products_bool and ac_method not in ['aquaverse']:
         for i, (key, idx) in enumerate(slices.items()):
-            if key not in ['chl','tss','cdom','pc']: continue
-            str1 = f"MDN {key} predictions"
-            figu = overlay_rgb_mdnProducts(rgb, products[:,:, idx], extent, img_uncert= uncerts[:,:, idx],product_name=str1, pred_ticks= [-2, -1, 0, 1, 2], pred_uncert_ticks = [-2, -1, 0, 1, 2], figsize=(16, 7))
-            png_filename = product_name(inp_file=inp_file,out_path=out_path,date=date,dataset=dataset,sensor=sensor,ac_method=ac_method,product=key,extension='.png',prefix='AQV')
-            plt.savefig(png_filename)
+            if key  in ['chl','tss','cdom','pc']: #continue
+                str1 = f"MDN {key} predictions"
+                figu = overlay_rgb_mdnProducts(rgb, products[:,:, idx], extent, img_uncert_lower= uncerts_lower[:,:, idx],img_uncert_upper= uncerts_upper[:,:, idx],product_name=str1, pred_ticks= [-2, -1, 0, 1, 2], pred_uncert_ticks = [-2, -1, 0, 1, 2], figsize=(16, 7))
+                png_filename = product_name(inp_file=inp_file,out_path=out_path,date=date,dataset=dataset,sensor=sensor,ac_method=ac_method,product=key,extension='.png',prefix='AQV')
+                plt.savefig(png_filename)
+            elif ac_method not in ['aquaverse']:
+                if sensor in ['PACE']:
+                    if key == 'aph':       
+                        key_bands = get_sensor_bands(f'{sensor}-aph')
+                        plotting_bands = [6,16,28,42,51]
+                        pred_ticks = [-2,-1,0,1]
+
+                    if key in ['ad','ag']: 
+                        key_bands = get_sensor_bands(f'{sensor}-adag')
+                        plotting_bands = [1,3,6]
+                        pred_ticks = [-2,-1,0,1]
+                
+                    for plotting_band in plotting_bands:
+                        current_wavelength = key_bands[plotting_band]
+                        str1 = f"MDN {key}({current_wavelength}) predictions"
+                        figu = overlay_rgb_mdnProducts(rgb, products[:,:, idx][:,:,plotting_band], extent, img_uncert_lower= uncerts_lower[:,:, idx][:,:,plotting_band],img_uncert_upper= uncerts_upper[:,:, idx][:,:,plotting_band],product_name=str1, pred_ticks= pred_ticks, pred_uncert_ticks = pred_ticks, figsize=(16, 7))
+                        png_filename = product_name(inp_file=inp_file,out_path=out_path,date=date,dataset=dataset,sensor=sensor,ac_method=ac_method,product=key+'_'+str(current_wavelength),extension='.png',prefix='AQV')
+                        plt.savefig(png_filename)
+                else:
+                    continue
+
 
 
     if not fix_projection_Rrs: 
-        if save_nc_bool: save_nc(inp_file,nc_filename,products,uncerts,slices,overwrite,wvls_dict)
+        save_nc(inp_file,nc_filename,products,slices,overwrite,wvls_dict,uncerts_lower = uncerts_lower ,uncerts_upper = uncerts_upper)
+        if save_nc_bool and overwrite: 
+            print(f'Copying nc:: {nc_filename} to {nc_filename_pardees}')
+            os.system(f'cp {nc_filename} {nc_filename_pardees}') #save_nc(inp_file,nc_filename,products,uncerts,slices,overwrite,wvls_dict)
+        
         products, extent, (im_lon, im_lat)  = fix_projection(products,im_lon,im_lat,reproject=False,nearestNeighborInterp=False, sparse_resample=True)        
     if save_tif_bool:
         create_geotiff(products=rgb_enhance(rgb),im_lat=im_lat,im_lon=im_lon,filename=geotiff_filename.split('.tif')[0]+'_RGB.tif')

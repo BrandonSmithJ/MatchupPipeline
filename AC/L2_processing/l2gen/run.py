@@ -401,8 +401,8 @@ def convert(
 
 if __name__ == '__main__':
     
-    sensor = 'OLI'
-    inp_file = Path('/data/roshea/SCRATCH/Gathered/Scenes/OLI/LC08_L1TP_020030_20220823_20220923_02_T1')
+    sensor = 's2c'
+    inp_file = Path('/run/cephfs/m2cross_scratch/f003/roshea/matchup_pipeline_dev_test/roshea/SCRATCH/Gathered/Scenes/MSI/S2A_MSIL1C_20201017T155251_N0500_R054_T18SUH_20230310T060014')
     out_dir = Path('/data/roshea/SCRATCH/Gathered/Scenes/OLI/LC08_L1TP_020030_20220823_20220923_02_T1/out/Erie_OLI_08_23_2022_XCI0001')
     ac_path = '/home/roshea/SeaDAS/SeaDAS_V2022_3/ocssw'
     overwrite = False

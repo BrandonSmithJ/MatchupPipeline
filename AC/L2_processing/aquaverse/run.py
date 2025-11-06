@@ -123,17 +123,24 @@ def check_job_id(out,timeout,output_path,job_id_list,AQV_error_path,stream_backe
     job_id_list.append(job_id)
     time_difference = time.time() - start
     while time_difference < timeout and file_not_found:
-        if os.path.exists(output_path):
+        
+        slurm_cmd      = f"sacct -u roshea -j {job_id} -p -b --format state"
+        proc           = subprocess.Popen(slurm_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,shell=True)
+        output, error  = proc.communicate()
+        status         = str(output).split('\\n')[1].split('|')[0]
+        if status in ['COMPLETED']: #os.path.exists(output_path):
             file_not_found = False
-            print(output_path, "found after",time_difference)
+            print(job_id, status, "after ",time_difference) #, output_path, "exists after",time_difference)
+            if os.path.exists(output_path):
+                print(output_path, "exists after ",time_difference)
             return
         else:
-            slurm_cmd      = f"sacct -u roshea -j {job_id} -p -b --format state"
-            proc           = subprocess.Popen(slurm_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,shell=True)
-            output, error  = proc.communicate()
-            status         = str(output).split('\\n')[1].split('|')[0]
+            #slurm_cmd      = f"sacct -u roshea -j {job_id} -p -b --format state"
+            #proc           = subprocess.Popen(slurm_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,shell=True)
+            #output, error  = proc.communicate()
+            #status         = str(output).split('\\n')[1].split('|')[0]
 
-            print(output_path, "NOT found after",time_difference)
+            print(job_id,output_path, "NOT completed after",time_difference)
             print("Status is:",status)
             if status in ['FAILED','TIMEOUT']:
                 slurm_cmd      = f"{stream_backend}/get_logs.sh {job_id}"

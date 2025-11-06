@@ -255,7 +255,7 @@ def main2(gc, data, i, debug=True):
             'queues'      : ['search','download','correct','extract','plot','celery','write',unique_uuid],
             #'queues'      : ['search', 'celery'],
             'concurrency' : 4,
-            'slurm_kwargs': {'partition' : 'ubuntu20',}, #'exclude':'slrm[0001-0041],slrm[0046-0055]'},
+            'slurm_kwargs': {'partition' : 'ubuntu20','exclude':'slrm[0001-0051]'}, #'exclude':'slrm[0001-0041],slrm[0046-0055]'},
         },
     ]
     print("UUID is:",unique_uuid)
@@ -273,23 +273,28 @@ def main2(gc, data, i, debug=True):
 def main(debug=True,skip_processing=False):
     global_config = gc = get_args()
     print(f'\nRunning pipeline with parameters: {pretty_print(gc.__dict__)}\n')
-    data = load_insitu_data(gc)
-    data = filter_completed(gc, data)
+    if not skip_processing:
+        data = load_insitu_data(gc)
+        data = filter_completed(gc, data)
     
-    assert(len(data))
+        assert(len(data))
 
-    # Shuffle samples to minimize risk of multiple threads trying to operate
-    # on the same matching scene at once
-    data = data.sample(frac=1)
+        # Shuffle samples to minimize risk of multiple threads trying to operate
+        # on the same matching scene at once
+        data = data.sample(frac=1)
+        list_range = list(range(len(data)))
+        random_list_range = random.shuffle(list_range)
+        print(list_range)
+    
     out_path = global_config.output_path.joinpath(global_config.sensors[0])
     print("Outpath is")
     print(out_path)
-    list_range = list(range(len(data)))
-    random_list_range = random.shuffle(list_range)
-    print(list_range)
+    #list_range = list(range(len(data)))
+    #random_list_range = random.shuffle(list_range)
+    #print(list_range)
     processes = []
-    max_jobs  = 180
-    finished_processing = 0
+    #max_jobs  = 180
+    #finished_processing = 0
 
     #update number of max files prior to SLURM deployment
     import resource

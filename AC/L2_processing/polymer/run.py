@@ -66,7 +66,8 @@ def run_polymer(
     inp_file = Path(inp_file).absolute()
     
     if sensor in ['OLCI','S3A','S3B']:
-        inp_file = inp_file.joinpath(str(inp_file.stem) + str(inp_file.suffix))
+        if not inp_file.joinpath('Oa01_radiance.nc').exists():
+            inp_file = inp_file.joinpath(str(inp_file.stem) + str(inp_file.suffix))
     # Perform any additional preprocessing which is necessary
     if sensor in ['OLI', 'MSI', 'S2A', 'S2B', 'TM', 'ETM']:
         inp_file = inp_file.parent if sensor not in ['OLI','MSI'] else  inp_file.joinpath(str(inp_file.stem) + '.SAFE') if sensor in ['MSI'] else inp_file

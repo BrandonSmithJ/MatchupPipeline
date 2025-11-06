@@ -20,7 +20,7 @@ task = 'pipeline.tasks.pipelines.PipelineTask:PipelineTask'
 app  = Celery('pipeline', task_cls=task)
 #app.control.inspect().active()
 
-rmq_hostname = 'slrm0017'
+rmq_hostname = 'slrm0055'
 
 
 # Set configuration options
@@ -49,7 +49,7 @@ app.conf.update(**{
     'task_queue_max_priority' : 10,
     'task_queue_default_priority' : 5,
 
-    'task_always_eager' : False, # Processes in serial, locally 
+    'task_always_eager' : True, # Processes in serial, locally 
 })
 # Need to allow larger representations to reconstruct arguments in the
 # Monitor. Otherwise, [kw]args are cutoff with '...' after certain length

@@ -191,6 +191,11 @@ plot_parameters.add_argument('--save_nc', type=int,
     default=config.save_nc,
     help='Whether or not to save the netcdf output locally.')
 
+plot_parameters.add_argument('--save_nc_object_storage', type=int,
+    default=config.save_nc_object_storage,
+    help='Whether or not to save the netcdf output to object storage.')
+
+
 plot_parameters.add_argument('--save_tif', type=int,
     default=config.save_tif,
     help='Whether or not to save the geotiff output locally.')

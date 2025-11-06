@@ -66,7 +66,7 @@ def plot(self,
             #del kwargs_Rrs['atm_corrs']
             plot_Rrs(**kwargs_Rrs)
         # plot_Rrs(base_dir, scene_id, atm_corrs= ['acolite','l2gen','polymer'], sensor='OLI')
-    if global_config.save_nc:
+    if global_config.save_nc_object_storage:
         if os.path.exists(kwargs['inp_file']):
             #m2cross_file = '/tis/m2cross/data/'+kwargs['inp_file'].stem.split('.')[0]+'_'+kwargs['inp_file'].parent.parent.parent.stem + '.nc'
             m2cross_file = '/tis/m2cross/data/'+kwargs['inp_file'].parent.parent.parent.stem + '_' + kwargs['inp_file'].stem.split('.')[0] + '.nc'

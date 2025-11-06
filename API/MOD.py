@@ -7,5 +7,5 @@ class MOD(BaseAPI):
 
     Currently, the only source for MOD is OBPG.
     '''
-    search_sources   = ['OBPG']
-    download_sources = ['OBPG']
+    search_sources   = ['earth_access']
+    download_sources = ['earth_access']
